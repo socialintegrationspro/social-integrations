@@ -74,13 +74,17 @@ final class Publisher {
 	 * @param int $timestamp Unix time.
 	 */
 	public static function wake_at( int $timestamp ): void {
-		wp_schedule_single_event( max( time(), $timestamp ), self::CRON_HOOK, array( 'at' => $timestamp ) );
+		// Positional argument: WordPress passes cron args by position, and an
+		// associative key would reach run() as a named parameter on PHP 8.
+		wp_schedule_single_event( max( time(), $timestamp ), self::CRON_HOOK, array( $timestamp ) );
 	}
 
 	/**
 	 * Sends every due share.
+	 *
+	 * @param int $at Time the event was scheduled for. Only makes each event unique.
 	 */
-	public function run(): void {
+	public function run( $at = 0 ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		foreach ( Queue::due( 20 ) as $job ) {
 			if ( Queue::claim( $job['id'] ) ) {
 				$this->send( $job );

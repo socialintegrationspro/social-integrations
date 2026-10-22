@@ -19,9 +19,11 @@ defined( 'ABSPATH' ) || exit;
  * Runs "Connect with…" for networks whose auth_type() is 'oauth2'.
  *
  * 1. The admin app calls POST /oauth/{network}/start and sends the user to the URL it returns.
- * 2. The network sends the user back to admin-post.php?action=sint_oauth_callback.
- *    The callback URL is the same for every network, so it can be registered exactly
- *    in the network app; the network key travels in the state.
+ * 2. The network sends the user back to /social-integrations/oauth/callback
+ *    (or /?sint_oauth_callback=1 without pretty permalinks). The callback URL is the
+ *    same for every network, so it can be registered exactly in the network app; the
+ *    network key travels in the state. The logged-in cookie identifies the user.
+ *    admin-post.php?action=sint_oauth_callback still works for apps registered with it.
  * 3. When the sign-in can post as several things (Facebook Pages), the choices are
  *    kept for a short time and the admin app lets the user pick one through
  *    GET/POST /oauth/{network}/entities. Otherwise the account is saved right away.
@@ -30,6 +32,8 @@ final class OAuth {
 
 	const REST_NAMESPACE  = 'sint/v1';
 	const ACTION          = 'sint_oauth_callback';
+	const QUERY_VAR       = 'sint_oauth_callback';
+	const CALLBACK_PATH   = 'social-integrations/oauth/callback';
 	const STATE_PREFIX    = 'sint_oauth_state_';
 	const PENDING_PREFIX  = 'sint_oauth_pending_';
 	const STATE_TTL       = 10 * MINUTE_IN_SECONDS;
@@ -58,13 +62,57 @@ final class OAuth {
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'handle_callback' ) );
+		add_action( 'init', array( self::class, 'add_rewrite_rule' ) );
+		add_filter( 'query_vars', array( $this, 'add_query_var' ) );
+		add_action( 'parse_request', array( $this, 'maybe_handle_callback' ) );
 	}
 
 	/**
 	 * Callback URL to register in the network app.
 	 */
 	public static function redirect_uri(): string {
-		return admin_url( 'admin-post.php?action=' . self::ACTION );
+		global $wp_rewrite;
+		if ( get_option( 'permalink_structure' ) ) {
+			// "/index.php/%postname%/" structures are for servers without URL rewriting.
+			$prefix = $wp_rewrite instanceof \WP_Rewrite && $wp_rewrite->using_index_permalinks() ? '/' . $wp_rewrite->index : '';
+			return home_url( $prefix . '/' . self::CALLBACK_PATH );
+		}
+		return add_query_arg( self::QUERY_VAR, '1', home_url( '/' ) );
+	}
+
+	/**
+	 * Maps /social-integrations/oauth/callback to the callback. Flushes the rules once
+	 * when they do not hold it yet, for example right after an update.
+	 */
+	public static function add_rewrite_rule(): void {
+		$regex = '^' . self::CALLBACK_PATH . '/?$';
+		add_rewrite_rule( $regex, 'index.php?' . self::QUERY_VAR . '=1', 'top' );
+
+		$rules = get_option( 'rewrite_rules' );
+		if ( get_option( 'permalink_structure' ) && is_array( $rules ) && ! isset( $rules[ $regex ] ) ) {
+			flush_rewrite_rules( false );
+		}
+	}
+
+	/**
+	 * Lets WordPress read the callback query var.
+	 *
+	 * @param string[] $vars Public query vars.
+	 */
+	public function add_query_var( array $vars ): array {
+		$vars[] = self::QUERY_VAR;
+		return $vars;
+	}
+
+	/**
+	 * Runs the callback before WordPress loads a template.
+	 *
+	 * @param \WP $wp Current request.
+	 */
+	public function maybe_handle_callback( \WP $wp ): void {
+		if ( ! empty( $wp->query_vars[ self::QUERY_VAR ] ) ) {
+			$this->handle_callback();
+		}
 	}
 
 	/**
@@ -228,7 +276,8 @@ final class OAuth {
 	}
 
 	/**
-	 * admin-post.php?action=sint_oauth_callback — finishes the sign-in and returns to the admin app.
+	 * The sign-in callback — finishes the sign-in and returns to the admin app.
+	 * Always ends with a redirect and exit.
 	 */
 	public function handle_callback(): void {
 		// The state checked below protects this request, not a nonce.

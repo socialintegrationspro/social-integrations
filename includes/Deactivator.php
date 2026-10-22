@@ -21,5 +21,6 @@ final class Deactivator {
 	 */
 	public static function deactivate(): void {
 		wp_clear_scheduled_hook( Publisher::CRON_HOOK );
+		flush_rewrite_rules( false );
 	}
 }
