@@ -7,6 +7,8 @@
 
 namespace SocialIntegrations\Support;
 
+use SocialIntegrations\Content\ShareBuilder;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -28,10 +30,13 @@ final class Settings {
 		return array(
 			'post_types'           => array(
 				'post' => array(
-					'auto'     => true,
-					'delay'    => 15,
-					'accounts' => array(),
-					'template' => '',
+					'auto'         => true,
+					'delay'        => 15,
+					'accounts'     => array(),
+					'template'     => '',
+					'captions'     => array(),
+					'media'        => 'auto',
+					'custom_media' => array(),
 				),
 			),
 			'blocks'               => array(
@@ -54,6 +59,7 @@ final class Settings {
 			'ai'                   => array(
 				'provider' => '',
 				'tone'     => 'friendly',
+				'model'    => '',
 			),
 		);
 	}
@@ -94,11 +100,15 @@ final class Settings {
 				if ( '' === $type || ! post_type_exists( $type ) || ! is_array( $rule ) ) {
 					continue;
 				}
+				$media                          = (string) ( $rule['media'] ?? 'auto' );
 				$current['post_types'][ $type ] = array(
-					'auto'     => ! empty( $rule['auto'] ),
-					'delay'    => max( 0, min( 86400, (int) ( $rule['delay'] ?? 15 ) ) ),
-					'accounts' => array_values( array_map( 'sanitize_text_field', (array) ( $rule['accounts'] ?? array() ) ) ),
-					'template' => sanitize_textarea_field( (string) ( $rule['template'] ?? '' ) ),
+					'auto'         => ! empty( $rule['auto'] ),
+					'delay'        => max( 0, min( 86400, (int) ( $rule['delay'] ?? 15 ) ) ),
+					'accounts'     => array_values( array_map( 'sanitize_text_field', (array) ( $rule['accounts'] ?? array() ) ) ),
+					'template'     => sanitize_textarea_field( (string) ( $rule['template'] ?? '' ) ),
+					'captions'     => self::captions( (array) ( $rule['captions'] ?? array() ) ),
+					'media'        => in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) ? $media : 'auto',
+					'custom_media' => self::media_items( (array) ( $rule['custom_media'] ?? array() ) ),
 				);
 			}
 		}
@@ -127,11 +137,47 @@ final class Settings {
 			$current['ai'] = array(
 				'provider' => sanitize_key( (string) ( $input['ai']['provider'] ?? '' ) ),
 				'tone'     => sanitize_key( (string) ( $input['ai']['tone'] ?? 'friendly' ) ),
+				'model'    => sanitize_text_field( (string) ( $input['ai']['model'] ?? '' ) ),
 			);
 		}
 
 		update_option( self::OPTION, $current, false );
 		return $current;
+	}
+
+	/**
+	 * Caption templates for single networks. Empty ones are dropped.
+	 *
+	 * @param array $input Network => template.
+	 * @return array<string, string>
+	 */
+	public static function captions( array $input ): array {
+		$captions = array();
+		foreach ( $input as $network => $text ) {
+			$network = sanitize_key( (string) $network );
+			$text    = sanitize_textarea_field( is_string( $text ) ? $text : '' );
+			if ( '' !== $network && '' !== trim( $text ) ) {
+				$captions[ $network ] = $text;
+			}
+		}
+		return $captions;
+	}
+
+	/**
+	 * Chosen images as media items, read again from the media library so only real
+	 * attachments are kept.
+	 *
+	 * @param array $input Media items or attachment IDs.
+	 */
+	public static function media_items( array $input ): array {
+		$items = array();
+		foreach ( array_slice( $input, 0, 10 ) as $chosen ) {
+			$item = ShareBuilder::attachment( (int) ( is_array( $chosen ) ? ( $chosen['id'] ?? 0 ) : $chosen ) );
+			if ( $item ) {
+				$items[] = $item;
+			}
+		}
+		return $items;
 	}
 
 	/**

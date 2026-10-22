@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Scheduler;
 
 use SocialIntegrations\Content\ShareBuilder;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
 
 defined( 'ABSPATH' ) || exit;
@@ -73,12 +74,18 @@ final class AutoShare {
 			return;
 		}
 
-		$builder  = new ShareBuilder();
-		$share    = $builder->build( $post );
-		$rule     = $builder->rule( $post->post_type );
-		$selected = get_post_meta( $post_id, self::META_ACCOUNTS, true );
-		$selected = is_array( $selected ) && $selected ? $selected : (array) ( $rule['accounts'] ?? array() );
+		if ( ! apply_filters( Hooks::AUTO_SHARE_POST, true, $post ) ) {
+			return;
+		}
 
+		$builder  = new ShareBuilder();
+		$rule     = $builder->rule( $post->post_type );
+		$chosen   = get_post_meta( $post_id, self::META_ACCOUNTS, true );
+		$chosen   = is_array( $chosen ) && $chosen ? $chosen : array();
+		$selected = $chosen ? $chosen : (array) ( $rule['accounts'] ?? array() );
+		$selected = (array) apply_filters( Hooks::AUTO_SHARE_ACCOUNTS, $selected, $post, (bool) $chosen );
+
+		$created = array();
 		foreach ( Accounts::all() as $account ) {
 			if ( 'connected' !== ( $account['status'] ?? '' ) ) {
 				continue;
@@ -86,7 +93,9 @@ final class AutoShare {
 			if ( $selected && ! in_array( $account['id'], $selected, true ) ) {
 				continue;
 			}
-			Queue::add(
+			// Built for each account: the template can differ by account and network.
+			$share = $builder->build( $post, $account, 'auto' );
+			$created[] = Queue::add(
 				array(
 					'post_id'      => $post_id,
 					'network'      => $account['network'],
@@ -99,6 +108,14 @@ final class AutoShare {
 				)
 			);
 		}
+		do_action(
+			Hooks::SHARES_CREATED,
+			$created,
+			array(
+				'source'    => 'auto',
+				'post_type' => $post->post_type,
+			)
+		);
 		Publisher::wake_at( time() );
 	}
 }

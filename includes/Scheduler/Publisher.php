@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Scheduler;
 
 use SocialIntegrations\Hooks;
+use SocialIntegrations\Networks\AbstractNetwork;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\NetworkException;
 use SocialIntegrations\Networks\Registry;
@@ -111,7 +112,8 @@ final class Publisher {
 				throw new NetworkException( 'expired', sprintf( __( '%s sign-in expired. Reconnect the account.', 'social-integrations' ), $network->label() ) );
 			}
 
-			$answer = $network->publish( (array) $account['credentials'], $this->payload( $job ) );
+			$credentials = $this->fresh_credentials( $network, (string) $job['account_id'], (array) $account['credentials'] );
+			$answer      = $network->publish( $credentials, $this->payload( $job ) );
 			if ( ! empty( $answer['credentials'] ) && is_array( $answer['credentials'] ) ) {
 				Accounts::update_credentials( (string) $job['account_id'], $answer['credentials'] );
 			}
@@ -140,6 +142,32 @@ final class Publisher {
 		Queue::log( $job, $result );
 		do_action( Hooks::SHARE_COMPLETED, $result, $job );
 		return $result;
+	}
+
+	/**
+	 * Renews credentials that expire within five minutes, when the network can.
+	 * A failed renewal keeps the old ones; the share then reports the sign-in problem.
+	 *
+	 * @param AbstractNetwork $network     Network.
+	 * @param string          $account_id  Account ID.
+	 * @param array           $credentials Current credentials.
+	 */
+	private function fresh_credentials( AbstractNetwork $network, string $account_id, array $credentials ): array {
+		$expires = (int) ( $credentials['expires_at'] ?? 0 );
+		if ( ! $expires || $expires - 5 * MINUTE_IN_SECONDS > time() ) {
+			return $credentials;
+		}
+		try {
+			$fresh = $network->refresh( Accounts::app( $network->key() ), $credentials );
+		} catch ( NetworkException $e ) {
+			return $credentials;
+		}
+		if ( empty( $fresh['access_token'] ) ) {
+			return $credentials;
+		}
+		$fresh = array_merge( $credentials, $fresh );
+		Accounts::update_credentials( $account_id, $fresh );
+		return $fresh;
 	}
 
 	/**

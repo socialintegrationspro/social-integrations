@@ -9,6 +9,8 @@ namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Content\ShareBuilder;
+use SocialIntegrations\Hooks;
+use SocialIntegrations\Support\Settings;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Queue;
 
@@ -56,6 +58,7 @@ final class ContentController extends RestController {
 			)
 		);
 		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::READABLE, array( $this, 'share' ) );
+		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::CREATABLE, array( $this, 'share_with' ) );
 	}
 
 	/**
@@ -143,6 +146,47 @@ final class ContentController extends RestController {
 		if ( ! $post || ! in_array( $post->post_type, PostTypes::names(), true ) ) {
 			return $this->error( 'not_found', __( 'This item does not exist.', 'social-integrations' ), 404 );
 		}
-		return rest_ensure_response( ( new ShareBuilder() )->build( $post ) );
+		// `media` picks another media source for this build only, as the composer asks for it.
+		$media = sanitize_key( (string) $request['media'] );
+		if ( ! in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) || 'custom' === $media ) {
+			return rest_ensure_response( ( new ShareBuilder() )->build( $post ) );
+		}
+		$use = static function ( $template ) use ( $media ) {
+			return array( 'media' => $media ) + (array) $template;
+		};
+		add_filter( Hooks::SHARE_TEMPLATE, $use, 1000 );
+		$share = ( new ShareBuilder() )->build( $post );
+		remove_filter( Hooks::SHARE_TEMPLATE, $use, 1000 );
+		return rest_ensure_response( $share );
+	}
+
+	/**
+	 * The share a post type template, not saved yet, builds for one item.
+	 *
+	 * Body: { template: { template, captions, media, custom_media } }, as a post type rule holds them.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function share_with( \WP_REST_Request $request ) {
+		$post = get_post( (int) $request['id'] );
+		if ( ! $post || ! in_array( $post->post_type, PostTypes::names(), true ) ) {
+			return $this->error( 'not_found', __( 'This item does not exist.', 'social-integrations' ), 404 );
+		}
+		$input = (array) ( ( (array) $request->get_json_params() )['template'] ?? array() );
+		$media = (string) ( $input['media'] ?? 'auto' );
+		$draft = array(
+			'caption'      => sanitize_textarea_field( (string) ( $input['template'] ?? '' ) ),
+			'captions'     => Settings::captions( (array) ( $input['captions'] ?? array() ) ),
+			'media'        => in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) ? $media : 'auto',
+			'custom_media' => Settings::media_items( (array) ( $input['custom_media'] ?? array() ) ),
+		);
+		$use   = static function () use ( $draft ) {
+			return $draft;
+		};
+		add_filter( Hooks::SHARE_TEMPLATE, $use, 1000 );
+		$share = ( new ShareBuilder() )->build( $post );
+		remove_filter( Hooks::SHARE_TEMPLATE, $use, 1000 );
+		return rest_ensure_response( $share );
 	}
 }

@@ -4,6 +4,8 @@ export interface Network {
   color: string
   auth_type: 'oauth2' | 'token' | 'credentials'
   char_limit: number
+  /** Characters a link counts as; 0 counts it as typed. */
+  url_length: number
   max_images: number
   supports_video: boolean
   connect_fields: Field[]
@@ -76,6 +78,8 @@ export interface MediaItem {
 
 export interface BuiltShare {
   caption: string
+  /** Captions from network templates, keyed by network. */
+  captions: Record<string, string>
   link: string
   media: MediaItem[]
   tokens: Record<string, string>
@@ -117,11 +121,17 @@ export interface LogItem {
 
 export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
 
+export type MediaSource = 'auto' | 'featured' | 'content' | 'custom' | 'none'
+
 export interface PostTypeRule {
   auto: boolean
   delay: number
   accounts: string[]
   template: string
+  /** Caption templates for single networks, keyed by network. */
+  captions: Record<string, string>
+  media: MediaSource
+  custom_media: MediaItem[]
 }
 
 export interface Settings {
@@ -130,7 +140,16 @@ export interface Settings {
   block_fallback: BlockUse
   allow_block_override: boolean
   max_images: number
-  ai: { provider: string; tone: string }
+  ai: { provider: string; tone: string; model: string }
+  ai_providers: AIProvider[]
+}
+
+export interface AIProvider {
+  key: string
+  label: string
+  needs_key: boolean
+  has_key: boolean
+  default_model: string
 }
 
 export interface BlockType {

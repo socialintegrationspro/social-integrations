@@ -83,4 +83,64 @@ final class Hooks {
 	 * @param array $job    The queue row.
 	 */
 	const SHARE_COMPLETED = 'sint/share_completed';
+
+	/**
+	 * Filter. Account IDs an automatic share on publish goes to. An empty list
+	 * means every connected account.
+	 *
+	 * @param string[] $account_ids From the post's own choice, or the post type's rule.
+	 * @param \WP_Post $post
+	 * @param bool     $chosen      True when the post itself chose the accounts.
+	 */
+	const AUTO_SHARE_ACCOUNTS = 'sint/auto_share_accounts';
+
+	/**
+	 * Filter. Whether a post is shared on publish. Runs when its shares are about to be
+	 * queued, after the post type's delay, so its terms and meta are saved.
+	 *
+	 * @param bool     $share True when the post type's rule says to share.
+	 * @param \WP_Post $post
+	 */
+	const AUTO_SHARE_POST = 'sint/auto_share_post';
+
+	/**
+	 * Filter. The storage behind connected accounts. Return an
+	 * \SocialIntegrations\Networks\AccountStore to replace the default, which keeps
+	 * one account for each network.
+	 *
+	 * @param \SocialIntegrations\Networks\AccountStore|null $store
+	 */
+	const ACCOUNT_STORE = 'sint/account_store';
+
+	/**
+	 * Filter. AI providers offered in Settings. Each must implement
+	 * \SocialIntegrations\AI\ProviderInterface.
+	 *
+	 * @param \SocialIntegrations\AI\ProviderInterface[] $providers
+	 */
+	const AI_PROVIDERS = 'sint/ai_providers';
+
+	/**
+	 * Filter. The template a share is built from. Starts as the post type's template;
+	 * a filter can return another one for an account or a context.
+	 *
+	 * @param array    $template ['caption' => string, 'captions' => array<network, string>,
+	 *                           'media' => 'auto'|'featured'|'content'|'custom'|'none',
+	 *                           'custom_media' => array of attachment IDs or media items].
+	 * @param \WP_Post $post
+	 * @param array    $account  The account the share goes to; empty when not known yet.
+	 * @param string   $context  'auto' on publish, 'composer' in the admin app, or a caller's own name.
+	 */
+	const SHARE_TEMPLATE = 'sint/share_template';
+
+	/**
+	 * Action. Fires when shares are added, before any is sent: from the admin app, or on
+	 * publish.
+	 *
+	 * @param int[] $ids     Queue row IDs, one per account.
+	 * @param array $options From the admin app: the unsanitized `options` the composer sent
+	 *                       (see the `sint.composer.options` JS filter). On publish:
+	 *                       [ 'source' => 'auto', 'post_type' => string ].
+	 */
+	const SHARES_CREATED = 'sint/shares_created';
 }

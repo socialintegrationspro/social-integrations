@@ -252,6 +252,8 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-copy .sint-btn { height: 42px; flex: 0 0 auto; }
 .sint-copy .sint-btn.copied { color: var(--ok-text); border-color: var(--ok-border); }
 .sint-field { display: flex; flex-direction: column; gap: 6px; }
+.sint-ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 4px 20px 20px; }
+.sint-btn.ai { border-color: var(--tok-border); background: var(--tok-bg); color: var(--accent-text); }
 .sint-field > span { font-size: 13px; font-weight: 600; }
 .sint-field small { color: var(--faint); font-size: 12px; }
 
@@ -372,3 +374,14 @@ body.folded .sint-overlay { left: 36px; }
 .sint-acc.add { background: transparent; border-style: dashed; }
 .sint-kv { display: flex; justify-content: space-between; font-size: 13px; gap: 10px; }
 .sint-kv span:first-child { color: var(--faint); }
+
+/* Auto-post tab of the composer: share-to row, then posts | what | when columns. */
+.sint-autopost-to { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.sint-autopost { display: flex; flex-wrap: wrap; min-height: 0; }
+.sint-autopost .col { flex: 1 1 280px; max-width: 340px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sint-autopost .col.mid { flex: 999 1 400px; max-width: none; border-left: 1px solid var(--line); border-right: 1px solid var(--line); padding: 18px 22px; }
+.sint-autopost .col.side { background: var(--side); }
+.sint-autopost-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--faint); }
+.sint-autopost-dot.on { background: var(--ok); }
+.sint-autopost-share { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg); }
+.sint-autopost-share p { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }

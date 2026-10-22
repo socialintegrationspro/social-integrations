@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Plugin;
 use SocialIntegrations\Scheduler\Publisher;
@@ -134,6 +135,8 @@ final class QueueController extends RestController {
 			);
 			$created[] = $id;
 		}
+
+		do_action( Hooks::SHARES_CREATED, $created, (array) ( $body['options'] ?? array() ) );
 
 		if ( ! empty( $body['draft'] ) ) {
 			return rest_ensure_response( array( 'created' => $created ) );

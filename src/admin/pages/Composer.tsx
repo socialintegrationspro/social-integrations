@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AccountAvatar, Icon, Modal, NetBadge, Segmented, typeColor, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
 import { config } from '../lib/config'
+import { applyFilters } from '../lib/hooks'
 import { fmtDate, initials } from '../lib/format'
 import { __, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
 import { useStore } from '../lib/store'
-import type { BuiltShare, ContentItem, MediaItem, QueueItem } from '../lib/types'
+import { AutoPost } from './AutoPost'
+import type { Account, BuiltShare, ContentItem, MediaItem, MediaSource, Network, QueueItem } from '../lib/types'
 
 export interface ComposerSeed {
   postId?: number
@@ -14,9 +16,43 @@ export interface ComposerSeed {
   item?: QueueItem
   /** A share to start a new one from. */
   copy?: QueueItem
+  /** A time to schedule a new share for, as UTC ISO. */
+  at?: string
 }
 
 type When = 'now' | 'pick'
+
+/** Props for a `sint.composer.options` control, shown next to the timing of a new share. */
+export interface ComposerOptionProps {
+  /** Every control's values; sent with the new share as `options`. */
+  options: Record<string, unknown>
+  setOption: (key: string, value: unknown) => void
+  when: 'now' | 'pick'
+  /** Site-time datetime-local value of the picked time. */
+  local: string
+}
+
+/** Props for a `sint.composer.modes` mode, which renders the modal's body and its own actions. */
+export interface ComposerModeProps {
+  accounts: Account[]
+  selected: string[]
+  onClose: () => void
+  onSaved: () => void
+}
+
+interface ComposerMode {
+  value: string
+  label: string
+  component: (props: ComposerModeProps) => JSX.Element
+}
+
+const MEDIA_FROM: { value: MediaSource | ''; label: () => string }[] = [
+  { value: '', label: () => __('Post type setting') },
+  { value: 'auto', label: () => __('Featured + post images') },
+  { value: 'featured', label: () => __('Featured image') },
+  { value: 'content', label: () => __('Images in the post') },
+  { value: 'none', label: () => __('No media') },
+]
 const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}']
 
 /** 'YYYY-MM-DDTHH:mm' in the site's time zone, one hour from now. */
@@ -37,6 +73,12 @@ function atLocal(days: number, hour: number): string {
 function toNextWeek(): number {
   const day = new Date(Date.now() + config.gmtOffset * 3600000).getUTCDay()
   return (config.weekStart - day + 7) % 7 || 7
+}
+
+/** Caption length as a network counts it: some count every link as a fixed length. */
+function measure(text: string, net?: Network): number {
+  const counted = net?.url_length ? text.replace(/https?:\/\/\S+/g, 'x'.repeat(net.url_length)) : text
+  return [...counted].length
 }
 
 /** UTC ISO → datetime-local value in the site's time zone. */
@@ -76,11 +118,24 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [previewPick, setPreviewPick] = useState('')
   const [media, setMedia] = useState<MediaItem[]>(from?.media ?? [])
   const [mediaOn, setMediaOn] = useState<string[]>(from?.media.map((m) => m.url) ?? [])
-  const [when, setWhen] = useState<When>(upcoming ? 'pick' : 'now')
-  const [local, setLocal] = useState(() => (upcoming ? utcToLocal(item!.scheduled_at) : defaultLocal()))
+  const [when, setWhen] = useState<When>(upcoming || seed.at ? 'pick' : 'now')
+  const [local, setLocal] = useState(() => (upcoming ? utcToLocal(item!.scheduled_at) : seed.at ? utcToLocal(seed.at) : defaultLocal()))
   const [busy, setBusy] = useState(false)
+  const [writing, setWriting] = useState(false)
+  // The text before the last AI answer, for Undo.
+  const [beforeAI, setBeforeAI] = useState<string | null>(null)
+  const [mediaFrom, setMediaFrom] = useState<MediaSource | ''>('')
+  const [mode, setMode] = useState('single')
+  const [options, setOptions] = useState<Record<string, unknown>>({})
   const area = useRef<HTMLTextAreaElement>(null)
   const keepSaved = useRef(!!from)
+
+  // Filter `sint.composer.modes`: other ways to share from this modal, such as many posts at once.
+  const modes = item ? [] : [...applyFilters<ComposerMode[]>('sint.composer.modes', []), { value: 'auto', label: __('Auto-post'), component: AutoPost }]
+  const Mode = modes.find((m) => m.value === mode)?.component
+  // Filter `sint.composer.options`: controls next to the timing of a new share, such as repeating it.
+  const optionControls = item ? [] : applyFilters<{ key: string; component: (props: ComposerOptionProps) => JSX.Element }[]>('sint.composer.options', [])
+  const setOption = (key: string, value: unknown) => setOptions((o) => ({ ...o, [key]: value }))
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -91,6 +146,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
   useEffect(() => {
     if (!postId) return
+    setMediaFrom('')
     api.get<BuiltShare>(`content/${postId}/share`).then((r) => {
       setBuilt(r.data)
       if (keepSaved.current) {
@@ -100,20 +156,47 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         return
       }
       setCaption(r.data.caption)
-      setOverrides({})
+      setOverrides(Array.isArray(r.data.captions) ? {} : r.data.captions)
       setMedia(r.data.media)
       setMediaOn(r.data.media.map((m) => m.url))
     })
   }, [postId])
+
+  /** Media from another source; images added by hand stay. */
+  const changeMediaFrom = (from: MediaSource | '') => {
+    setMediaFrom(from)
+    if (!postId) return
+    api.get<BuiltShare>(`content/${postId}/share${from ? `?media=${from}` : ''}`).then((r) => {
+      const fromPost = new Set(built?.media.map((m) => m.url) ?? [])
+      const added = media.filter((m) => !fromPost.has(m.url))
+      setBuilt((b) => (b ? { ...b, media: r.data.media } : r.data))
+      setMedia([...r.data.media, ...added.filter((m) => !r.data.media.some((x) => x.url === m.url))])
+      setMediaOn([...r.data.media.map((m) => m.url), ...added.filter((m) => mediaOn.includes(m.url)).map((m) => m.url)])
+    })
+  }
 
   const nets = useMemo(() => Array.from(new Set(connected.filter((a) => selected.includes(a.id)).map((a) => a.network))), [connected, selected])
   const text = tab === 'all' ? caption : overrides[tab] ?? caption
   const setText = (v: string) => (tab === 'all' ? setCaption(v) : setOverrides((o) => ({ ...o, [tab]: v })))
   const chosenMedia = media.filter((m) => mediaOn.includes(m.url))
   const title = results.find((r) => r.id === postId)?.title ?? built?.tokens.title ?? ''
-  const over = nets.filter((n) => [...(overrides[n] ?? caption)].length > (network(n)?.char_limit ?? Infinity))
+  const over = nets.filter((n) => measure(overrides[n] ?? caption, network(n)) > (network(n)?.char_limit ?? Infinity))
   const canSend = !busy && selected.length > 0 && caption.trim() !== '' && over.length === 0
   const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
+
+  /** Drafts the current tab's caption from the post, or improves the text written so far. */
+  const writeWithAI = async () => {
+    const limits = (tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500)
+    setWriting(true)
+    try {
+      const r = await api.post<{ caption: string }>('ai/caption', { post_id: postId, text: postId && text === (built?.caption ?? '') ? '' : text, limit: Math.min(500, ...limits) })
+      setBeforeAI(text)
+      setText(r.data.caption)
+    } catch (e) {
+      toast((e as Error).message, true)
+    }
+    setWriting(false)
+  }
 
   const addMedia = () => {
     const opened = pickMedia((items) => {
@@ -170,6 +253,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         link: built?.link,
         scheduled_at: when === 'pick' ? localToUtc(local) : '',
         draft,
+        options,
       })
       const failed = (r.data.results ?? []).filter((x) => x.status !== 'published')
       if (failed.length) {
@@ -195,7 +279,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     <Modal
       title={item ? __('Edit post') : __('Create post')}
       onClose={onClose}
-      footer={
+      footer={Mode ? undefined :
         <>
           <Segmented<When> label={__('Timing')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now') }, { value: 'pick', label: __('Pick a time') }]} />
           {when === 'pick' && (
@@ -210,6 +294,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             </>
           )}
           <span style={{ fontSize: 12, color: 'var(--faint)' }}>{config.timezone}</span>
+          {optionControls.map(({ key, component: Control }) => <Control key={key} options={options} setOption={setOption} when={when} local={local} />)}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
             <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft')}</button>
             <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
@@ -218,9 +303,16 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           </div>
         </>
       }
-      headerExtra={<span style={{ fontSize: 12, color: 'var(--faint)' }}>{title}</span>}
+      headerExtra={
+        <>
+          {modes.length > 0 && (
+            <Segmented<string> label={__('What to share')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
+          )}
+          {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)' }}>{title}</span>}
+        </>
+      }
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
+      {mode !== 'auto' && <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
         <span className="sint-label">{__('Share to')}</span>
         {accounts.length === 0 && <a href="#/accounts" onClick={onClose}>{__('Connect an account first')}</a>}
         {accounts.filter((a) => !item || a.id === item.account_id).map((a) => {
@@ -244,12 +336,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         {accounts.filter((a) => a.status === 'expired' && (!item || a.id === item.account_id)).map((a) => (
           <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="alert" size={14} stroke={2.2} />
-            {sprintf(__('%s sign-in expired'), network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect')}</a>
+            {sprintf(__('%1$s on %2$s: sign-in expired'), a.name || a.username, network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect')}</a>
           </span>
         ))}
-      </div>
+      </div>}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
+      {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} /> : <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
         {!item && <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           <div className="sint-label">{__('From your site')}</div>
           <label className="sint-search" style={{ minWidth: 0 }}>
@@ -309,6 +401,15 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                   {TOKENS.map((t) => <button key={t} type="button" className="sint-tok" onClick={() => insert(t)}>{t}</button>)}
                 </>
               )}
+              {config.ai.ready && (postId || text.trim()) && (
+                <button type="button" className="sint-btn ai sm" disabled={writing} onClick={writeWithAI}>
+                  <Icon name="sparkle" size={15} stroke={2} />
+                  {writing ? __('Writing…') : postId && text === (built?.caption ?? '') ? __('Write with AI') : __('Improve with AI')}
+                </button>
+              )}
+              {beforeAI !== null && !writing && (
+                <button type="button" className="sint-btn ghost sm" onClick={() => { setText(beforeAI); setBeforeAI(null) }}>{__('Undo')}</button>
+              )}
               <button type="button" className="sint-btn ghost sm" onClick={addMedia}>
                 <Icon name="image" size={15} stroke={2} />
                 {__('Add media')}
@@ -325,7 +426,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {nets.map((n) => {
                   const limit = network(n)?.char_limit ?? 0
-                  const len = [...(overrides[n] ?? caption)].length
+                  const len = measure(overrides[n] ?? caption, network(n))
                   return (
                     <span key={n} className={`sint-pill ${len > limit ? 'bad' : 'muted'}`}>
                       {network(n)?.label} {len.toLocaleString()}/{limit.toLocaleString()}
@@ -336,12 +437,19 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             </div>
           </div>
 
-          {media.length > 0 && (
+          {(media.length > 0 || !!postId) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span className="sint-label">{__('Media')}</span>
                 <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected · tap to turn on or off'), chosenMedia.length)}</span>
-                {postId && <a href="#/settings" onClick={onClose} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600 }}>{__('Block rules')}</a>}
+                {postId && (
+                  <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
+                    {__('From')}
+                    <select className="sint-select" style={{ height: 36, minWidth: 0 }} value={mediaFrom} onChange={(e) => changeMediaFrom(e.target.value as MediaSource | '')}>
+                      {MEDIA_FROM.map((m) => <option key={m.value} value={m.value}>{m.label()}</option>)}
+                    </select>
+                  </label>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {media.map((m, i) => {
@@ -412,7 +520,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: 'var(--text-2)' }}>
               {nets.map((n) => {
                 const net = network(n)
-                const len = [...(overrides[n] ?? caption)].length
+                const len = measure(overrides[n] ?? caption, network(n))
                 const ok = net ? len <= net.char_limit : true
                 return (
                   <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -430,7 +538,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             </div>
           )}
         </aside>
-      </div>
+      </div>}
     </Modal>
   )
 }
