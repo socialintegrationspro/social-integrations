@@ -96,7 +96,10 @@ export interface QueueItem {
   status: QueueStatus
   scheduled_at: string
   attempts: number
-  post: { title: string; type: string } | null
+  post: { title: string; type: string; thumbnail: string; edit_link: string } | null
+  /** Last send attempt: the error, or the live post's URL. */
+  message: string
+  remote_url: string
 }
 
 export interface LogItem {

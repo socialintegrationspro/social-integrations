@@ -40,7 +40,7 @@ export function LogPage(_props: PageProps) {
                   <tr key={r.id}>
                     <td style={{ color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{fmtDateTime(r.created_at)}</td>
                     <td><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><NetBadge network={r.network} color={network(r.network)?.color} size={22} />{network(r.network)?.label ?? r.network}</span></td>
-                    <td style={{ fontWeight: 600 }}>{r.post_title || __('Post without a page')}</td>
+                    <td style={{ fontWeight: 600 }}>{r.post_title || __('Written in the composer')}</td>
                     <td>
                       {r.status === 'published' ? <span className="sint-pill ok">{__('Published')}</span> : <span className="sint-pill bad">{__('Failed')}</span>}
                       {r.message && <div style={{ fontSize: 12, color: 'var(--bad-text)', marginTop: 4 }}>{r.message}</div>}

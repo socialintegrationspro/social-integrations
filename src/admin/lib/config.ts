@@ -13,6 +13,13 @@ export interface SintConfig {
   user: { name: string; avatar: string }
 }
 
+/** The parts of a wp.media frame the composer uses. */
+export interface MediaFrame {
+  on: (event: string, callback: () => void) => void
+  open: () => void
+  state: () => { get: (key: string) => { toJSON: () => { id: number; url: string; alt?: string; type: string }[] } }
+}
+
 declare global {
   interface Window {
     sintConfig?: SintConfig
@@ -22,6 +29,7 @@ declare global {
         doAction: (name: string, ...args: unknown[]) => void
       }
       i18n?: { __: (text: string, domain?: string) => string }
+      media?: (options: Record<string, unknown>) => MediaFrame
     }
   }
 }

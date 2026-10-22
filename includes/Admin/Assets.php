@@ -66,6 +66,9 @@ final class Assets {
 			}
 		}
 
+		// The composer adds images from the media library.
+		wp_enqueue_media();
+
 		wp_add_inline_script( self::HANDLE, 'window.sintConfig = ' . wp_json_encode( $this->config() ) . ';', 'before' );
 		wp_set_script_translations( self::HANDLE, 'social-integrations', SINT_PATH . 'languages' );
 	}

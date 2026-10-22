@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Header, type PageProps } from '../App'
-import { AccountAvatar, Icon, Modal, NetBadge, useToast } from '../components/ui'
+import { AccountAvatar, CopyField, Icon, Modal, NetBadge, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtDate } from '../lib/format'
 import { __, sprintf } from '../lib/i18n'
@@ -59,7 +59,7 @@ export function AccountsPage({ params, go }: PageProps) {
             <Icon name="alert" size={20} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700 }}>{sprintf(__('%s sign-in expired'), network(a.network)?.label ?? a.network)}</div>
-              <div style={{ fontSize: 13, color: '#e5d3a1' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.')}</div>
+              <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.')}</div>
             </div>
             <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null)}>{__('Reconnect')}</button>
           </div>
@@ -164,8 +164,8 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
           <>
             <p className="sint-sub">{sprintf(__('%s connects through an app you create on its developer site. Enter the app details, then sign in.'), network.label)}</p>
             <div className="sint-field">
-              <span>{__('Redirect URL for the app')}</span>
-              <input className="sint-input" readOnly value={redirectUri} onFocus={(e) => e.target.select()} />
+              <span id="sint-redirect-label">{__('Redirect URL for the app')}</span>
+              <CopyField value={redirectUri} labelledBy="sint-redirect-label" />
               <small>{__('Add this URL to the app as an allowed redirect URL.')}</small>
             </div>
             {network.app_setup_url && (

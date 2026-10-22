@@ -56,27 +56,98 @@ export function CalendarPage({ openComposer }: PageProps) {
     }
   }
 
+  const publish = async (item: QueueItem) => {
+    try {
+      const r = await api.post<{ result?: { status: string; message: string } }>(`queue/${item.id}`, { draft: false, scheduled_at: '' })
+      const ok = r.data.result?.status === 'published'
+      toast(ok ? __('Shared.') : r.data.result?.message ?? '', !ok)
+      load()
+    } catch (e) {
+      toast((e as Error).message, true)
+    }
+  }
+
+  const remove = async (item: QueueItem) => {
+    try {
+      await api.del(`queue/${item.id}`)
+      toast(__('Share deleted.'))
+      load()
+    } catch (e) {
+      toast((e as Error).message, true)
+    }
+  }
+
+  const label = (item: QueueItem) => item.post?.title || item.caption.slice(0, 80) || __('Post')
+  // The caption adds something only when the card's title is the post's.
+  const snippet = (item: QueueItem) => (item.post?.title && item.caption.trim() !== item.post.title ? item.caption.trim() : '')
+  const account = (item: QueueItem) => accounts.find((a) => a.id === item.account_id)
+
+  // Shares that have not gone out yet open in the composer; sent ones are a record.
+  const title = (item: QueueItem) =>
+    editable(item) ? (
+      <button type="button" className="sint-pc-open" title={item.caption} onClick={() => openComposer({ item })}>
+        <span className="t">{label(item)}</span>
+      </button>
+    ) : (
+      <div className="t">{label(item)}</div>
+    )
+
+  const actions = (item: QueueItem, height?: number) => (
+    <>
+      {item.status === 'draft' && (
+        <button type="button" className="sint-btn primary sm" style={{ height }} onClick={() => publish(item)}>
+          {__('Publish')}
+        </button>
+      )}
+      {item.status === 'failed' && (
+        <button type="button" className="sint-btn danger sm" style={{ height }} onClick={() => retry(item)}>
+          {__('Retry')}
+        </button>
+      )}
+      <span className="sint-pc-tools">
+        {item.remote_url && (
+          <a className="sint-pc-tool" href={item.remote_url} target="_blank" rel="noreferrer" aria-label={__('View the live post')} title={__('View the live post')}>
+            <Icon name="external" size={14} stroke={2} />
+          </a>
+        )}
+        <button type="button" className="sint-pc-tool" aria-label={__('Duplicate')} title={__('Duplicate')} onClick={() => openComposer({ copy: item })}>
+          <Icon name="copy" size={14} stroke={2} />
+        </button>
+        {item.status !== 'sending' && item.status !== 'published' && <DeleteButton onConfirm={() => remove(item)} />}
+      </span>
+    </>
+  )
+
   const card = (item: QueueItem) => {
     const net = network(item.network)
+    const acct = account(item)
+    const thumb = item.media.find((m) => m.type === 'image')?.url || item.post?.thumbnail
+    const text = snippet(item)
     return (
       <div key={item.id} className={`sint-pc ${item.status}`}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-          <div className="sint-nets">
-            <NetBadge network={item.network} color={net?.color} />
-          </div>
-          <StatusPill item={item} />
+        <div className="sint-pc-who">
+          {acct ? <AccountAvatar account={acct} network={net} /> : <NetBadge network={item.network} color={net?.color} />}
+          <span className="n">{acct?.name || acct?.username || net?.label}</span>
+          {thumb && <img className="sint-pc-thumb" src={thumb} alt="" />}
         </div>
-        <div className="t">{item.post?.title || item.caption.slice(0, 80) || __('Post')}</div>
+        {title(item)}
+        {text && <div className="c">{text}</div>}
+        <div className="m">
+          <StatusPill item={item} />
+          {item.status !== 'scheduled' && <span>{fmtTime(item.scheduled_at)}</span>}
+          {item.media.length > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }} aria-label={`${item.media.length} ${__('media')}`}>
+              <Icon name="image" size={12} stroke={2} />
+              {item.media.length}
+            </span>
+          )}
+        </div>
         <div className="m">
           {item.post && <span className="sint-type-dot" style={{ background: typeColor(types, item.post.type) }} />}
-          {item.post ? postTypes.find((t) => t.name === item.post!.type)?.singular ?? item.post.type : __('Post')}
-          {item.status !== 'scheduled' && ` · ${fmtTime(item.scheduled_at)}`}
+          {item.post ? postTypes.find((t) => t.name === item.post!.type)?.singular ?? item.post.type : __('Social only')}
         </div>
-        {item.status === 'failed' && (
-          <button type="button" className="sint-btn danger sm" style={{ height: 30 }} onClick={() => retry(item)}>
-            {__('Retry')}
-          </button>
-        )}
+        {item.status === 'failed' && item.message && <div className="e">{item.message}</div>}
+        <div className="sint-pc-act">{actions(item, 30)}</div>
       </div>
     )
   }
@@ -110,7 +181,7 @@ export function CalendarPage({ openComposer }: PageProps) {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.username}</div>
                   {a.status === 'expired' ? (
-                    <a href="#/accounts" style={{ fontSize: 12, color: 'var(--warn)', fontWeight: 600 }}>
+                    <a href="#/accounts" style={{ fontSize: 12, color: 'var(--warn-text)', fontWeight: 600 }}>
                       {network(a.network)?.label} · {__('Reconnect')}
                     </a>
                   ) : (
@@ -163,12 +234,23 @@ export function CalendarPage({ openComposer }: PageProps) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {visible.map((item) => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px', background: 'var(--raised)', borderRadius: 14 }}>
+                  <div key={item.id} className="sint-pc-row" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px', background: 'var(--raised)', borderRadius: 14 }}>
                     <div style={{ width: 120, color: 'var(--muted)', fontSize: 13 }}>{fmtDate(item.scheduled_at)} · {fmtTime(item.scheduled_at)}</div>
-                    <NetBadge network={item.network} color={network(item.network)?.color} size={24} />
-                    <div style={{ flex: 1, minWidth: 0, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.post?.title || item.caption}</div>
+                    {account(item) ? <AccountAvatar account={account(item)!} network={network(item.network)} /> : <NetBadge network={item.network} color={network(item.network)?.color} size={24} />}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title(item)}</div>
+                      <div style={{ fontSize: 12, color: item.status === 'failed' && item.message ? 'var(--bad-text)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.status === 'failed' && item.message ? item.message : [account(item)?.name, snippet(item)].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {item.media.length > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--muted)' }}>
+                        <Icon name="image" size={14} stroke={2} />
+                        {item.media.length}
+                      </span>
+                    )}
                     <StatusPill item={item} />
-                    {item.status === 'failed' && <button type="button" className="sint-btn danger sm" onClick={() => retry(item)}>{__('Retry')}</button>}
+                    {actions(item)}
                   </div>
                 ))}
               </div>
@@ -226,6 +308,10 @@ function Row({ hour, days, items, todayKey, now, card }: { hour: number; days: D
   )
 }
 
+function editable(item: QueueItem): boolean {
+  return item.status === 'draft' || item.status === 'scheduled' || item.status === 'failed'
+}
+
 function StatusPill({ item }: { item: QueueItem }) {
   switch (item.status) {
     case 'published':
@@ -239,4 +325,19 @@ function StatusPill({ item }: { item: QueueItem }) {
     default:
       return <span className="sint-pill accent">{fmtTime(item.scheduled_at)}</span>
   }
+}
+
+/** Deletes on a second click, so one stray tap does not lose a share. */
+function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 3000)
+    return () => clearTimeout(t)
+  }, [armed])
+  return (
+    <button type="button" className={`sint-pc-tool${armed ? ' armed' : ''}`} aria-label={armed ? __('Click again to delete') : __('Delete')} title={armed ? __('Click again to delete') : __('Delete')} onClick={() => (armed ? onConfirm() : setArmed(true))}>
+      <Icon name={armed ? 'check' : 'trash'} size={14} stroke={2} />
+    </button>
+  )
 }

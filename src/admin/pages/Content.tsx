@@ -119,7 +119,7 @@ export function ContentPage({ openComposer }: PageProps) {
                             return (
                               <span key={a.id} style={{ position: 'relative', opacity: share ? 1 : 0.3 }} title={share ? `${share.status} · ${fmtDateTime(share.date)}` : __('Not shared')}>
                                 <NetBadge network={a.network} color={network(a.network)?.color} size={22} />
-                                {share && <span style={{ position: 'absolute', right: -2, bottom: -2, width: 9, height: 9, borderRadius: 999, border: '2px solid #161618', background: share.status === 'published' ? 'var(--ok)' : 'var(--bad)' }} />}
+                                {share && <span style={{ position: 'absolute', right: -2, bottom: -2, width: 9, height: 9, borderRadius: 999, border: '2px solid var(--table)', background: share.status === 'published' ? 'var(--ok)' : 'var(--bad)' }} />}
                               </span>
                             )
                           })}

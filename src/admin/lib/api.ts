@@ -12,8 +12,18 @@ export interface ApiResponse<T> {
   totalPages: number
 }
 
+/**
+ * REST URL for a path such as 'content?type=post'. With plain permalinks the base is
+ * '/?rest_route=/sint/v1/', so the path's own query must join with '&', not a second '?'.
+ */
+export function restUrl(path: string): string {
+  const [route, qs] = path.replace(/^\//, '').split('?')
+  const url = config.restUrl + route
+  return qs ? url + (url.includes('?') ? '&' : '?') + qs : url
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<ApiResponse<T>> {
-  const res = await fetch(config.restUrl + path.replace(/^\//, ''), {
+  const res = await fetch(restUrl(path), {
     method,
     credentials: 'same-origin',
     headers: { 'X-WP-Nonce': config.nonce, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },

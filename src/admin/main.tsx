@@ -7,6 +7,7 @@ import './styles.css'
 import { App } from './App'
 import { api } from './lib/api'
 import * as ui from './components/ui'
+import { applyTheme, initialTheme } from './lib/theme'
 
 // Shared with scripts that extend the app through `wp.hooks`, so their
 // components use the same React instance.
@@ -14,6 +15,7 @@ import * as ui from './components/ui'
 
 const mount = () => {
   const el = document.getElementById('sint-app')
+  applyTheme(initialTheme())
   if (el) createRoot(el).render(<App />)
 }
 

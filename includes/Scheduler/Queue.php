@@ -94,16 +94,22 @@ final class Queue {
 	/**
 	 * Changes fields of a row.
 	 *
-	 * @param int   $id     Row ID.
-	 * @param array $fields Column => value.
+	 * @param int         $id     Row ID.
+	 * @param array       $fields Column => value.
+	 * @param string|null $status Only change the row while it still has this status.
+	 * @return bool Whether a row changed.
 	 */
-	public static function update( int $id, array $fields ): void {
+	public static function update( int $id, array $fields, ?string $status = null ): bool {
 		global $wpdb;
 		if ( isset( $fields['media'] ) && is_array( $fields['media'] ) ) {
 			$fields['media'] = wp_json_encode( array_values( $fields['media'] ) );
 		}
 		$fields['updated_at'] = current_time( 'mysql', true );
-		$wpdb->update( Migrations::queue_table(), $fields, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$where                = null === $status ? array( 'id' => $id ) : array(
+			'id'     => $id,
+			'status' => $status,
+		);
+		return 1 === (int) $wpdb->update( Migrations::queue_table(), $fields, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**
@@ -168,6 +174,26 @@ final class Queue {
 			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
 		return (array) $rows;
+	}
+
+	/**
+	 * The newest log row for each share, keyed by queue ID.
+	 *
+	 * @param int[] $queue_ids Queue IDs.
+	 */
+	public static function last_logs( array $queue_ids ): array {
+		global $wpdb;
+		if ( ! $queue_ids ) {
+			return array();
+		}
+		$table = Migrations::logs_table();
+		$ids   = implode( ',', array_map( 'intval', $queue_ids ) );
+		$rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE id IN (SELECT MAX(id) FROM {$table} WHERE queue_id IN ({$ids}) GROUP BY queue_id)", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$logs  = array();
+		foreach ( (array) $rows as $row ) {
+			$logs[ (int) $row['queue_id'] ] = $row;
+		}
+		return $logs;
 	}
 
 	/**

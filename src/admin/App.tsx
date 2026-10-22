@@ -9,6 +9,7 @@ import { LogPage } from './pages/Log'
 import { applyFilters } from './lib/hooks'
 import { __ } from './lib/i18n'
 import { StoreProvider, useRoute } from './lib/store'
+import { useTheme } from './lib/theme'
 
 export interface PageProps {
   openComposer: (seed?: ComposerSeed) => void
@@ -28,6 +29,7 @@ function Shell() {
   const { path, params, go } = useRoute()
   const [composer, setComposer] = useState<ComposerSeed | null>(null)
   const [refresh, setRefresh] = useState(0)
+  const [theme, toggleTheme] = useTheme()
 
   // Filter `sint.routes`: other plugins add or replace screens.
   const routes = applyFilters<RouteDef[]>('sint.routes', [
@@ -54,6 +56,9 @@ function Shell() {
             {r.label}
           </a>
         ))}
+        <button type="button" className="sint-theme" onClick={toggleTheme} aria-label={theme === 'dark' ? __('Switch to day mode') : __('Switch to night mode')} title={theme === 'dark' ? __('Day mode') : __('Night mode')}>
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+        </button>
       </nav>
       <main className="sint-main">
         <Page key={`${current.path}-${refresh}`} openComposer={openComposer} params={params} go={go} />

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { initials } from '../lib/format'
+import { __ } from '../lib/i18n'
 import type { Account, Network } from '../lib/types'
 
 /* Icons: 24px stroke icons. */
@@ -21,6 +22,9 @@ const paths: Record<string, ReactNode> = {
   external: <><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
   share: <><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="18" cy="18" r="2.5" /><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6" /></>,
   trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
+  moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
+  copy: <><rect x="8" y="8" width="12" height="12" rx="2.5" /><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" /></>,
   retry: <><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></>,
 }
 
@@ -102,6 +106,48 @@ export function Modal({ title, onClose, children, footer, narrow, headerExtra }:
         <div className="sint-modal-body">{children}</div>
         {footer && <div className="sint-modal-foot">{footer}</div>}
       </div>
+    </div>
+  )
+}
+
+/* Read-only value with a Copy button. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Clipboard API needs a secure context; fall back to a hidden textarea.
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('readonly', '')
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.appendChild(area)
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  }
+}
+
+export function CopyField({ value, labelledBy }: { value: string; labelledBy?: string }) {
+  const [copied, setCopied] = useState(false)
+  const toast = useToast()
+  const copy = async () => {
+    if (await copyText(value)) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast(__('Select the URL and copy it.'), true)
+    }
+  }
+  return (
+    <div className="sint-copy">
+      <input className="sint-input" readOnly value={value} aria-labelledby={labelledBy} onFocus={(e) => e.target.select()} />
+      <button type="button" className={`sint-btn sm${copied ? ' copied' : ''}`} onClick={copy} aria-live="polite">
+        <Icon name={copied ? 'check' : 'copy'} size={15} stroke={2} />
+        {copied ? __('Copied') : __('Copy')}
+      </button>
     </div>
   )
 }

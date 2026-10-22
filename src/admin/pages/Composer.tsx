@@ -2,13 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AccountAvatar, Icon, Modal, NetBadge, Segmented, typeColor, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
 import { config } from '../lib/config'
-import { initials } from '../lib/format'
+import { fmtDate, initials } from '../lib/format'
 import { __, sprintf } from '../lib/i18n'
+import { pickMedia } from '../lib/media'
 import { useStore } from '../lib/store'
-import type { BuiltShare, ContentItem, MediaItem } from '../lib/types'
+import type { BuiltShare, ContentItem, MediaItem, QueueItem } from '../lib/types'
 
 export interface ComposerSeed {
   postId?: number
+  /** A draft, scheduled or failed share to edit. */
+  item?: QueueItem
+  /** A share to start a new one from. */
+  copy?: QueueItem
 }
 
 type When = 'now' | 'pick'
@@ -20,6 +25,25 @@ function defaultLocal(): string {
   return d.toISOString().slice(0, 14) + '00'
 }
 
+/** datetime-local value in the site's time zone, `days` from today at `hour`:00. */
+function atLocal(days: number, hour: number): string {
+  const d = new Date(Date.now() + config.gmtOffset * 3600000)
+  d.setUTCDate(d.getUTCDate() + days)
+  d.setUTCHours(hour, 0, 0, 0)
+  return d.toISOString().slice(0, 16)
+}
+
+/** Days from today to the start of next week. */
+function toNextWeek(): number {
+  const day = new Date(Date.now() + config.gmtOffset * 3600000).getUTCDay()
+  return (config.weekStart - day + 7) % 7 || 7
+}
+
+/** UTC ISO → datetime-local value in the site's time zone. */
+function utcToLocal(iso: string): string {
+  return new Date(Date.parse(iso) + config.gmtOffset * 3600000).toISOString().slice(0, 16)
+}
+
 /** datetime-local value in the site's time zone → UTC ISO. */
 function localToUtc(value: string): string {
   return new Date(Date.parse(value + ':00Z') - config.gmtOffset * 3600000).toISOString()
@@ -29,22 +53,34 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const { accounts, network, postTypes } = useStore()
   const toast = useToast()
   const connected = accounts.filter((a) => a.status === 'connected')
+  // An edited share belongs to one account and one post; only its text, media and time change.
+  const item = seed.item
+  const upcoming = item?.status === 'scheduled' && Date.parse(item.scheduled_at) > Date.now()
+  // A duplicate starts from another share's text, media and post, as a new share.
+  const from = item ?? seed.copy
 
-  const [selected, setSelected] = useState<string[]>(connected.map((a) => a.id))
+  const [selected, setSelected] = useState<string[]>(() => {
+    if (item) return [item.account_id]
+    const all = connected.map((a) => a.id)
+    return seed.copy && all.includes(seed.copy.account_id) ? [seed.copy.account_id] : all
+  })
   const [type, setType] = useState('any')
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<ContentItem[]>([])
-  const [postId, setPostId] = useState<number | undefined>(seed.postId)
+  const [postId, setPostId] = useState<number | undefined>(seed.postId ?? (from?.post_id || undefined))
+  const [picked, setPicked] = useState<ContentItem | null>(null)
   const [built, setBuilt] = useState<BuiltShare | null>(null)
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState(from?.caption ?? '')
   const [overrides, setOverrides] = useState<Record<string, string>>({})
   const [tab, setTab] = useState('all')
-  const [media, setMedia] = useState<MediaItem[]>([])
-  const [mediaOn, setMediaOn] = useState<string[]>([])
-  const [when, setWhen] = useState<When>('now')
-  const [local, setLocal] = useState(defaultLocal)
+  const [previewPick, setPreviewPick] = useState('')
+  const [media, setMedia] = useState<MediaItem[]>(from?.media ?? [])
+  const [mediaOn, setMediaOn] = useState<string[]>(from?.media.map((m) => m.url) ?? [])
+  const [when, setWhen] = useState<When>(upcoming ? 'pick' : 'now')
+  const [local, setLocal] = useState(() => (upcoming ? utcToLocal(item!.scheduled_at) : defaultLocal()))
   const [busy, setBusy] = useState(false)
   const area = useRef<HTMLTextAreaElement>(null)
+  const keepSaved = useRef(!!from)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -57,6 +93,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     if (!postId) return
     api.get<BuiltShare>(`content/${postId}/share`).then((r) => {
       setBuilt(r.data)
+      if (keepSaved.current) {
+        // Keep the saved caption and media choice; still offer the post's other media.
+        keepSaved.current = false
+        setMedia((m) => [...m, ...r.data.media.filter((x) => !m.some((y) => y.url === x.url))])
+        return
+      }
       setCaption(r.data.caption)
       setOverrides({})
       setMedia(r.data.media)
@@ -69,6 +111,24 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const setText = (v: string) => (tab === 'all' ? setCaption(v) : setOverrides((o) => ({ ...o, [tab]: v })))
   const chosenMedia = media.filter((m) => mediaOn.includes(m.url))
   const title = results.find((r) => r.id === postId)?.title ?? built?.tokens.title ?? ''
+  const over = nets.filter((n) => [...(overrides[n] ?? caption)].length > (network(n)?.char_limit ?? Infinity))
+  const canSend = !busy && selected.length > 0 && caption.trim() !== '' && over.length === 0
+  const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
+
+  const addMedia = () => {
+    const opened = pickMedia((items) => {
+      setMedia((m) => [...m, ...items.filter((x) => !m.some((y) => y.url === x.url))])
+      setMediaOn((on) => [...on, ...items.map((x) => x.url).filter((u) => !on.includes(u))])
+    })
+    if (!opened) toast(__('The media library did not load. Reload the page and try again.'), true)
+  }
+
+  const presets = [
+    { label: __('In an hour'), value: defaultLocal() },
+    { label: __('Tomorrow 9:00'), value: atLocal(1, 9) },
+    { label: __('Next week'), value: atLocal(toNextWeek(), 9) },
+    ...(live ? [{ label: __('When the post goes live'), value: utcToLocal(live) }] : []),
+  ]
 
   const insert = (token: string) => {
     const el = area.current
@@ -82,9 +142,26 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const save = async (draft: boolean) => {
     setBusy(true)
     try {
+      if (item) {
+        const r = await api.post<{ result?: { status: string; message?: string } }>(`queue/${item.id}`, {
+          caption: overrides[item.network] ?? caption,
+          media: chosenMedia,
+          scheduled_at: when === 'pick' ? localToUtc(local) : '',
+          draft,
+        })
+        const result = r.data.result
+        if (result && result.status !== 'published') {
+          toast(result.message || sprintf(__('%s did not accept the post.'), network(item.network)?.label ?? item.network), true)
+          setBusy(false)
+          return
+        }
+        toast(draft ? __('Draft saved.') : result ? __('Shared.') : __('Saved to the calendar.'))
+        onSaved()
+        return
+      }
       const captions: Record<string, string> = {}
       nets.forEach((n) => { if (overrides[n] !== undefined) captions[n] = overrides[n]! })
-      await api.post('queue', {
+      const r = await api.post<{ created: number[]; results?: { network: string; status: string; message?: string }[] }>('queue', {
         post_id: postId,
         caption,
         captions,
@@ -94,7 +171,14 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         scheduled_at: when === 'pick' ? localToUtc(local) : '',
         draft,
       })
-      toast(draft ? __('Draft saved.') : when === 'now' ? __('Sharing now.') : __('Added to the calendar.'))
+      const failed = (r.data.results ?? []).filter((x) => x.status !== 'published')
+      if (failed.length) {
+        // Keep the composer open so the person can fix the caption or reconnect and try again.
+        toast(failed.map((f) => f.message || sprintf(__('%s did not accept the post.'), network(f.network)?.label ?? f.network)).join(' '), true)
+        setBusy(false)
+        return
+      }
+      toast(draft ? __('Draft saved.') : r.data.results ? sprintf(__('Shared to %d accounts.'), r.data.results.length) : __('Added to the calendar.'))
       onSaved()
     } catch (e) {
       toast((e as Error).message, true)
@@ -103,28 +187,33 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   }
 
   const types = postTypes.map((t) => t.name)
-  const preview = tab === 'all' ? nets[0] : tab
+  const preview = tab !== 'all' ? tab : nets.includes(previewPick) ? previewPick : nets[0]
   const previewNet = preview ? network(preview) : undefined
   const previewAccount = connected.find((a) => a.network === preview)
 
   return (
     <Modal
-      title={__('Create post')}
+      title={item ? __('Edit post') : __('Create post')}
       onClose={onClose}
       footer={
         <>
           <Segmented<When> label={__('Timing')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now') }, { value: 'pick', label: __('Pick a time') }]} />
           {when === 'pick' && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="sint-sr">{__('Date and time')}</span>
-              <input type="datetime-local" className="sint-input" style={{ width: 'auto', colorScheme: 'dark' }} value={local} onChange={(e) => setLocal(e.target.value)} />
-            </label>
+            <>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="sint-sr">{__('Date and time')}</span>
+                <input type="datetime-local" className="sint-input" style={{ width: 'auto', colorScheme: 'dark' }} value={local} onChange={(e) => setLocal(e.target.value)} />
+              </label>
+              {presets.map((p) => (
+                <button key={p.label} type="button" className={`sint-chip${local === p.value ? ' on' : ''}`} onClick={() => setLocal(p.value)}>{p.label}</button>
+              ))}
+            </>
           )}
           <span style={{ fontSize: 12, color: 'var(--faint)' }}>{config.timezone}</span>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
             <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft')}</button>
-            <button type="button" className="sint-btn primary" disabled={busy || !selected.length || !caption.trim()} onClick={() => save(false)}>
-              {when === 'now' ? __('Share now') : __('Add to calendar')}
+            <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
+              {when === 'now' ? __('Share now') : upcoming ? __('Save') : __('Add to calendar')}
             </button>
           </div>
         </>
@@ -134,26 +223,34 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
         <span className="sint-label">{__('Share to')}</span>
         {accounts.length === 0 && <a href="#/accounts" onClick={onClose}>{__('Connect an account first')}</a>}
-        {accounts.map((a) => {
+        {accounts.filter((a) => !item || a.id === item.account_id).map((a) => {
           const on = selected.includes(a.id)
           const expired = a.status === 'expired'
           return (
-            <button key={a.id} type="button" className="sint-pick" aria-pressed={on && !expired} disabled={expired} title={`${a.name} · ${network(a.network)?.label}`} aria-label={`${a.name}, ${network(a.network)?.label}`} onClick={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))}>
+            <button key={a.id} type="button" className="sint-pick" aria-pressed={on && !expired} disabled={expired || !!item} title={`${a.name} · ${network(a.network)?.label}`} aria-label={`${a.name}, ${network(a.network)?.label}`} onClick={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))}>
               {a.avatar ? <img src={a.avatar} alt="" /> : initials(a.name)}
               <NetBadge network={a.network} color={network(a.network)?.color} />
             </button>
           )
         })}
-        {accounts.filter((a) => a.status === 'expired').map((a) => (
-          <span key={a.id} style={{ fontSize: 12, color: 'var(--warn)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {!item && connected.length > 1 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
+            {sprintf(__('%1$d of %2$d'), selected.length, connected.length)}
+            <button type="button" className="sint-btn ghost sm" onClick={() => setSelected(selected.length === connected.length ? [] : connected.map((a) => a.id))}>
+              {selected.length === connected.length ? __('Clear') : __('Select all')}
+            </button>
+          </span>
+        )}
+        {accounts.filter((a) => a.status === 'expired' && (!item || a.id === item.account_id)).map((a) => (
+          <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="alert" size={14} stroke={2.2} />
-            {sprintf(__('%s sign-in expired'), network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn)', fontWeight: 700 }}>{__('Reconnect')}</a>
+            {sprintf(__('%s sign-in expired'), network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect')}</a>
           </span>
         ))}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
-        <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+        {!item && <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           <div className="sint-label">{__('From your site')}</div>
           <label className="sint-search" style={{ minWidth: 0 }}>
             <Icon name="search" size={16} stroke={2} />
@@ -168,24 +265,27 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {results.map((r) => (
-              <button key={r.id} type="button" className={`sint-item${r.id === postId ? ' on' : ''}`} onClick={() => setPostId(r.id)}>
+              <button key={r.id} type="button" className={`sint-item${r.id === postId ? ' on' : ''}`} onClick={() => { setPostId(r.id); setPicked(r) }}>
                 {r.thumbnail ? <img className="sint-thumb" src={r.thumbnail} alt="" style={{ width: 48, height: 48 }} /> : <span className="sint-thumb" style={{ width: 48, height: 48 }} />}
                 <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{r.title || __('(no title)')}</span>
-                  <span style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span className="sint-type-dot" style={{ background: typeColor(types, r.type) }} />
                     {postTypes.find((t) => t.name === r.type)?.singular ?? r.type}
+                    <span aria-hidden="true">·</span>
+                    {r.status === 'future' ? sprintf(__('Live %s'), fmtDate(r.date)) : r.status === 'draft' ? __('Draft') : fmtDate(r.date)}
                   </span>
+                  <ShareState item={r} />
                 </span>
               </button>
             ))}
           </div>
           {postId && (
-            <button type="button" className="sint-btn ghost sm" onClick={() => { setPostId(undefined); setBuilt(null); setMedia([]); setMediaOn([]) }}>
+            <button type="button" className="sint-btn ghost sm" onClick={() => { setPostId(undefined); setPicked(null); setBuilt(null); setMedia([]); setMediaOn([]) }}>
               {__('Write without a post')}
             </button>
           )}
-        </aside>
+        </aside>}
 
         <section style={{ flex: '999 1 440px', minWidth: 0, padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="sint-seg" role="tablist" aria-label={__('Caption for')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
@@ -201,13 +301,23 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
           <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, display: 'flex', flexDirection: 'column' }}>
             <label className="sint-sr" htmlFor="sint-caption">{__('Caption')}</label>
-            <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} placeholder={__('Write a caption, or select an item from your site.')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
+            <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSend) save(false) }} placeholder={__('Write a caption, or select an item from your site.')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', borderTop: '1px solid var(--line)', flexWrap: 'wrap' }}>
               {built && (
                 <>
                   <span style={{ fontSize: 12, color: 'var(--faint)', marginRight: 2 }}>{__('Insert')}</span>
                   {TOKENS.map((t) => <button key={t} type="button" className="sint-tok" onClick={() => insert(t)}>{t}</button>)}
                 </>
+              )}
+              <button type="button" className="sint-btn ghost sm" onClick={addMedia}>
+                <Icon name="image" size={15} stroke={2} />
+                {__('Add media')}
+              </button>
+              {built && tab === 'all' && caption !== built.caption && (
+                <button type="button" className="sint-btn ghost sm" onClick={() => setCaption(built.caption)}>
+                  <Icon name="retry" size={15} stroke={2} />
+                  {__('Rebuild from post')}
+                </button>
               )}
               {tab !== 'all' && overrides[tab] !== undefined && (
                 <button type="button" className="sint-btn ghost sm" onClick={() => setOverrides((o) => { const n = { ...o }; delete n[tab]; return n })}>{__('Use the shared caption')}</button>
@@ -229,9 +339,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           {media.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span className="sint-label">{__('Media from the post')}</span>
-                <span style={{ fontSize: 12, color: 'var(--faint)' }}>{__('Featured image and media blocks')}</span>
-                <a href="#/settings" onClick={onClose} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600 }}>{__('Block rules')}</a>
+                <span className="sint-label">{__('Media')}</span>
+                <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected · tap to turn on or off'), chosenMedia.length)}</span>
+                {postId && <a href="#/settings" onClick={onClose} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600 }}>{__('Block rules')}</a>}
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {media.map((m, i) => {
@@ -244,15 +354,30 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                     </button>
                   )
                 })}
+                <button type="button" className="sint-media add" onClick={addMedia}>
+                  <Icon name="plus" size={22} stroke={2} />
+                  <span>{__('Add')}</span>
+                </button>
               </div>
             </div>
           )}
         </section>
 
-        <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: '#151517', minWidth: 0 }}>
-          <div className="sint-label">{__('Preview')}</div>
+        <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="sint-label">{__('Preview')}</span>
+            {tab === 'all' && nets.length > 1 && (
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="group" aria-label={__('Preview network')}>
+                {nets.map((n) => (
+                  <button key={n} type="button" className="sint-prev-net" aria-pressed={n === preview} aria-label={network(n)?.label} onClick={() => setPreviewPick(n)}>
+                    <NetBadge network={n} color={network(n)?.color} size={22} />
+                  </button>
+                ))}
+              </span>
+            )}
+          </div>
           {previewNet ? (
-            <div style={{ background: '#fff', color: '#1c1e21', borderRadius: 16, overflow: 'hidden', fontFamily: 'system-ui, sans-serif' }}>
+            <div className="sint-preview" style={{ background: '#fff', color: '#1c1e21', borderRadius: 16, overflow: 'hidden', fontFamily: 'system-ui, sans-serif' }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 12 }}>
                 {previewAccount && <AccountAvatar account={previewAccount} network={previewNet} />}
                 <div>
@@ -268,6 +393,15 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                   {chosenMedia.slice(0, Math.min(4, previewNet.max_images)).map((m) => (
                     m.type === 'image' ? <img key={m.url} src={m.url} alt={m.alt} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} /> : <div key={m.url} style={{ height: 140, background: '#ddd' }} />
                   ))}
+                </div>
+              )}
+              {chosenMedia.length === 0 && built?.link && (
+                <div style={{ borderTop: '1px solid #e4e6eb', background: '#f0f2f5' }}>
+                  {(picked?.thumbnail || media[0]?.url) && <img src={picked?.thumbnail || media[0]!.url} alt="" style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }} />}
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: '#65676b', textTransform: 'uppercase' }}>{hostOf(built.link)}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{built.tokens.title}</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -289,7 +423,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               })}
               {chosenMedia.length > 0 && nets.some((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: 'var(--warn)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
+                  <span style={{ color: 'var(--warn-text)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
                   {__('Some networks take fewer images. They get the first ones.')}
                 </div>
               )}
@@ -299,4 +433,22 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       </div>
     </Modal>
   )
+}
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
+}
+
+/** Where an item from the site stands with sharing. */
+function ShareState({ item }: { item: ContentItem }) {
+  const sent = item.shares.filter((x) => x.status === 'published').length
+  const failed = item.shares.length - sent
+  if (failed) return <span className="sint-pill bad" style={{ alignSelf: 'flex-start' }}>{sprintf(__('%d failed'), failed)}</span>
+  if (sent) return <span className="sint-pill ok" style={{ alignSelf: 'flex-start' }}>{sprintf(__('Shared to %d'), sent)}</span>
+  if (item.status === 'publish') return <span className="sint-pill muted" style={{ alignSelf: 'flex-start' }}>{__('Not shared yet')}</span>
+  return null
 }
