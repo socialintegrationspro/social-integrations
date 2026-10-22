@@ -108,6 +108,22 @@ abstract class AbstractNetwork {
 	}
 
 	/**
+	 * How many characters a link counts toward char_limit(). 0 counts it as typed.
+	 */
+	public function url_length(): int {
+		return 0;
+	}
+
+	/**
+	 * Whether the sign-in uses PKCE. When true, the sign-in adds a S256 code challenge
+	 * to the authorization_url() address and passes the verifier to exchange_code()
+	 * as $app['code_verifier'].
+	 */
+	public function pkce(): bool {
+		return false;
+	}
+
+	/**
 	 * Link to the network's page where the user creates an app.
 	 */
 	public function app_setup_url(): string {
@@ -191,6 +207,7 @@ abstract class AbstractNetwork {
 			'color'          => $this->color(),
 			'auth_type'      => $this->auth_type(),
 			'char_limit'     => $this->char_limit(),
+			'url_length'     => $this->url_length(),
 			'max_images'     => $this->max_images(),
 			'supports_video' => $this->supports_video(),
 			'connect_fields' => $this->connect_fields(),

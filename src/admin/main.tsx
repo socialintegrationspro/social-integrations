@@ -7,11 +7,13 @@ import './styles.css'
 import { App } from './App'
 import { api } from './lib/api'
 import * as ui from './components/ui'
+import * as format from './lib/format'
+import { useStore } from './lib/store'
 import { applyTheme, initialTheme } from './lib/theme'
 
 // Shared with scripts that extend the app through `wp.hooks`, so their
 // components use the same React instance.
-;(window as unknown as { sintApp: unknown }).sintApp = { React, api, ui }
+;(window as unknown as { sintApp: unknown }).sintApp = { React, api, ui, format, useStore }
 
 const mount = () => {
   const el = document.getElementById('sint-app')

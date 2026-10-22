@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Header, type PageProps } from '../App'
 import { AccountAvatar, CopyField, Icon, Modal, NetBadge, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtDate } from '../lib/format'
+import { applyFilters } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { Account, Network } from '../lib/types'
@@ -44,7 +45,7 @@ export function AccountsPage({ params, go }: PageProps) {
     <>
       <Header title={__('Accounts')} />
       <div className="sint-body">
-        <p className="sint-sub">{__('Connect one account for each network. Sign-in tokens are stored encrypted on your site and never leave it except to the network.')}</p>
+        <p className="sint-sub">{__('Sign-in tokens are stored encrypted on your site and never leave it except to the network.')}</p>
 
         {error && (
           <div className="sint-banner bad">
@@ -58,7 +59,7 @@ export function AccountsPage({ params, go }: PageProps) {
           <div key={a.id} className="sint-banner warn">
             <Icon name="alert" size={20} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 700 }}>{sprintf(__('%s sign-in expired'), network(a.network)?.label ?? a.network)}</div>
+              <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
               <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.')}</div>
             </div>
             <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null)}>{__('Reconnect')}</button>
@@ -67,8 +68,8 @@ export function AccountsPage({ params, go }: PageProps) {
 
         <div className="sint-grid">
           {networks.map((n) => {
-            const account = accounts.find((a) => a.network === n.key)
-            if (!account) {
+            const list = accounts.filter((a) => a.network === n.key)
+            if (!list.length) {
               return (
                 <div key={n.key} className="sint-acc add">
                   <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -84,35 +85,42 @@ export function AccountsPage({ params, go }: PageProps) {
                 </div>
               )
             }
+            // Filter `sint.accounts.tiles`: other plugins add tiles after a network's accounts.
+            const extra = applyFilters<ReactNode[]>('sint.accounts.tiles', [], n, { connect: () => setConnecting(n) })
             return (
-              <div key={n.key} className={`sint-acc${account.status === 'expired' ? ' expired' : ''}`}>
-                <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <AccountAvatar account={account} network={n} large />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis' }}>{account.name || account.username}</div>
-                    <div style={{ fontSize: 13, color: 'var(--muted)' }}>{n.label}</div>
+              <Fragment key={n.key}>
+                {list.map((account) => (
+                  <div key={account.id} className={`sint-acc${account.status === 'expired' ? ' expired' : ''}`}>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                      <AccountAvatar account={account} network={n} large />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis' }}>{account.name || account.username}</div>
+                        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{n.label}</div>
+                      </div>
+                      {account.status === 'expired' ? (
+                        <span className="sint-pill warn" style={{ marginLeft: 'auto' }}>{__('Sign-in expired')}</span>
+                      ) : (
+                        <span className="sint-pill ok" style={{ marginLeft: 'auto' }}>{__('Connected')}</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {account.username && <div className="sint-kv"><span>{__('Handle')}</span><span>{account.username}</span></div>}
+                      <div className="sint-kv"><span>{__('Connected')}</span><span>{fmtDate(account.connected_at)}</span></div>
+                      <div className="sint-kv"><span>{__('Caption limit')}</span><span>{sprintf(__('%s characters'), n.char_limit.toLocaleString())}</span></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n)}>{__('Reconnect')}</button>}
+                      {account.profile_url && (
+                        <a className="sint-btn sm" href={account.profile_url} target="_blank" rel="noreferrer">
+                          {__('Open')} <Icon name="external" size={14} />
+                        </a>
+                      )}
+                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} onClick={() => disconnect(account)}>{__('Disconnect')}</button>
+                    </div>
                   </div>
-                  {account.status === 'expired' ? (
-                    <span className="sint-pill warn" style={{ marginLeft: 'auto' }}>{__('Sign-in expired')}</span>
-                  ) : (
-                    <span className="sint-pill ok" style={{ marginLeft: 'auto' }}>{__('Connected')}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {account.username && <div className="sint-kv"><span>{__('Handle')}</span><span>{account.username}</span></div>}
-                  <div className="sint-kv"><span>{__('Connected')}</span><span>{fmtDate(account.connected_at)}</span></div>
-                  <div className="sint-kv"><span>{__('Caption limit')}</span><span>{sprintf(__('%s characters'), n.char_limit.toLocaleString())}</span></div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n)}>{__('Reconnect')}</button>}
-                  {account.profile_url && (
-                    <a className="sint-btn sm" href={account.profile_url} target="_blank" rel="noreferrer">
-                      {__('Open')} <Icon name="external" size={14} />
-                    </a>
-                  )}
-                  <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} onClick={() => disconnect(account)}>{__('Disconnect')}</button>
-                </div>
-              </div>
+                ))}
+                {extra}
+              </Fragment>
             )
           })}
         </div>

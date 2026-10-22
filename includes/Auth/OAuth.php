@@ -191,17 +191,29 @@ final class OAuth {
 			);
 		}
 
-		$state = wp_generate_password( 40, false, false );
+		$state    = wp_generate_password( 40, false, false );
+		$verifier = $network->pkce() ? wp_generate_password( 64, false, false ) : '';
 		set_transient(
 			self::STATE_PREFIX . $state,
 			array(
-				'user_id' => get_current_user_id(),
-				'network' => $network->key(),
+				'user_id'  => get_current_user_id(),
+				'network'  => $network->key(),
+				'verifier' => $verifier,
 			),
 			self::STATE_TTL
 		);
 
 		$url = $network->authorization_url( Accounts::app( $network->key() ), self::redirect_uri(), $state );
+		if ( '' !== $url && '' !== $verifier ) {
+			$challenge = rtrim( strtr( base64_encode( hash( 'sha256', $verifier, true ) ), '+/', '-_' ), '=' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- PKCE challenge, RFC 7636.
+			$url       = add_query_arg(
+				array(
+					'code_challenge'        => $challenge,
+					'code_challenge_method' => 'S256',
+				),
+				$url
+			);
+		}
 		if ( '' === $url ) {
 			delete_transient( self::STATE_PREFIX . $state );
 			return new \WP_Error( 'sint_no_url', __( 'This network did not provide a sign-in address.', 'social-integrations' ), array( 'status' => 500 ) );
@@ -320,7 +332,11 @@ final class OAuth {
 		}
 
 		try {
-			$credentials = $network->exchange_code( Accounts::app( $key ), $code, self::redirect_uri() );
+			$app = Accounts::app( $key );
+			if ( ! empty( $saved['verifier'] ) ) {
+				$app['code_verifier'] = (string) $saved['verifier'];
+			}
+			$credentials = $network->exchange_code( $app, $code, self::redirect_uri() );
 			$entities    = $network->connectable_entities( $credentials );
 
 			if ( is_array( $entities ) ) {

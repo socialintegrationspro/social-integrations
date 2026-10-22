@@ -23,6 +23,8 @@ export interface RouteDef {
   icon: string
   component: ComponentType<PageProps>
   bottom?: boolean
+  /** Reached by link only; not listed in the rail. */
+  hidden?: boolean
 }
 
 function Shell() {
@@ -50,7 +52,7 @@ function Shell() {
         <div className="logo" aria-hidden="true" style={{ color: '#fff' }}>
           <Icon name="share" size={22} stroke={2.2} />
         </div>
-        {routes.map((r) => (
+        {routes.filter((r) => !r.hidden).map((r) => (
           <a key={r.path} href={`#/${r.path}`} className={`${r.path === current.path ? 'on' : ''} ${r.bottom ? 'bottom' : ''}`} aria-current={r.path === current.path ? 'page' : undefined}>
             <Icon name={r.icon} size={20} />
             {r.label}

@@ -8,6 +8,30 @@ import { applyFilters } from '../lib/hooks'
 import { __ } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { QueueItem } from '../lib/types'
+import type { ComposerSeed } from './Composer'
+
+/**
+ * A calendar view. Filter `sint.calendar.views` adds views to the switcher; filter
+ * `sint.calendar.view` supplies the body for a view free does not draw itself.
+ */
+export interface CalendarViewDef {
+  value: string
+  label: string
+  /**
+   * The days the view shows, `offset` steps from the current period. `start` is a
+   * site-time day at 00:00 UTC, like the week's days. Without it the view shows a week.
+   */
+  period?: (offset: number) => { start: Date; days: number; title?: string }
+}
+
+export interface CalendarViewProps {
+  items: QueueItem[]
+  days: Date[]
+  reload: () => void
+  openComposer: (seed?: ComposerSeed) => void
+  /** Free's card for one share. */
+  card: (item: QueueItem) => JSX.Element
+}
 
 const HOURS = [0, 3, 6, 9, 12, 15, 18, 21]
 const DAY_MS = 86400000
@@ -24,21 +48,29 @@ function weekStart(offsetWeeks: number): Date {
 export function CalendarPage({ openComposer }: PageProps) {
   const { accounts, network, postTypes } = useStore()
   const toast = useToast()
-  const [view, setView] = useState<'week' | 'list'>('week')
+  const [view, setView] = useState('week')
   const [offset, setOffset] = useState(0)
   const [items, setItems] = useState<QueueItem[] | null>(null)
   const [hidden, setHidden] = useState<string[]>([])
 
-  const start = useMemo(() => weekStart(offset), [offset])
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(start.getTime() + i * DAY_MS)), [start])
+  // Filter `sint.calendar.views`: other plugins add views to the switcher.
+  const views = applyFilters<CalendarViewDef[]>('sint.calendar.views', [
+    { value: 'week', label: __('Week') },
+    { value: 'list', label: __('List') },
+  ])
+  const def = views.find((v) => v.value === view) ?? views[0]!
+  // A view's period depends only on the view and the offset.
+  const period = useMemo(() => def.period?.(offset) ?? { start: weekStart(offset), days: 7 }, [def.value, offset])
+  const start = period.start
+  const days = useMemo(() => Array.from({ length: period.days }, (_, i) => new Date(start.getTime() + i * DAY_MS)), [start, period.days])
 
   const load = useCallback(() => {
-    // Ask a day either side, because the site's time zone shifts the week edges.
+    // Ask a day either side, because the site's time zone shifts the period edges.
     const from = new Date(start.getTime() - DAY_MS).toISOString()
-    const to = new Date(start.getTime() + 8 * DAY_MS).toISOString()
+    const to = new Date(start.getTime() + (period.days + 1) * DAY_MS).toISOString()
     setItems(null)
     api.get<QueueItem[]>(`queue?${query({ from, to })}`).then((r) => setItems(r.data), () => setItems([]))
-  }, [start])
+  }, [start, period.days])
   useEffect(load, [load])
 
   const types = postTypes.map((t) => t.name)
@@ -153,7 +185,7 @@ export function CalendarPage({ openComposer }: PageProps) {
   }
 
   // Filter `sint.calendar.view`: another plugin may supply a different calendar body.
-  const CustomView = applyFilters<null | ((p: { items: QueueItem[]; days: Date[]; reload: () => void }) => JSX.Element)>('sint.calendar.view', null, view)
+  const CustomView = applyFilters<null | ((p: CalendarViewProps) => JSX.Element)>('sint.calendar.view', null, view)
 
   return (
     <>
@@ -206,26 +238,26 @@ export function CalendarPage({ openComposer }: PageProps) {
         <section className="sint-cal-main">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg)' }}>
-              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Previous week')} onClick={() => setOffset((o) => o - 1)}>
+              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Previous')} onClick={() => setOffset((o) => o - 1)}>
                 <Icon name="left" size={16} stroke={2} />
               </button>
               <span style={{ padding: '0 12px', fontWeight: 600, borderLeft: '1px solid var(--border)', borderRight: '1px solid var(--border)', height: 42, display: 'flex', alignItems: 'center' }}>
-                {fmtDate(days[0]!.toISOString())} – {fmtDate(days[6]!.toISOString())}
+                {period.title ?? `${fmtDate(days[0]!.toISOString())} – ${fmtDate(days[days.length - 1]!.toISOString())}`}
               </span>
-              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Next week')} onClick={() => setOffset((o) => o + 1)}>
+              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Next')} onClick={() => setOffset((o) => o + 1)}>
                 <Icon name="right" size={16} stroke={2} />
               </button>
             </div>
             <button type="button" className="sint-btn" onClick={() => setOffset(0)}>{__('Today')}</button>
             <div style={{ marginLeft: 'auto' }}>
-              <Segmented label={__('View')} value={view} onChange={setView} options={[{ value: 'week', label: __('Week') }, { value: 'list', label: __('List') }]} />
+              <Segmented label={__('View')} value={def.value} onChange={(v) => { setView(v); setOffset(0) }} options={views.map((v) => ({ value: v.value, label: v.label }))} />
             </div>
           </div>
 
           {items === null ? (
             <div className="sint-skeleton" style={{ height: 420 }} />
           ) : CustomView ? (
-            <CustomView items={visible} days={days} reload={load} />
+            <CustomView items={visible} days={days} reload={load} openComposer={openComposer} card={card} />
           ) : view === 'list' ? (
             visible.length === 0 ? (
               <Empty title={__('Nothing planned this week')}>

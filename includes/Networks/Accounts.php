@@ -51,7 +51,7 @@ final class Accounts {
 	}
 
 	/**
-	 * Saves the account for a network. A network holds one account; saving replaces it.
+	 * Saves a connected account. The store decides its ID; an existing ID is replaced.
 	 *
 	 * @param string $network     Network key.
 	 * @param array  $profile     ['remote_id', 'name', 'username', 'avatar', 'profile_url'].
@@ -60,11 +60,13 @@ final class Accounts {
 	 */
 	public static function save( string $network, array $profile, array $credentials ): array {
 		$stored        = self::stored();
-		$id            = sanitize_key( $network );
+		$network       = sanitize_key( $network );
+		$remote_id     = sanitize_text_field( (string) ( $profile['remote_id'] ?? '' ) );
+		$id            = sanitize_key( self::store()->id_for( $network, $remote_id, $stored ) );
 		$account       = array(
 			'id'           => $id,
-			'network'      => $id,
-			'remote_id'    => sanitize_text_field( (string) ( $profile['remote_id'] ?? '' ) ),
+			'network'      => $network,
+			'remote_id'    => $remote_id,
 			'name'         => sanitize_text_field( (string) ( $profile['name'] ?? '' ) ),
 			'username'     => sanitize_text_field( (string) ( $profile['username'] ?? '' ) ),
 			'avatar'       => esc_url_raw( (string) ( $profile['avatar'] ?? '' ) ),
@@ -74,7 +76,7 @@ final class Accounts {
 			'expires_at'   => isset( $credentials['expires_at'] ) ? gmdate( 'c', (int) $credentials['expires_at'] ) : null,
 		);
 		$stored[ $id ] = $account + array( 'credentials' => Encryption::encrypt_array( self::flatten( $credentials ) ) );
-		update_option( self::OPTION, $stored, false );
+		self::store()->persist( $stored );
 		return $account;
 	}
 
@@ -90,7 +92,7 @@ final class Accounts {
 			$stored[ $id ]['credentials'] = Encryption::encrypt_array( self::flatten( $credentials ) );
 			$stored[ $id ]['status']      = 'connected';
 			$stored[ $id ]['expires_at']  = isset( $credentials['expires_at'] ) ? gmdate( 'c', (int) $credentials['expires_at'] ) : null;
-			update_option( self::OPTION, $stored, false );
+			self::store()->persist( $stored );
 		}
 	}
 
@@ -104,7 +106,7 @@ final class Accounts {
 		$stored = self::stored();
 		if ( isset( $stored[ $id ] ) ) {
 			$stored[ $id ]['status'] = $status;
-			update_option( self::OPTION, $stored, false );
+			self::store()->persist( $stored );
 		}
 	}
 
@@ -119,7 +121,7 @@ final class Accounts {
 			return false;
 		}
 		unset( $stored[ $id ] );
-		update_option( self::OPTION, $stored, false );
+		self::store()->persist( $stored );
 		return true;
 	}
 
@@ -160,8 +162,15 @@ final class Accounts {
 	 * Raw stored accounts.
 	 */
 	private static function stored(): array {
-		$stored = get_option( self::OPTION, array() );
-		return is_array( $stored ) ? $stored : array();
+		return self::store()->load();
+	}
+
+	/**
+	 * The account storage: the filtered one, or one account per network.
+	 */
+	private static function store(): AccountStore {
+		$store = apply_filters( Hooks::ACCOUNT_STORE, null );
+		return $store instanceof AccountStore ? $store : new OptionStore();
 	}
 
 	/**

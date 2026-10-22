@@ -14,6 +14,7 @@ use SocialIntegrations\Database\Migrations;
 use SocialIntegrations\Editor\BlockSupport;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Rest\AccountsController;
+use SocialIntegrations\Rest\AIController;
 use SocialIntegrations\Rest\ContentController;
 use SocialIntegrations\Rest\QueueController;
 use SocialIntegrations\Rest\SettingsController;
@@ -98,5 +99,6 @@ final class Plugin {
 		( new SettingsController() )->register_routes();
 		( new AccountsController( $this->networks ) )->register_routes();
 		( new QueueController() )->register_routes();
+		( new AIController() )->register_routes();
 	}
 }

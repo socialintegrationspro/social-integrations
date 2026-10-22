@@ -11,6 +11,8 @@ export interface SintConfig {
   weekStart: number
   redirectUri: string
   user: { name: string; avatar: string }
+  /** Whether an AI provider and its key are set. */
+  ai: { ready: boolean }
 }
 
 /** The parts of a wp.media frame the composer uses. */
@@ -47,4 +49,5 @@ export const config: SintConfig = window.sintConfig ?? {
   weekStart: 1,
   redirectUri: '',
   user: { name: '', avatar: '' },
+  ai: { ready: false },
 }

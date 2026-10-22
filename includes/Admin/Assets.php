@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Admin;
 
+use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Auth\OAuth;
 
@@ -112,6 +113,7 @@ final class Assets {
 				'gmtOffset'   => (float) get_option( 'gmt_offset' ),
 				'weekStart'   => (int) get_option( 'start_of_week', 1 ),
 				'redirectUri' => OAuth::redirect_uri(),
+				'ai'          => array( 'ready' => null !== Providers::current() ),
 				'user'        => array(
 					'name'   => $user->display_name,
 					'avatar' => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
