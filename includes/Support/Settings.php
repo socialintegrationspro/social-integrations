@@ -1,0 +1,153 @@
+<?php
+/**
+ * Plugin settings.
+ *
+ * @package SocialIntegrations
+ */
+
+namespace SocialIntegrations\Support;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Reads and writes the `sint_settings` option.
+ */
+final class Settings {
+
+	const OPTION = 'sint_settings';
+
+	/**
+	 * Ways a block can be used in a social post.
+	 */
+	const BLOCK_USES = array( 'text', 'excerpt', 'media', 'link', 'skip', 'remove' );
+
+	/**
+	 * Default settings.
+	 */
+	public static function defaults(): array {
+		return array(
+			'post_types'           => array(
+				'post' => array(
+					'auto'     => true,
+					'delay'    => 15,
+					'accounts' => array(),
+					'template' => '',
+				),
+			),
+			'blocks'               => array(
+				'core/paragraph' => 'excerpt',
+				'core/heading'   => 'skip',
+				'core/list'      => 'text',
+				'core/image'     => 'media',
+				'core/gallery'   => 'media',
+				'core/video'     => 'media',
+				'core/embed'     => 'link',
+				'core/quote'     => 'skip',
+				'core/pullquote' => 'skip',
+				'core/shortcode' => 'remove',
+				'core/code'      => 'remove',
+				'core/html'      => 'remove',
+			),
+			'block_fallback'       => 'text',
+			'allow_block_override' => true,
+			'max_images'           => 4,
+			'ai'                   => array(
+				'provider' => '',
+				'tone'     => 'friendly',
+			),
+		);
+	}
+
+	/**
+	 * All settings, merged over the defaults.
+	 */
+	public static function all(): array {
+		$saved = get_option( self::OPTION, array() );
+		return self::merge( self::defaults(), is_array( $saved ) ? $saved : array() );
+	}
+
+	/**
+	 * One setting.
+	 *
+	 * @param string $key     Top-level key.
+	 * @param mixed  $fallback Value when the key is missing.
+	 * @return mixed
+	 */
+	public static function get( string $key, $fallback = null ) {
+		$all = self::all();
+		return array_key_exists( $key, $all ) ? $all[ $key ] : $fallback;
+	}
+
+	/**
+	 * Sanitizes and saves the settings the admin app sends.
+	 *
+	 * @param array $input Raw input.
+	 * @return array The saved settings.
+	 */
+	public static function save( array $input ): array {
+		$current = self::all();
+
+		if ( isset( $input['post_types'] ) && is_array( $input['post_types'] ) ) {
+			$current['post_types'] = array();
+			foreach ( $input['post_types'] as $type => $rule ) {
+				$type = sanitize_key( $type );
+				if ( '' === $type || ! post_type_exists( $type ) || ! is_array( $rule ) ) {
+					continue;
+				}
+				$current['post_types'][ $type ] = array(
+					'auto'     => ! empty( $rule['auto'] ),
+					'delay'    => max( 0, min( 86400, (int) ( $rule['delay'] ?? 15 ) ) ),
+					'accounts' => array_values( array_map( 'sanitize_text_field', (array) ( $rule['accounts'] ?? array() ) ) ),
+					'template' => sanitize_textarea_field( (string) ( $rule['template'] ?? '' ) ),
+				);
+			}
+		}
+
+		if ( isset( $input['blocks'] ) && is_array( $input['blocks'] ) ) {
+			$blocks = array();
+			foreach ( $input['blocks'] as $name => $use ) {
+				$name = preg_replace( '/[^a-z0-9\-\/]/', '', strtolower( (string) $name ) );
+				if ( $name && in_array( $use, self::BLOCK_USES, true ) ) {
+					$blocks[ $name ] = $use;
+				}
+			}
+			$current['blocks'] = $blocks;
+		}
+
+		if ( isset( $input['block_fallback'] ) && in_array( $input['block_fallback'], self::BLOCK_USES, true ) ) {
+			$current['block_fallback'] = $input['block_fallback'];
+		}
+		if ( isset( $input['allow_block_override'] ) ) {
+			$current['allow_block_override'] = (bool) $input['allow_block_override'];
+		}
+		if ( isset( $input['max_images'] ) ) {
+			$current['max_images'] = max( 1, min( 10, (int) $input['max_images'] ) );
+		}
+		if ( isset( $input['ai'] ) && is_array( $input['ai'] ) ) {
+			$current['ai'] = array(
+				'provider' => sanitize_key( (string) ( $input['ai']['provider'] ?? '' ) ),
+				'tone'     => sanitize_key( (string) ( $input['ai']['tone'] ?? 'friendly' ) ),
+			);
+		}
+
+		update_option( self::OPTION, $current, false );
+		return $current;
+	}
+
+	/**
+	 * Recursive merge where saved lists replace default lists.
+	 *
+	 * @param array $defaults Defaults.
+	 * @param array $saved    Saved values.
+	 */
+	private static function merge( array $defaults, array $saved ): array {
+		foreach ( $saved as $key => $value ) {
+			if ( is_array( $value ) && isset( $defaults[ $key ] ) && is_array( $defaults[ $key ] ) && ! wp_is_numeric_array( $value ) && in_array( $key, array( 'ai' ), true ) ) {
+				$defaults[ $key ] = self::merge( $defaults[ $key ], $value );
+			} else {
+				$defaults[ $key ] = $value;
+			}
+		}
+		return $defaults;
+	}
+}

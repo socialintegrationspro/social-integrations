@@ -1,0 +1,102 @@
+<?php
+/**
+ * Main plugin class.
+ *
+ * @package SocialIntegrations
+ */
+
+namespace SocialIntegrations;
+
+use SocialIntegrations\Admin\Assets;
+use SocialIntegrations\Auth\OAuth;
+use SocialIntegrations\Admin\Menu;
+use SocialIntegrations\Database\Migrations;
+use SocialIntegrations\Editor\BlockSupport;
+use SocialIntegrations\Networks\Registry;
+use SocialIntegrations\Rest\AccountsController;
+use SocialIntegrations\Rest\ContentController;
+use SocialIntegrations\Rest\QueueController;
+use SocialIntegrations\Rest\SettingsController;
+use SocialIntegrations\Scheduler\AutoShare;
+use SocialIntegrations\Scheduler\Publisher;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Wires the services together.
+ */
+final class Plugin {
+
+	/**
+	 * The booted instance.
+	 *
+	 * @var Plugin|null
+	 */
+	private static $instance = null;
+
+	/**
+	 * Network registry.
+	 *
+	 * @var Registry
+	 */
+	public $networks;
+
+	/**
+	 * Boots the plugin once, on `plugins_loaded`.
+	 */
+	public static function boot(): void {
+		if ( null !== self::$instance ) {
+			return;
+		}
+		self::$instance = new self();
+		self::$instance->register();
+
+		do_action( Hooks::LOADED, self::$instance );
+	}
+
+	/**
+	 * The booted instance.
+	 */
+	public static function instance(): ?Plugin {
+		return self::$instance;
+	}
+
+	/**
+	 * Registers hooks for every service.
+	 */
+	private function register(): void {
+		$this->networks = new Registry();
+		( new OAuth( $this->networks ) )->register();
+
+		Migrations::maybe_upgrade();
+
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+
+		( new BlockSupport() )->register();
+		( new AutoShare() )->register();
+		( new Publisher( $this->networks ) )->register();
+
+		if ( is_admin() ) {
+			( new Menu() )->register();
+			( new Assets() )->register();
+		}
+	}
+
+	/**
+	 * Loads translations for older WordPress versions; 6.7+ loads them on demand.
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain( 'social-integrations', false, dirname( plugin_basename( SINT_FILE ) ) . '/languages' );
+	}
+
+	/**
+	 * Registers the REST routes for the admin app.
+	 */
+	public function register_routes(): void {
+		( new ContentController() )->register_routes();
+		( new SettingsController() )->register_routes();
+		( new AccountsController( $this->networks ) )->register_routes();
+		( new QueueController() )->register_routes();
+	}
+}
