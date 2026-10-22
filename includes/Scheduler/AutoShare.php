@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\Campaigns\Auto;
 use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
@@ -14,7 +15,7 @@ use SocialIntegrations\Networks\Accounts;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Adds queue rows on the first publish of a post type with auto-share on.
+ * Adds queue rows on the first publish of a post that an auto-post campaign shares.
  * Updates to a published post never share again.
  */
 final class AutoShare {
@@ -23,6 +24,12 @@ final class AutoShare {
 	const META_DISABLED = '_sint_disabled';
 	const META_ACCOUNTS = '_sint_accounts';
 	const CRON_HOOK     = 'sint_auto_share_post';
+
+	/**
+	 * The block editor saves post meta and terms in a second request; the shares are
+	 * worked out this many seconds after publish, when those are saved.
+	 */
+	const SETTLE = 15;
 
 	/**
 	 * Registers the hook.
@@ -49,22 +56,17 @@ final class AutoShare {
 		if ( get_post_meta( $post->ID, self::META_SHARED, true ) || get_post_meta( $post->ID, self::META_DISABLED, true ) ) {
 			return;
 		}
-
-		$builder = new ShareBuilder();
-		$rule    = $builder->rule( $post->post_type );
-		if ( empty( $rule['auto'] ) ) {
+		if ( ! Auto::covers( $post->post_type ) ) {
 			return;
 		}
 
-		// Block editor saves post meta in a second request; the delay lets that finish.
-		$delay = max( 0, (int) ( $rule['delay'] ?? 15 ) );
 		update_post_meta( $post->ID, self::META_SHARED, time() );
-
-		wp_schedule_single_event( time() + $delay, self::CRON_HOOK, array( $post->ID ) );
+		wp_schedule_single_event( time() + self::SETTLE, self::CRON_HOOK, array( $post->ID ) );
 	}
 
 	/**
-	 * Builds the share and adds one queue row for each account.
+	 * Adds the post's shares for every campaign it matches, each at publish time plus the
+	 * campaign's delay. An account gets the post once, from the first matching campaign.
 	 *
 	 * @param int $post_id Post ID.
 	 */
@@ -74,48 +76,52 @@ final class AutoShare {
 			return;
 		}
 
-		if ( ! apply_filters( Hooks::AUTO_SHARE_POST, true, $post ) ) {
-			return;
-		}
+		// Accounts the editor chose for this post replace every campaign's accounts.
+		$chosen    = get_post_meta( $post_id, self::META_ACCOUNTS, true );
+		$chosen    = is_array( $chosen ) ? array_values( array_filter( $chosen ) ) : array();
+		$published = (int) get_post_time( 'U', true, $post );
+		$builder   = new ShareBuilder();
+		$used      = array();
 
-		$builder  = new ShareBuilder();
-		$rule     = $builder->rule( $post->post_type );
-		$chosen   = get_post_meta( $post_id, self::META_ACCOUNTS, true );
-		$chosen   = is_array( $chosen ) && $chosen ? $chosen : array();
-		$selected = $chosen ? $chosen : (array) ( $rule['accounts'] ?? array() );
-		$selected = (array) apply_filters( Hooks::AUTO_SHARE_ACCOUNTS, $selected, $post, (bool) $chosen );
-
-		$created = array();
-		foreach ( Accounts::all() as $account ) {
-			if ( 'connected' !== ( $account['status'] ?? '' ) ) {
+		foreach ( Auto::matching( $post ) as $campaign ) {
+			$wanted  = $chosen ? $chosen : $campaign['accounts'];
+			$when    = max( time(), $published + Auto::delay( $campaign ) );
+			$created = array();
+			foreach ( Accounts::all() as $account ) {
+				if ( 'connected' !== ( $account['status'] ?? '' ) || isset( $used[ $account['id'] ] ) ) {
+					continue;
+				}
+				if ( $wanted && ! in_array( $account['id'], $wanted, true ) ) {
+					continue;
+				}
+				$share     = $builder->build( $post, $account, 'auto', Auto::template( $campaign ) );
+				$created[] = Queue::add(
+					array(
+						'post_id'      => $post_id,
+						'campaign_id'  => (int) $campaign['id'],
+						'network'      => $account['network'],
+						'account_id'   => $account['id'],
+						'caption'      => $share['caption'],
+						'media'        => $share['media'],
+						'link'         => $share['link'],
+						'status'       => 'scheduled',
+						'scheduled_at' => gmdate( 'Y-m-d H:i:s', $when ),
+					)
+				);
+				$used[ $account['id'] ] = true;
+			}
+			if ( ! $created ) {
 				continue;
 			}
-			if ( $selected && ! in_array( $account['id'], $selected, true ) ) {
-				continue;
-			}
-			// Built for each account: the template can differ by account and network.
-			$share = $builder->build( $post, $account, 'auto' );
-			$created[] = Queue::add(
+			do_action(
+				Hooks::SHARES_CREATED,
+				$created,
 				array(
-					'post_id'      => $post_id,
-					'network'      => $account['network'],
-					'account_id'   => $account['id'],
-					'caption'      => $share['caption'],
-					'media'        => $share['media'],
-					'link'         => $share['link'],
-					'status'       => 'scheduled',
-					'scheduled_at' => current_time( 'mysql', true ),
+					'source'   => 'auto',
+					'campaign' => (int) $campaign['id'],
 				)
 			);
+			Publisher::wake_at( $when );
 		}
-		do_action(
-			Hooks::SHARES_CREATED,
-			$created,
-			array(
-				'source'    => 'auto',
-				'post_type' => $post->post_type,
-			)
-		);
-		Publisher::wake_at( time() );
 	}
 }

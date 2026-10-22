@@ -15,6 +15,7 @@ use SocialIntegrations\Editor\BlockSupport;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Rest\AccountsController;
 use SocialIntegrations\Rest\AIController;
+use SocialIntegrations\Rest\CampaignsController;
 use SocialIntegrations\Rest\ContentController;
 use SocialIntegrations\Rest\QueueController;
 use SocialIntegrations\Rest\SettingsController;
@@ -100,5 +101,6 @@ final class Plugin {
 		( new AccountsController( $this->networks ) )->register_routes();
 		( new QueueController() )->register_routes();
 		( new AIController() )->register_routes();
+		( new CampaignsController() )->register_routes();
 	}
 }

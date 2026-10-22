@@ -44,9 +44,11 @@ final class ShareBuilder {
 	 * @param \WP_Post $post    Post.
 	 * @param array    $account The account it goes to; empty when not known yet.
 	 * @param string   $context Who asks: 'auto' on publish, 'composer' in the admin app.
+	 * @param array    $base    The template to start from, such as an auto-post campaign's;
+	 *                          empty for the default caption and media.
 	 * @return array ['caption', 'captions', 'link', 'media', 'tokens', 'blocks', 'links'].
 	 */
-	public function build( \WP_Post $post, array $account = array(), string $context = 'composer' ): array {
+	public function build( \WP_Post $post, array $account = array(), string $context = 'composer', array $base = array() ): array {
 		if ( ! isset( $this->parsed[ $post->ID ] ) ) {
 			$blocks                    = ( new BlockParser() )->parse( $post );
 			$this->parsed[ $post->ID ] = array(
@@ -57,7 +59,7 @@ final class ShareBuilder {
 		$parsed   = $this->parsed[ $post->ID ]['blocks'];
 		$tokens   = $this->parsed[ $post->ID ]['tokens'];
 		$parser   = new TemplateParser();
-		$template = $this->template( $post, $account, $context );
+		$template = $this->template( $post, $account, $context, $base );
 
 		$captions = array();
 		$custom   = (string) get_post_meta( $post->ID, '_sint_caption', true );
@@ -85,30 +87,20 @@ final class ShareBuilder {
 	}
 
 	/**
-	 * Auto-share rule for a post type.
-	 *
-	 * @param string $post_type Post type.
-	 */
-	public function rule( string $post_type ): array {
-		$rules = (array) Settings::get( 'post_types', array() );
-		return isset( $rules[ $post_type ] ) && is_array( $rules[ $post_type ] ) ? $rules[ $post_type ] : array();
-	}
-
-	/**
-	 * The template a share uses: the post type's, unless a filter supplies another.
+	 * The template a share uses: the one given, unless a filter supplies another.
 	 *
 	 * @param \WP_Post $post    Post.
 	 * @param array    $account Account, or empty.
 	 * @param string   $context Who asks.
+	 * @param array    $base    Template to start from; empty for the default.
 	 * @return array{caption: string, captions: array<string, string>, media: string, custom_media: array}
 	 */
-	public function template( \WP_Post $post, array $account = array(), string $context = 'composer' ): array {
-		$rule     = $this->rule( $post->post_type );
+	public function template( \WP_Post $post, array $account = array(), string $context = 'composer', array $base = array() ): array {
 		$template = array(
-			'caption'      => (string) ( $rule['template'] ?? '' ),
-			'captions'     => (array) ( $rule['captions'] ?? array() ),
-			'media'        => (string) ( $rule['media'] ?? 'auto' ),
-			'custom_media' => (array) ( $rule['custom_media'] ?? array() ),
+			'caption'      => (string) ( $base['caption'] ?? '' ),
+			'captions'     => (array) ( $base['captions'] ?? array() ),
+			'media'        => (string) ( $base['media'] ?? 'auto' ),
+			'custom_media' => (array) ( $base['custom_media'] ?? array() ),
 		);
 		$template = (array) apply_filters( Hooks::SHARE_TEMPLATE, $template, $post, $account, $context );
 

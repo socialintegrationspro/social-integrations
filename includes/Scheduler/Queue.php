@@ -32,6 +32,7 @@ final class Queue {
 			Migrations::queue_table(),
 			array(
 				'post_id'      => (int) ( $data['post_id'] ?? 0 ),
+				'campaign_id'  => (int) ( $data['campaign_id'] ?? 0 ),
 				'network'      => sanitize_key( (string) $data['network'] ),
 				'account_id'   => sanitize_key( (string) $data['account_id'] ),
 				'caption'      => (string) ( $data['caption'] ?? '' ),
@@ -43,7 +44,7 @@ final class Queue {
 				'created_at'   => $now,
 				'updated_at'   => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
 		);
 		return (int) $wpdb->insert_id;
 	}
@@ -204,6 +205,7 @@ final class Queue {
 	private static function hydrate( array $row ): array {
 		$row['id']       = (int) $row['id'];
 		$row['post_id']  = (int) $row['post_id'];
+		$row['campaign_id'] = (int) ( $row['campaign_id'] ?? 0 );
 		$row['attempts'] = (int) $row['attempts'];
 		$media           = json_decode( (string) $row['media'], true );
 		$row['media']    = is_array( $media ) ? $media : array();

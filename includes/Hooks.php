@@ -85,23 +85,15 @@ final class Hooks {
 	const SHARE_COMPLETED = 'sint/share_completed';
 
 	/**
-	 * Filter. Account IDs an automatic share on publish goes to. An empty list
-	 * means every connected account.
+	 * Filter. Whether an auto-post campaign shares a post. Runs when the post's shares are
+	 * about to be queued, a few seconds after it is published, so its terms and meta are
+	 * saved. Only campaigns that are on and include the post's type are asked.
 	 *
-	 * @param string[] $account_ids From the post's own choice, or the post type's rule.
+	 * @param bool     $match    True.
 	 * @param \WP_Post $post
-	 * @param bool     $chosen      True when the post itself chose the accounts.
+	 * @param array    $campaign The campaign, with its `id`.
 	 */
-	const AUTO_SHARE_ACCOUNTS = 'sint/auto_share_accounts';
-
-	/**
-	 * Filter. Whether a post is shared on publish. Runs when its shares are about to be
-	 * queued, after the post type's delay, so its terms and meta are saved.
-	 *
-	 * @param bool     $share True when the post type's rule says to share.
-	 * @param \WP_Post $post
-	 */
-	const AUTO_SHARE_POST = 'sint/auto_share_post';
+	const AUTO_CAMPAIGN_MATCHES = 'sint/auto_campaign_matches';
 
 	/**
 	 * Filter. The storage behind connected accounts. Return an
@@ -140,7 +132,16 @@ final class Hooks {
 	 * @param int[] $ids     Queue row IDs, one per account.
 	 * @param array $options From the admin app: the unsanitized `options` the composer sent
 	 *                       (see the `sint.composer.options` JS filter). On publish:
-	 *                       [ 'source' => 'auto', 'post_type' => string ].
+	 *                       [ 'source' => 'auto', 'campaign' => int ], once per campaign.
 	 */
 	const SHARES_CREATED = 'sint/shares_created';
+
+	/**
+	 * Filter. Campaigns listed on the Campaigns screen. Add items of your own `type`; the
+	 * admin app's `sint.campaigns.actions` JS filter handles their buttons.
+	 *
+	 * @param array[] $items Each: [ 'id', 'type', 'name', 'accounts', 'status', 'next_at',
+	 *                       'last_at', 'sent', 'total', 'updated_at', 'actions' ].
+	 */
+	const CAMPAIGNS = 'sint/campaigns';
 }

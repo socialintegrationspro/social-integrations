@@ -33,6 +33,14 @@ final class Migrations {
 	}
 
 	/**
+	 * Campaigns table name.
+	 */
+	public static function campaigns_table(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'sint_campaigns';
+	}
+
+	/**
 	 * Runs the migrations when the stored version is older than the code.
 	 */
 	public static function maybe_upgrade(): void {
@@ -56,6 +64,7 @@ final class Migrations {
 			"CREATE TABLE {$queue} (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 				post_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				campaign_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				network varchar(50) NOT NULL,
 				account_id varchar(100) NOT NULL,
 				caption longtext NOT NULL,
@@ -69,7 +78,8 @@ final class Migrations {
 				updated_at datetime NOT NULL,
 				PRIMARY KEY  (id),
 				KEY status_scheduled (status, scheduled_at),
-				KEY post_id (post_id)
+				KEY post_id (post_id),
+				KEY campaign_id (campaign_id)
 			) {$charset};"
 		);
 
@@ -90,6 +100,23 @@ final class Migrations {
 				KEY queue_id (queue_id)
 			) {$charset};"
 		);
+
+		$campaigns = self::campaigns_table();
+		dbDelta(
+			"CREATE TABLE {$campaigns} (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				type varchar(20) NOT NULL DEFAULT 'single',
+				name varchar(191) NOT NULL DEFAULT '',
+				data longtext NOT NULL,
+				created_by bigint(20) unsigned NOT NULL DEFAULT 0,
+				created_at datetime NOT NULL,
+				updated_at datetime NOT NULL,
+				PRIMARY KEY  (id)
+			) {$charset};"
+		);
+
+		// Version 3: the per post type sharing rules become auto-post campaigns.
+		\SocialIntegrations\Campaigns\Auto::migrate();
 
 		update_option( self::VERSION_OPTION, SINT_DB_VERSION, false );
 	}

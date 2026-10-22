@@ -161,9 +161,9 @@ final class ContentController extends RestController {
 	}
 
 	/**
-	 * The share a post type template, not saved yet, builds for one item.
+	 * The share a template, not saved yet, builds for one item.
 	 *
-	 * Body: { template: { template, captions, media, custom_media } }, as a post type rule holds them.
+	 * Body: { template: { caption, captions, media, custom_media } }, as an auto-post campaign holds them.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -176,7 +176,7 @@ final class ContentController extends RestController {
 		$input = (array) ( ( (array) $request->get_json_params() )['template'] ?? array() );
 		$media = (string) ( $input['media'] ?? 'auto' );
 		$draft = array(
-			'caption'      => sanitize_textarea_field( (string) ( $input['template'] ?? '' ) ),
+			'caption'      => sanitize_textarea_field( (string) ( $input['caption'] ?? '' ) ),
 			'captions'     => Settings::captions( (array) ( $input['captions'] ?? array() ) ),
 			'media'        => in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) ? $media : 'auto',
 			'custom_media' => Settings::media_items( (array) ( $input['custom_media'] ?? array() ) ),

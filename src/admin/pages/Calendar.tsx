@@ -192,7 +192,7 @@ export function CalendarPage({ openComposer }: PageProps) {
       <Header title={__('Calendar')}>
         <button type="button" className="sint-btn primary" onClick={() => openComposer()}>
           <Icon name="plus" size={16} stroke={2.4} />
-          {__('Create post')}
+          {__('New campaign')}
         </button>
       </Header>
       <div className="sint-cal-layout">
@@ -261,7 +261,7 @@ export function CalendarPage({ openComposer }: PageProps) {
           ) : view === 'list' ? (
             visible.length === 0 ? (
               <Empty title={__('Nothing planned this week')}>
-                <button type="button" className="sint-btn primary" onClick={() => openComposer()}>{__('Create post')}</button>
+                <button type="button" className="sint-btn primary" onClick={() => openComposer()}>{__('New campaign')}</button>
               </Empty>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

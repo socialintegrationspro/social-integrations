@@ -381,7 +381,16 @@ body.folded .sint-overlay { left: 36px; }
 .sint-autopost .col { flex: 1 1 280px; max-width: 340px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .sint-autopost .col.mid { flex: 999 1 400px; max-width: none; border-left: 1px solid var(--line); border-right: 1px solid var(--line); padding: 18px 22px; }
 .sint-autopost .col.side { background: var(--side); }
+.sint-autopost .sint-seg { max-width: 100%; flex-wrap: wrap; }
+.sint-autopost .sint-seg button { padding: 0 12px; }
+.sint-autopost .col.side .sint-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+.sint-autopost .col.side .sint-seg button { padding: 0 4px; justify-content: center; }
 .sint-autopost-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--faint); }
 .sint-autopost-dot.on { background: var(--ok); }
 .sint-autopost-share { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg); }
 .sint-autopost-share p { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+
+/* Campaigns screen. */
+.sint-camp-name { display: block; border: 0; background: none; padding: 0; margin-bottom: 4px; color: var(--text); font: inherit; font-weight: 700; text-align: left; cursor: pointer; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-camp-name:hover { color: var(--link); }
+.sint-camp-actions { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%; }

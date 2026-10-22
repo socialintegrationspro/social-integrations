@@ -28,17 +28,6 @@ final class Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'post_types'           => array(
-				'post' => array(
-					'auto'         => true,
-					'delay'        => 15,
-					'accounts'     => array(),
-					'template'     => '',
-					'captions'     => array(),
-					'media'        => 'auto',
-					'custom_media' => array(),
-				),
-			),
 			'blocks'               => array(
 				'core/paragraph' => 'excerpt',
 				'core/heading'   => 'skip',
@@ -92,26 +81,6 @@ final class Settings {
 	 */
 	public static function save( array $input ): array {
 		$current = self::all();
-
-		if ( isset( $input['post_types'] ) && is_array( $input['post_types'] ) ) {
-			$current['post_types'] = array();
-			foreach ( $input['post_types'] as $type => $rule ) {
-				$type = sanitize_key( $type );
-				if ( '' === $type || ! post_type_exists( $type ) || ! is_array( $rule ) ) {
-					continue;
-				}
-				$media                          = (string) ( $rule['media'] ?? 'auto' );
-				$current['post_types'][ $type ] = array(
-					'auto'         => ! empty( $rule['auto'] ),
-					'delay'        => max( 0, min( 86400, (int) ( $rule['delay'] ?? 15 ) ) ),
-					'accounts'     => array_values( array_map( 'sanitize_text_field', (array) ( $rule['accounts'] ?? array() ) ) ),
-					'template'     => sanitize_textarea_field( (string) ( $rule['template'] ?? '' ) ),
-					'captions'     => self::captions( (array) ( $rule['captions'] ?? array() ) ),
-					'media'        => in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) ? $media : 'auto',
-					'custom_media' => self::media_items( (array) ( $rule['custom_media'] ?? array() ) ),
-				);
-			}
-		}
 
 		if ( isset( $input['blocks'] ) && is_array( $input['blocks'] ) ) {
 			$blocks = array();

@@ -2,7 +2,7 @@ import { useState, type ComponentType, type ReactNode } from 'react'
 import { Icon, ToastProvider } from './components/ui'
 import { Composer, type ComposerSeed } from './pages/Composer'
 import { CalendarPage } from './pages/Calendar'
-import { ContentPage } from './pages/Content'
+import { CampaignsPage } from './pages/Campaigns'
 import { AccountsPage } from './pages/Accounts'
 import { SettingsPage } from './pages/Settings'
 import { LogPage } from './pages/Log'
@@ -36,7 +36,7 @@ function Shell() {
   // Filter `sint.routes`: other plugins add or replace screens.
   const routes = applyFilters<RouteDef[]>('sint.routes', [
     { path: 'calendar', label: __('Calendar'), icon: 'calendar', component: CalendarPage },
-    { path: 'content', label: __('Content'), icon: 'content', component: ContentPage },
+    { path: 'campaigns', label: __('Campaigns'), icon: 'content', component: CampaignsPage },
     { path: 'accounts', label: __('Accounts'), icon: 'accounts', component: AccountsPage },
     { path: 'log', label: __('Share log'), icon: 'log', component: LogPage },
     { path: 'settings', label: __('Settings'), icon: 'settings', component: SettingsPage, bottom: true },

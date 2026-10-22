@@ -18,6 +18,29 @@ export interface ComposerSeed {
   copy?: QueueItem
   /** A time to schedule a new share for, as UTC ISO. */
   at?: string
+  /** A campaign to edit, or to start a new one from (`copy`). */
+  campaign?: CampaignRef
+}
+
+/** A campaign the composer opens: its `type` picks the tab. */
+export interface CampaignRef {
+  type: string
+  id: number | string
+  accounts?: string[]
+  copy?: boolean
+}
+
+/** A single campaign, as GET campaigns/{id} returns it. */
+interface SingleCampaign {
+  id: number
+  post_id: number
+  caption: string
+  captions: Record<string, string> | []
+  accounts: string[]
+  media: MediaItem[]
+  scheduled_at: string
+  draft: boolean
+  options: Record<string, unknown> | []
 }
 
 type When = 'now' | 'pick'
@@ -38,6 +61,8 @@ export interface ComposerModeProps {
   selected: string[]
   onClose: () => void
   onSaved: () => void
+  /** The campaign of this mode's type being edited or copied. */
+  campaign?: CampaignRef
 }
 
 interface ComposerMode {
@@ -101,8 +126,11 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   // A duplicate starts from another share's text, media and post, as a new share.
   const from = item ?? seed.copy
 
+  const campaign = seed.campaign
+  const editing = campaign && !campaign.copy ? campaign : undefined
   const [selected, setSelected] = useState<string[]>(() => {
     if (item) return [item.account_id]
+    if (campaign?.accounts?.length) return campaign.accounts.filter((id) => connected.some((a) => a.id === id))
     const all = connected.map((a) => a.id)
     return seed.copy && all.includes(seed.copy.account_id) ? [seed.copy.account_id] : all
   })
@@ -125,7 +153,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   // The text before the last AI answer, for Undo.
   const [beforeAI, setBeforeAI] = useState<string | null>(null)
   const [mediaFrom, setMediaFrom] = useState<MediaSource | ''>('')
-  const [mode, setMode] = useState('single')
+  const [mode, setMode] = useState(campaign ? (campaign.type === 'single' ? 'single' : campaign.type) : 'single')
   const [options, setOptions] = useState<Record<string, unknown>>({})
   const area = useRef<HTMLTextAreaElement>(null)
   const keepSaved = useRef(!!from)
@@ -143,6 +171,26 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     }, 250)
     return () => clearTimeout(t)
   }, [type, search])
+
+  // A single campaign opens with what it was saved with.
+  useEffect(() => {
+    if (campaign?.type !== 'single') return
+    api.get<SingleCampaign>(`campaigns/${campaign.id}`).then((r) => {
+      const c = r.data
+      keepSaved.current = !!c.post_id
+      setCaption(c.caption)
+      setOverrides(Array.isArray(c.captions) ? {} : c.captions)
+      setMedia(c.media)
+      setMediaOn(c.media.map((m) => m.url))
+      setSelected(c.accounts.filter((id) => connected.some((a) => a.id === id)))
+      setOptions(Array.isArray(c.options) ? {} : c.options)
+      if (c.scheduled_at && Date.parse(c.scheduled_at) > Date.now()) {
+        setWhen('pick')
+        setLocal(utcToLocal(c.scheduled_at))
+      }
+      if (c.post_id) setPostId(c.post_id)
+    }, (e) => toast((e as Error).message, true))
+  }, [])
 
   useEffect(() => {
     if (!postId) return
@@ -244,7 +292,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       }
       const captions: Record<string, string> = {}
       nets.forEach((n) => { if (overrides[n] !== undefined) captions[n] = overrides[n]! })
-      const r = await api.post<{ created: number[]; results?: { network: string; status: string; message?: string }[] }>('queue', {
+      const r = await api.post<{ created: number[]; results?: { network: string; status: string; message?: string }[] }>(editing?.type === 'single' ? `campaigns/${editing.id}` : 'queue', {
         post_id: postId,
         caption,
         captions,
@@ -277,7 +325,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
   return (
     <Modal
-      title={item ? __('Edit post') : __('Create post')}
+      title={item ? __('Edit post') : editing ? __('Edit campaign') : __('New campaign')}
       onClose={onClose}
       footer={Mode ? undefined :
         <>
@@ -305,7 +353,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       }
       headerExtra={
         <>
-          {modes.length > 0 && (
+          {modes.length > 0 && !editing && (
             <Segmented<string> label={__('What to share')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
           )}
           {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)' }}>{title}</span>}
@@ -341,7 +389,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         ))}
       </div>}
 
-      {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} /> : <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
+      {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
         {!item && <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           <div className="sint-label">{__('From your site')}</div>
           <label className="sint-search" style={{ minWidth: 0 }}>

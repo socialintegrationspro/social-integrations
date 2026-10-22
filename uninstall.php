@@ -15,6 +15,7 @@ foreach ( array( 'sint_settings', 'sint_accounts', 'sint_network_apps', 'sint_db
 
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_queue" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_logs" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_campaigns" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 delete_post_meta_by_key( '_sint_auto_shared' );
 delete_post_meta_by_key( '_sint_disabled' );

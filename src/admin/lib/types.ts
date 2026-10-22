@@ -123,19 +123,7 @@ export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
 
 export type MediaSource = 'auto' | 'featured' | 'content' | 'custom' | 'none'
 
-export interface PostTypeRule {
-  auto: boolean
-  delay: number
-  accounts: string[]
-  template: string
-  /** Caption templates for single networks, keyed by network. */
-  captions: Record<string, string>
-  media: MediaSource
-  custom_media: MediaItem[]
-}
-
 export interface Settings {
-  post_types: Record<string, PostTypeRule>
   blocks: Record<string, BlockUse>
   block_fallback: BlockUse
   allow_block_override: boolean
