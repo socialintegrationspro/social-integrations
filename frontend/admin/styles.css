@@ -926,3 +926,16 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-modal-body { overscroll-behavior: contain; }
 /* The footer asks before the composer closes with unsaved changes. */
 .sint-root .sint-discard { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; font-weight: 600; }
+
+/* Touch targets: small controls keep their look, but each one takes a tap or a click in an area of at
+   least 44 by 44 px around it. */
+.sint-root :is(.sint-btn.sm, .sint-icon-btn.sm, .sint-seg button, .sint-chip, .sint-tok, .sint-pc-tool, .sint-post-field-nets.count, .sint-log-retry) { position: relative; }
+.sint-root :is(.sint-btn.sm, .sint-icon-btn.sm, .sint-seg button, .sint-chip, .sint-tok, .sint-pc-tool, .sint-post-field-nets.count, .sint-log-retry)::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+
+/* Composer footer: the save buttons at the end; on a phone they fill one row, so the main action is easy to reach. */
+.sint-root .sint-foot-actions { margin-left: auto; display: flex; gap: 10px; }
+@media (max-width: 600px) {
+  .sint-root .sint-modal-foot { gap: 8px; padding: 10px 12px; }
+  .sint-root .sint-foot-actions { margin-left: 0; width: 100%; }
+  .sint-root .sint-foot-actions > .sint-btn { flex: 1; justify-content: center; }
+}

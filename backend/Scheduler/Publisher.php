@@ -186,6 +186,8 @@ final class Publisher {
 			// for comments. The user can fix that, so say how. The details keep the network's own text.
 			$status = $e instanceof NetworkException ? (int) $e->getCode() : 0;
 			if ( 401 === $status || 403 === $status || ( $e instanceof NetworkException && $e->is_expired() ) || false !== stripos( Errors::text( $e ), 'permission' ) ) {
+				// The share log shows a Reconnect button for this share.
+				$details['comment']['reconnect'] = true;
 				/* translators: %s: network name */
 				return sprintf( __( 'The post is on %s. The network did not allow the first comment. Reconnect the account to give the plugin permission for comments.', 'social-integrations' ), $network->label() );
 			}

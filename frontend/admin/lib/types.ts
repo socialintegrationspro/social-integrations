@@ -143,6 +143,8 @@ export interface LogShare {
   remote_url: string
   created_at: string
   tries: number
+  /** The sign-in expired, or the network refused the first comment: a new sign-in fixes it. */
+  reconnect?: boolean
 }
 
 /** One post that one campaign shared to its accounts, from one batch. */

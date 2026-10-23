@@ -37,9 +37,10 @@ export function TimingFooter({ when, setWhen, local, setLocal, live, optionContr
           ))}
         </>
       )}
-      <span style={{ fontSize: 12, color: 'var(--faint)' }}>{config.timezone}</span>
+      {/* The time zone matters only for a selected time. */}
+      {when === 'pick' && <span style={{ fontSize: 12, color: 'var(--faint)' }}>{config.timezone}</span>}
       {optionControls.map(({ key, component: Control }) => <Control key={key} options={options} setOption={setOption} when={when} local={local} />)}
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>{children}</div>
+      <div className="sint-foot-actions">{children}</div>
     </>
   )
 }

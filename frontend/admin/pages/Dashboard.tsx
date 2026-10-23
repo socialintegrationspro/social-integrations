@@ -63,7 +63,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
             <span style={{ flex: 1 }}>
               {sprintf(__('%1$s sign-in expired for %2$s. Reconnect the account.', 'social-integrations'), network(a.network)?.label ?? a.network, a.name)}
             </span>
-            {can(caps.manageAccounts) && <button type="button" className="sint-btn warn sm" onClick={() => go('accounts')}>{__('Reconnect', 'social-integrations')}</button>}
+            {can(caps.manageAccounts) && <button type="button" className="sint-btn warn sm" onClick={() => go(`accounts?reconnect=${encodeURIComponent(a.id)}`)}>{__('Reconnect', 'social-integrations')}</button>}
           </div>
         ))}
 

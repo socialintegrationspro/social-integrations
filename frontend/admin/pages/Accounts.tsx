@@ -38,6 +38,16 @@ export function AccountsPage({ params, go }: PageProps) {
     setRefreshing(false)
   }
 
+  // From a Reconnect button on another screen: open the sign-in of that account at once.
+  useEffect(() => {
+    const id = params.get('reconnect')
+    const account = id ? accounts.find((a) => a.id === id) : undefined
+    const net = account ? network(account.network) : undefined
+    if (account && net) setConnecting(net, account.via)
+    // Only on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     const done = params.get('connected')
     if (done) {

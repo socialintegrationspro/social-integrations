@@ -324,6 +324,7 @@ final class QueueController extends RestController {
 						'remote_url' => (string) $row['remote_url'],
 						'created_at' => \SocialIntegrations\Support\Dates::iso( $row['created_at'] ),
 						'tries'      => (int) $row['tries'],
+						'reconnect'  => ! empty( $row['reconnect'] ),
 					);
 				},
 				$shares

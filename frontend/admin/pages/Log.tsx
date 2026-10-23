@@ -224,6 +224,9 @@ export function LogPage({ params, go }: PageProps) {
           </div>
           <span className={`sint-log-result ${s.status === 'published' ? 'ok' : 'bad'}`}>{s.status === 'published' ? __('Published', 'social-integrations') : __('Failed', 'social-integrations')}</span>
           <span className="sint-log-share-act">
+            {s.reconnect && acct && can(caps.manageAccounts) && (
+              <button type="button" className="sint-btn warn sm" onClick={() => go(`accounts?reconnect=${encodeURIComponent(acct.id)}`)}>{__('Reconnect', 'social-integrations')}</button>
+            )}
             {s.status === 'failed' && s.queue_id > 0 && can(caps.publish) && (
               <button type="button" className="sint-log-retry" disabled={!!busy} onClick={() => retry([s], `s${s.id}`)}>
                 <Icon name="retry" size={14} stroke={2} />

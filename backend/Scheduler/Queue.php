@@ -287,7 +287,10 @@ final class Queue {
 			$in[] = $keys ? 'q.batch_id IN (' . implode( ',', $keys ) . ')' : '';
 			$in[] = $ids ? 'l.id IN (' . implode( ',', $ids ) . ')' : '';
 			$rows = $wpdb->get_results(
+				// `reconnect`: the sign-in expired, or the network refused the first comment. A LIKE test
+				// avoids reading the details, which hold the request trace, for each row of the page.
 				"SELECT l.id, l.queue_id, l.post_id, l.network, l.account_id, l.status, l.message, l.remote_url, l.created_at, t.tries,
+					( l.details LIKE '%\"reconnect\":true%' OR l.details LIKE '%\"code\":\"expired\"%' ) AS reconnect,
 					{$batch} AS batch_id, COALESCE(q.campaign_key, '') AS campaign_key, COALESCE(q.caption, '') AS caption
 				{$shares} AND (" . implode( ' OR ', array_filter( $in ) ) . ') ORDER BY l.id DESC',
 				ARRAY_A
