@@ -231,7 +231,7 @@ body.sint-admin-page #wpfooter { display: none; }
 }
 @media (min-width: 783px) and (max-width: 1279px) {
   .sint-brand { padding: 0 8px; }
-  .sint-brand .label, .sint-tools a span { display: none; }
+  .sint-brand .label, .sint-tools a span:not(.sint-pill-bg) { display: none; }
   .sint-tools a { padding: 0; width: 52px; }
   .sint-nav a { padding: 0 14px; }
   .sint-head h1 { font-size: 28px; }
@@ -246,7 +246,7 @@ body.sint-admin-page #wpfooter { display: none; }
   .sint-brand { height: 44px; font-size: 15px; padding-right: 14px; }
   .sint-brand .mark { width: 30px; height: 30px; }
   .sint-tools a, .sint-theme { height: 44px; min-width: 44px; }
-  .sint-tools a span { display: none; }
+  .sint-tools a span:not(.sint-pill-bg) { display: none; }
   .sint-tools a { padding: 0; width: 44px; }
   .sint-theme { width: 44px; }
   .sint-nav a { padding: 0 14px; }

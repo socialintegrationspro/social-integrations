@@ -313,6 +313,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   // The preview shows what the post format sends: media, a link card, or the text only.
   const shown = preview ? fieldsFor([preview])[preview] ?? {} : {}
   const format = shown.format ?? 'auto'
+  // Networks with a link card show the media instead of the card. Name them, so the user can pick "Link card only".
+  const resolved = fieldsFor(nets)
+  const cardHidden = built?.link && chosenMedia.length > 0 ? nets.filter((n) => network(n)?.post_fields.some((f) => f.name === 'format') && (resolved[n]?.format ?? 'auto') === 'auto') : []
 
   return (
     <Modal
@@ -411,6 +414,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             chosenMedia={format === 'auto' ? chosenMedia : []}
             link={built?.link && format !== 'text' ? { url: built.link, title: shown.title || built.tokens.title || '', description: shown.description, image: linkImage } : undefined}
             comment={shown.first_comment}
+            cardHidden={cardHidden}
           />
         </div>
       )}
