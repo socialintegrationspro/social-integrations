@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { m } from 'motion/react'
 import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, Icon, LoadError, NetBadge, RefreshButton, Segmented } from '../components/ui'
-import { config } from '../lib/config'
+import { can, caps, config } from '../lib/config'
 import { fmtStamp } from '../lib/format'
 import { useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
@@ -63,7 +63,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
             <span style={{ flex: 1 }}>
               {sprintf(__('%1$s sign-in expired for %2$s. Reconnect the account.', 'social-integrations'), network(a.network)?.label ?? a.network, a.name)}
             </span>
-            <button type="button" className="sint-btn warn sm" onClick={() => go('accounts')}>{__('Reconnect', 'social-integrations')}</button>
+            {can(caps.manageAccounts) && <button type="button" className="sint-btn warn sm" onClick={() => go('accounts')}>{__('Reconnect', 'social-integrations')}</button>}
           </div>
         ))}
 

@@ -25,6 +25,7 @@ use SocialIntegrations\Rest\SettingsController;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Cron;
 use SocialIntegrations\Support\Settings;
 
@@ -78,6 +79,7 @@ final class Plugin {
 	 * Registers hooks for every service.
 	 */
 	private function register(): void {
+		Capabilities::register();
 		$this->networks = new Registry();
 		( new OAuth( $this->networks ) )->register();
 

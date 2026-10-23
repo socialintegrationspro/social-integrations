@@ -4,7 +4,7 @@ import { easeOut } from '../lib/motion'
 import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, Empty, Icon, LoadError, NetBadge, RefreshButton, Segmented, typeColor, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
-import { config } from '../lib/config'
+import { can, caps, config } from '../lib/config'
 import { fmtDate, fmtTime, siteParts } from '../lib/format'
 import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
@@ -146,12 +146,12 @@ export function CalendarPage({ openComposer }: PageProps) {
 
   const actions = (item: QueueItem, height?: number) => (
     <>
-      {item.status === 'draft' && (
+      {item.status === 'draft' && can(caps.publish) && (
         <button type="button" className="sint-btn primary sm" style={{ height }} onClick={() => publish(item)}>
           {__('Publish', 'social-integrations')}
         </button>
       )}
-      {item.status === 'failed' && (
+      {item.status === 'failed' && can(caps.publish) && (
         <button type="button" className="sint-btn danger sm" style={{ height }} onClick={() => retry(item)}>
           {__('Retry', 'social-integrations')}
         </button>
@@ -219,11 +219,11 @@ export function CalendarPage({ openComposer }: PageProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px 6px' }}>
               <span style={{ fontSize: 18, fontWeight: 700 }}>{__('Accounts', 'social-integrations')}</span>
-              <a href="#/accounts" style={{ fontSize: 13, fontWeight: 600 }}>{__('Manage', 'social-integrations')}</a>
+              {can(caps.manageAccounts) && <a href="#/accounts" style={{ fontSize: 13, fontWeight: 600 }}>{__('Manage', 'social-integrations')}</a>}
             </div>
             {accounts.length === 0 && (
               <div style={{ padding: '8px 6px', color: 'var(--muted)', fontSize: 13 }}>
-                {__('No accounts yet.', 'social-integrations')} <a href="#/accounts">{__('Connect an account', 'social-integrations')}</a>
+                {__('No accounts yet.', 'social-integrations')} {can(caps.manageAccounts) && <a href="#/accounts">{__('Connect an account', 'social-integrations')}</a>}
               </div>
             )}
             {accounts.map((a) => (
@@ -231,7 +231,11 @@ export function CalendarPage({ openComposer }: PageProps) {
                 <AccountAvatar account={a} network={network(a.network)} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.username}</div>
-                  {a.status === 'expired' ? (
+                  {a.status === 'expired' && !can(caps.manageAccounts) ? (
+                    <div style={{ fontSize: 12, color: 'var(--warn-text)', fontWeight: 600 }}>
+                      {network(a.network)?.label} · {__('Sign-in expired', 'social-integrations')}
+                    </div>
+                  ) : a.status === 'expired' ? (
                     <a href="#/accounts" style={{ fontSize: 12, color: 'var(--warn-text)', fontWeight: 600 }}>
                       {network(a.network)?.label} · {__('Reconnect', 'social-integrations')}
                     </a>

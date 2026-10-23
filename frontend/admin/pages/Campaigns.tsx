@@ -3,6 +3,7 @@ import { Header, type PageProps } from '../components/Header'
 import { Empty, Icon, LoadError, Menu, NetBadge, Pagination, RefreshButton, SkeletonTable, usePaged, useToast, type MenuItem } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtStamp } from '../lib/format'
+import { can as userCan, caps } from '../lib/config'
 import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -138,7 +139,8 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
                     const status = STATUS[c.status] ?? { label: () => c.status, tone: 'muted' }
                     const on = c.accounts.length ? accounts.filter((a) => c.accounts.includes(a.id)) : []
                     const k = keyOf(c)
-                    const can = (a: string) => c.actions.includes(a) && (a === 'edit' || a === 'duplicate' || !!handlers[c.type])
+                    // Pause and Resume turn a campaign on or off, so they need the publish capability.
+                    const can = (a: string) => c.actions.includes(a) && (a === 'edit' || a === 'duplicate' || !!handlers[c.type]) && ((a !== 'pause' && a !== 'resume') || userCan(caps.publish))
                     const log = `#/log?campaign=${encodeURIComponent(k)}`
                     // One list of actions: buttons in a wide table, a menu in a narrow one.
                     const menu: MenuItem[] = [

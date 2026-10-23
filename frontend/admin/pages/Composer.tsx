@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
 import { api } from '../lib/api'
-import { config } from '../lib/config'
+import { can, caps, config } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
 import { localToUtc, utcToLocal } from '../lib/format'
 import { __, sprintf } from '../lib/i18n'
@@ -305,9 +305,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       footer={Mode ? undefined : (
         <TimingFooter when={when} setWhen={setWhen} local={local} setLocal={setLocal} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
           <button type="button" className="sint-btn ghost" disabled={busy || building || opening || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
-          <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
+          {!can(caps.publish) && <span className="sint-sub" style={{ margin: 0, fontSize: 12 }}>{__('You save drafts only. A user who can publish schedules them.', 'social-integrations')}</span>}
+          {can(caps.publish) && <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
             {when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
-          </button>
+          </button>}
         </TimingFooter>
       )}
       headerExtra={

@@ -5,6 +5,7 @@ import { api, query } from '../lib/api'
 import { fmtStamp, siteParts } from '../lib/format'
 import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
+import { can, caps } from '../lib/config'
 import { useStore } from '../lib/store'
 import type { LogEntry, LogPage as LogData, LogRequest, LogShare, LogTry } from '../lib/types'
 
@@ -39,11 +40,14 @@ function rangeDates(range: Range): { from: string; to: string } {
 
 const count = (shares: LogShare[], status: LogShare['status']) => shares.filter((s) => s.status === status).length
 // Only a share that still has its queue row can be sent again.
-const retryable = (shares: LogShare[]) => shares.filter((s) => s.status === 'failed' && s.queue_id > 0)
+// Only a user who can publish sends a share again.
+const retryable = (shares: LogShare[]) => (can(caps.publish) ? shares.filter((s) => s.status === 'failed' && s.queue_id > 0) : [])
 
 export function LogPage({ params, go }: PageProps) {
   const { network, accounts } = useStore()
   const toast = useToast()
+  // Only a user who can change the settings deletes log entries.
+  const canDelete = can(caps.manageSettings)
   const [status, setStatus] = useState<'' | 'failed'>('')
   const [typed, setTyped] = useState('')
   const [search, setSearch] = useState('')
@@ -220,7 +224,7 @@ export function LogPage({ params, go }: PageProps) {
           </div>
           <span className={`sint-log-result ${s.status === 'published' ? 'ok' : 'bad'}`}>{s.status === 'published' ? __('Published', 'social-integrations') : __('Failed', 'social-integrations')}</span>
           <span className="sint-log-share-act">
-            {s.status === 'failed' && s.queue_id > 0 && (
+            {s.status === 'failed' && s.queue_id > 0 && can(caps.publish) && (
               <button type="button" className="sint-log-retry" disabled={!!busy} onClick={() => retry([s], `s${s.id}`)}>
                 <Icon name="retry" size={14} stroke={2} />
                 {busy === `s${s.id}` ? __('Wait…', 'social-integrations') : __('Retry', 'social-integrations')}
@@ -316,17 +320,19 @@ export function LogPage({ params, go }: PageProps) {
             <table className={`sint-table sint-log-table${selected.length ? ' selecting' : ''}`}>
               <thead>
                 <tr className={selected.length ? 'sint-bulk' : ''}>
-                  <th className="sint-check-cell">
-                    <input
-                      type="checkbox"
-                      aria-label={__('Select all entries on this page', 'social-integrations')}
-                      checked={data.items.length > 0 && selected.length === data.items.length}
-                      ref={(el) => {
-                        if (el) el.indeterminate = selected.length > 0 && selected.length < data.items.length
-                      }}
-                      onChange={(ev) => setSelected(ev.target.checked ? data.items.map((x) => x.key) : [])}
-                    />
-                  </th>
+                  {canDelete && (
+                    <th className="sint-check-cell">
+                      <input
+                        type="checkbox"
+                        aria-label={__('Select all entries on this page', 'social-integrations')}
+                        checked={data.items.length > 0 && selected.length === data.items.length}
+                        ref={(el) => {
+                          if (el) el.indeterminate = selected.length > 0 && selected.length < data.items.length
+                        }}
+                        onChange={(ev) => setSelected(ev.target.checked ? data.items.map((x) => x.key) : [])}
+                      />
+                    </th>
+                  )}
                   {selected.length ? (
                     // While entries are selected, the header row holds the bulk actions.
                     <th colSpan={5}>
@@ -365,9 +371,11 @@ export function LogPage({ params, go }: PageProps) {
                   return (
                     <Fragment key={e.key}>
                       <tr className={`sint-log-row${isOpen ? ' open' : ''}${selected.includes(e.key) ? ' selected' : ''}`} onClick={(ev) => rowClick(ev, e.key)}>
-                        <td className="sint-check-cell">
-                          <input type="checkbox" aria-label={sprintf(__('Select the entry of %s', 'social-integrations'), fmtStamp(e.at))} checked={selected.includes(e.key)} onChange={(ev) => pick(e.key, ev.target.checked)} />
-                        </td>
+                        {canDelete && (
+                          <td className="sint-check-cell">
+                            <input type="checkbox" aria-label={sprintf(__('Select the entry of %s', 'social-integrations'), fmtStamp(e.at))} checked={selected.includes(e.key)} onChange={(ev) => pick(e.key, ev.target.checked)} />
+                          </td>
+                        )}
                         <td style={{ whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{fmtStamp(e.at)}</td>
                         <td>{campaignCell(e)}</td>
                         <td>{type ? <span className="sint-pill muted">{types[type]?.label ?? type}</span> : <span className="sint-log-none">—</span>}</td>
@@ -379,18 +387,20 @@ export function LogPage({ params, go }: PageProps) {
                                 {busy === e.key ? __('Wait…', 'social-integrations') : failed.length > 1 ? sprintf(__('Retry %d failed', 'social-integrations'), failed.length) : __('Retry', 'social-integrations')}
                               </button>
                             )}
-                            <button
-                              type="button"
-                              className={`sint-log-del${armed === e.key ? ' armed' : ''}`}
-                              disabled={busy === 'delete'}
-                              aria-label={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
-                              title={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
-                              onClick={() => (armed === e.key ? remove([e.key]) : setArmed(e.key))}
-                              onBlur={() => armed === e.key && setArmed('')}
-                            >
-                              <Icon name="trash" size={15} stroke={2} />
-                              {armed === e.key && <span>{__('Click again to delete', 'social-integrations')}</span>}
-                            </button>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                className={`sint-log-del${armed === e.key ? ' armed' : ''}`}
+                                disabled={busy === 'delete'}
+                                aria-label={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
+                                title={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
+                                onClick={() => (armed === e.key ? remove([e.key]) : setArmed(e.key))}
+                                onBlur={() => armed === e.key && setArmed('')}
+                              >
+                                <Icon name="trash" size={15} stroke={2} />
+                                {armed === e.key && <span>{__('Click again to delete', 'social-integrations')}</span>}
+                              </button>
+                            )}
                             <button type="button" className="sint-log-chev" aria-expanded={isOpen} aria-label={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} title={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} onClick={() => toggle(e.key)}>
                               <Icon name="down" size={16} stroke={2.2} />
                             </button>
@@ -399,7 +409,7 @@ export function LogPage({ params, go }: PageProps) {
                       </tr>
                       {isOpen && (
                         <tr className="sint-log-detail">
-                          <td colSpan={6}>
+                          <td colSpan={canDelete ? 6 : 5}>
                             <ul className="sint-log-shares">{e.shares.map(shareRow(e))}</ul>
                           </td>
                         </tr>

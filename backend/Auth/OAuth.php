@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Auth;
 
 use SocialIntegrations\Admin\Menu;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\AbstractNetwork;
@@ -171,7 +172,7 @@ final class OAuth {
 	 * Whether the current user can connect accounts.
 	 */
 	public function can_manage(): bool {
-		return current_user_can( 'manage_options' );
+		return current_user_can( Capabilities::MANAGE_ACCOUNTS );
 	}
 
 	/**
@@ -297,7 +298,7 @@ final class OAuth {
 	public function handle_callback(): void {
 		list( $state, $code, $error ) = $this->callback_params();
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( Capabilities::MANAGE_ACCOUNTS ) ) {
 			$this->finish( 'error', __( 'You are not allowed to connect accounts.', 'social-integrations' ) );
 		}
 

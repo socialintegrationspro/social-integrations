@@ -14,6 +14,7 @@ use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Plugin;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Dates;
 
 defined( 'ABSPATH' ) || exit;
@@ -46,6 +47,9 @@ final class Campaigns {
 		if ( ! array_filter( (array) ( $body['accounts'] ?? array() ) ) ) {
 			return new \WP_Error( 'sint_no_accounts', __( 'Select at least one account.', 'social-integrations' ), array( 'status' => 400 ) );
 		}
+		if ( ! Accounts::can_use( array_map( 'sanitize_key', (array) $body['accounts'] ) ) ) {
+			return self::not_allowed();
+		}
 		if ( ! empty( $body['scheduled_at'] ) && ! strtotime( (string) $body['scheduled_at'] ) ) {
 			return new \WP_Error( 'sint_bad_date', __( 'Enter a valid date and time.', 'social-integrations' ), array( 'status' => 400 ) );
 		}
@@ -71,7 +75,8 @@ final class Campaigns {
 			'media'        => self::media( $body['media'] ?? array() ),
 			'link'         => esc_url_raw( (string) ( $body['link'] ?? ( $post_id ? get_permalink( $post_id ) : '' ) ) ),
 			'scheduled_at' => empty( $body['scheduled_at'] ) ? '' : gmdate( 'c', (int) strtotime( (string) $body['scheduled_at'] ) ),
-			'draft'        => ! empty( $body['draft'] ),
+			// A user who cannot publish saves drafts only.
+			'draft'        => ! empty( $body['draft'] ) || ! current_user_can( Capabilities::PUBLISH ),
 			'options'      => (array) ( $body['options'] ?? array() ),
 		);
 	}
@@ -98,7 +103,9 @@ final class Campaigns {
 	public static function create( array $body ): array {
 		$data = self::data( $body );
 		$id   = self::insert( 'single', mb_substr( self::name( $data ), 0, 191 ), $data );
-		return array( 'id' => $id ) + self::share( $data, $id );
+		$out  = array( 'id' => $id ) + self::share( $data, $id );
+		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'] );
+		return $out;
 	}
 
 	/**
@@ -151,7 +158,9 @@ final class Campaigns {
 			),
 			array( 'id' => $id )
 		);
-		return array( 'id' => $id ) + self::share( $data, $id );
+		$out = array( 'id' => $id ) + self::share( $data, $id );
+		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'] );
+		return $out;
 	}
 
 	/**
@@ -185,6 +194,30 @@ final class Campaigns {
 			'type' => (string) $row['type'],
 			'name' => (string) $row['name'],
 		) + ( is_array( $data ) ? $data : array() );
+	}
+
+	/**
+	 * The error for an account that the current user cannot use.
+	 */
+	public static function not_allowed(): \WP_Error {
+		return new \WP_Error( 'sint_account_not_allowed', __( 'You cannot share to one or more of the selected accounts. Select only your accounts.', 'social-integrations' ), array( 'status' => 403 ) );
+	}
+
+	/**
+	 * Whether the current user can see and change a campaign: the user can use every account
+	 * of the campaign. A campaign without accounts shares to every account.
+	 *
+	 * @param array $campaign A campaign from get() or all().
+	 */
+	public static function visible( array $campaign ): bool {
+		return Accounts::can_use( (array) ( $campaign['accounts'] ?? array() ) );
+	}
+
+	/**
+	 * The campaigns of all() that the current user can see.
+	 */
+	public static function visible_all(): array {
+		return array_values( array_filter( self::all(), array( self::class, 'visible' ) ) );
 	}
 
 	/**

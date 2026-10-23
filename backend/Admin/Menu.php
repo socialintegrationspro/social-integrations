@@ -9,6 +9,9 @@ namespace SocialIntegrations\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use SocialIntegrations\Support\Capabilities;
+
+
 /**
  * Adds the menu item and the page the React app mounts on.
  */
@@ -35,7 +38,7 @@ final class Menu {
 		add_menu_page(
 			__( 'Social Integrations', 'social-integrations' ),
 			__( 'Social Integrations', 'social-integrations' ),
-			'manage_options',
+			Capabilities::VIEW,
 			self::SLUG,
 			array( $this, 'render' ),
 			$icon,

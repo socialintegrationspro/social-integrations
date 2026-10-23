@@ -75,14 +75,15 @@ final class Queue {
 	/**
 	 * Rows scheduled between two UTC dates.
 	 *
-	 * @param string $from UTC 'Y-m-d H:i:s'.
-	 * @param string $to   UTC 'Y-m-d H:i:s'.
+	 * @param string        $from     UTC 'Y-m-d H:i:s'.
+	 * @param string        $to       UTC 'Y-m-d H:i:s'.
+	 * @param string[]|null $accounts Only rows of these accounts. Null: every account.
 	 */
-	public static function between( string $from, string $to ): array {
+	public static function between( string $from, string $to, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE scheduled_at >= %s AND scheduled_at < %s ORDER BY scheduled_at ASC LIMIT 500", $from, $to ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE scheduled_at >= %s AND scheduled_at < %s", $from, $to ) . self::accounts_where( $accounts, 'account_id' ) . ' ORDER BY scheduled_at ASC LIMIT 500', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -91,14 +92,15 @@ final class Queue {
 	/**
 	 * The newest shares of one post, newest first.
 	 *
-	 * @param int $post_id Post ID.
-	 * @param int $limit   Maximum rows.
+	 * @param int           $post_id  Post ID.
+	 * @param int           $limit    Maximum rows.
+	 * @param string[]|null $accounts Only rows of these accounts. Null: every account.
 	 */
-	public static function for_post( int $post_id, int $limit = 20 ): array {
+	public static function for_post( int $post_id, int $limit = 20, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d ORDER BY scheduled_at DESC, id DESC LIMIT %d", $post_id, $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d", $post_id ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at DESC, id DESC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -191,15 +193,16 @@ final class Queue {
 	 * Every try of the share that one log row belongs to, the oldest first, with what the
 	 * network answered. A log row without a queue row is its only try.
 	 *
-	 * @param int $log_id Log row ID.
+	 * @param int           $log_id   Log row ID.
+	 * @param string[]|null $accounts Only a row of these accounts. Null: every account.
 	 * @return array[]|null Null when the row does not exist.
 	 */
-	public static function log_tries( int $log_id ): ?array {
+	public static function log_tries( int $log_id, ?array $accounts = null ): ?array {
 		global $wpdb;
 		$table = Migrations::logs_table();
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT id, queue_id FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
-		if ( ! $row ) {
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT id, queue_id, account_id FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
+		if ( ! $row || ( null !== $accounts && ! in_array( (string) $row['account_id'], $accounts, true ) ) ) {
 			return null;
 		}
 		$rows = (int) $row['queue_id']
@@ -224,17 +227,18 @@ final class Queue {
 	/**
 	 * Latest log rows of some posts.
 	 *
-	 * @param int[] $post_ids Post IDs. Empty gives no rows.
-	 * @param int   $limit    Maximum rows.
+	 * @param int[]         $post_ids Post IDs. Empty gives no rows.
+	 * @param int           $limit    Maximum rows.
+	 * @param string[]|null $accounts Only rows of these accounts. Null: every account.
 	 */
-	public static function logs( array $post_ids, int $limit = 100 ): array {
+	public static function logs( array $post_ids, int $limit = 100, ?array $accounts = null ): array {
 		global $wpdb;
 		if ( ! $post_ids ) {
 			return array();
 		}
 		$table = Migrations::logs_table();
 		$ids   = implode( ',', array_map( 'intval', $post_ids ) );
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE post_id IN ({$ids}) ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE post_id IN ({$ids})" . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		return (array) $rows;
 	}
 
@@ -248,7 +252,8 @@ final class Queue {
 	 * Each share is its newest log row, with the number of times it was tried.
 	 *
 	 * @param array $args [ 'page' => int, 'per_page' => int, 'campaign' => campaign key,
-	 *                    'status' => '' | 'failed', 'search' => string, 'from' / 'to' => UTC 'Y-m-d H:i:s' ].
+	 *                    'status' => '' | 'failed', 'search' => string, 'from' / 'to' => UTC 'Y-m-d H:i:s',
+	 *                    'accounts' => string[] | null (only shares of these accounts; null: every account) ].
 	 * @return array [ 'total' => int, 'entries' => [ batch_id => share rows ] ].
 	 */
 	public static function log_entries( array $args ): array {
@@ -314,7 +319,7 @@ final class Queue {
 	 * which is its newest log row, with the number of tries in t.tries. A log row without
 	 * a queue row is its own share.
 	 *
-	 * @param array $args The filters of log_entries(): 'campaign', 'status', 'search', 'from', 'to'.
+	 * @param array $args The filters of log_entries(): 'campaign', 'status', 'search', 'from', 'to', 'accounts'.
 	 * @return string Prepared SQL.
 	 */
 	private static function log_shares_sql( array $args ): string {
@@ -358,7 +363,7 @@ final class Queue {
 		if ( $params ) {
 			$sql = $wpdb->prepare( $sql, $params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-		return (string) $sql;
+		return $sql . self::accounts_where( $args['accounts'] ?? null, 'l.account_id' );
 	}
 
 	/**
@@ -432,15 +437,16 @@ final class Queue {
 	 * Sent and failed shares since a date, counted for each day and network. A share counts
 	 * on the day that it became due.
 	 *
-	 * @param string $from   UTC 'Y-m-d H:i:s'.
-	 * @param int    $offset Seconds to add to UTC to get the site's time.
+	 * @param string        $from     UTC 'Y-m-d H:i:s'.
+	 * @param int           $offset   Seconds to add to UTC to get the site's time.
+	 * @param string[]|null $accounts Only shares of these accounts. Null: every account.
 	 * @return array Rows [ 'day' => site 'Y-m-d', 'network', 'status' => 'published' | 'failed', 'n' ].
 	 */
-	public static function activity( string $from, int $offset ): array {
+	public static function activity( string $from, int $offset, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT DATE(DATE_ADD(scheduled_at, INTERVAL %d SECOND)) AS day, network, status, COUNT(*) AS n FROM {$table} WHERE scheduled_at >= %s AND status IN ('published', 'failed') GROUP BY day, network, status", $offset, $from ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT DATE(DATE_ADD(scheduled_at, INTERVAL %d SECOND)) AS day, network, status, COUNT(*) AS n FROM {$table} WHERE scheduled_at >= %s AND status IN ('published', 'failed')", $offset, $from ) . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY day, network, status', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return (array) $rows;
@@ -449,13 +455,14 @@ final class Queue {
 	/**
 	 * The number of shares with each status.
 	 *
+	 * @param string[]|null $accounts Only shares of these accounts. Null: every account.
 	 * @return array<string, int> [ status => count ].
 	 */
-	public static function status_counts(): array {
+	public static function status_counts( ?array $accounts = null ): array {
 		global $wpdb;
 		$table  = Migrations::queue_table();
 		$counts = array_fill_keys( self::STATUSES, 0 );
-		foreach ( (array) $wpdb->get_results( "SELECT status, COUNT(*) AS n FROM {$table} GROUP BY status", ARRAY_A ) as $row ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		foreach ( (array) $wpdb->get_results( "SELECT status, COUNT(*) AS n FROM {$table} WHERE 1 = 1" . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY status', ARRAY_A ) as $row ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			$counts[ $row['status'] ] = (int) $row['n'];
 		}
 		return $counts;
@@ -464,13 +471,14 @@ final class Queue {
 	/**
 	 * The next scheduled shares, the soonest first.
 	 *
-	 * @param int $limit Maximum rows.
+	 * @param int           $limit    Maximum rows.
+	 * @param string[]|null $accounts Only shares of these accounts. Null: every account.
 	 */
-	public static function upcoming( int $limit = 6 ): array {
+	public static function upcoming( int $limit = 6, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE status = 'scheduled' AND scheduled_at >= %s ORDER BY scheduled_at ASC, id ASC LIMIT %d", current_time( 'mysql', true ), $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE status = 'scheduled' AND scheduled_at >= %s", current_time( 'mysql', true ) ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at ASC, id ASC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -479,13 +487,35 @@ final class Queue {
 	/**
 	 * The newest log rows, the newest first.
 	 *
-	 * @param int $limit Maximum rows.
+	 * @param int           $limit    Maximum rows.
+	 * @param string[]|null $accounts Only rows of these accounts. Null: every account.
 	 */
-	public static function recent_logs( int $limit = 8 ): array {
+	public static function recent_logs( int $limit = 8, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::logs_table();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, queue_id, post_id, network, account_id, status, message, remote_url, created_at FROM {$table} ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( "SELECT id, queue_id, post_id, network, account_id, status, message, remote_url, created_at FROM {$table} WHERE 1 = 1" . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		return (array) $rows;
+	}
+
+	/**
+	 * SQL that keeps only rows of some accounts, to add after a WHERE clause.
+	 *
+	 * @param string[]|null $accounts Account IDs. Null: every account, so no condition.
+	 * @param string        $column   The account column, for example 'l.account_id'.
+	 */
+	private static function accounts_where( ?array $accounts, string $column ): string {
+		global $wpdb;
+		if ( null === $accounts ) {
+			return '';
+		}
+		if ( ! $accounts ) {
+			return ' AND 1 = 0';
+		}
+		$in = array();
+		foreach ( $accounts as $id ) {
+			$in[] = $wpdb->prepare( '%s', (string) $id );
+		}
+		return " AND {$column} IN (" . implode( ',', $in ) . ')';
 	}
 
 	/**

@@ -9,8 +9,10 @@ namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Campaigns\Campaigns;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -36,15 +38,16 @@ final class QueueController extends RestController {
 					'type'     => 'string',
 					'required' => true,
 				),
-			)
+			),
+			Capabilities::VIEW
 		);
-		$this->route( '/queue', \WP_REST_Server::CREATABLE, array( $this, 'create' ) );
-		$this->route( '/queue/(?P<id>\d+)', \WP_REST_Server::EDITABLE, array( $this, 'update' ) );
-		$this->route( '/queue/(?P<id>\d+)', \WP_REST_Server::DELETABLE, array( $this, 'delete' ) );
-		$this->route( '/queue/(?P<id>\d+)/retry', \WP_REST_Server::CREATABLE, array( $this, 'retry' ) );
-		$this->route( '/logs', \WP_REST_Server::READABLE, array( $this, 'logs' ) );
-		$this->route( '/logs/(?P<id>\d+)/tries', \WP_REST_Server::READABLE, array( $this, 'log_tries' ) );
-		$this->route( '/logs/delete', \WP_REST_Server::CREATABLE, array( $this, 'delete_logs' ) );
+		$this->route( '/queue', \WP_REST_Server::CREATABLE, array( $this, 'create' ), array(), Capabilities::SHARE );
+		$this->route( '/queue/(?P<id>\d+)', \WP_REST_Server::EDITABLE, array( $this, 'update' ), array(), Capabilities::SHARE );
+		$this->route( '/queue/(?P<id>\d+)', \WP_REST_Server::DELETABLE, array( $this, 'delete' ), array(), Capabilities::SHARE );
+		$this->route( '/queue/(?P<id>\d+)/retry', \WP_REST_Server::CREATABLE, array( $this, 'retry' ), array(), Capabilities::PUBLISH );
+		$this->route( '/logs', \WP_REST_Server::READABLE, array( $this, 'logs' ), array(), Capabilities::VIEW );
+		$this->route( '/logs/(?P<id>\d+)/tries', \WP_REST_Server::READABLE, array( $this, 'log_tries' ), array(), Capabilities::VIEW );
+		$this->route( '/logs/delete', \WP_REST_Server::CREATABLE, array( $this, 'delete_logs' ), array(), Capabilities::MANAGE_SETTINGS );
 	}
 
 	/**
@@ -55,7 +58,7 @@ final class QueueController extends RestController {
 	public function index( \WP_REST_Request $request ): \WP_REST_Response {
 		$from = gmdate( 'Y-m-d H:i:s', (int) strtotime( (string) $request['from'] ) );
 		$to   = gmdate( 'Y-m-d H:i:s', (int) strtotime( (string) $request['to'] ) );
-		$rows = Queue::between( $from, $to );
+		$rows = Queue::between( $from, $to, Accounts::allowed() );
 
 		$titles = array();
 		$logs   = Queue::last_logs( wp_list_pluck( $rows, 'id' ) );
@@ -120,7 +123,7 @@ final class QueueController extends RestController {
 			return $this->error( 'bad_date', __( 'Enter a valid date and time.', 'social-integrations' ) );
 		}
 
-		$draft  = ! empty( $body['draft'] );
+		$draft  = ! empty( $body['draft'] ) || ! current_user_can( Capabilities::PUBLISH );
 		$fields = array(
 			'status'       => $draft ? 'draft' : 'scheduled',
 			'scheduled_at' => gmdate( 'Y-m-d H:i:s', $when ),
@@ -177,7 +180,7 @@ final class QueueController extends RestController {
 	 */
 	private function job( \WP_REST_Request $request ) {
 		$job = Queue::find( (int) $request['id'] );
-		return $job ? $job : $this->not_found( __( 'This share does not exist.', 'social-integrations' ) );
+		return $job && Accounts::can_use( array( (string) $job['account_id'] ) ) ? $job : $this->not_found( __( 'This share does not exist.', 'social-integrations' ) );
 	}
 
 	/**
@@ -263,6 +266,7 @@ final class QueueController extends RestController {
 			'search'   => sanitize_text_field( (string) $request['search'] ),
 			'from'     => $day( $request['from'] ),
 			'to'       => $day( $request['to'], '+1 day' ),
+			'accounts' => Accounts::allowed(),
 		);
 	}
 
@@ -273,7 +277,7 @@ final class QueueController extends RestController {
 	 */
 	private function campaign_names(): array {
 		$campaigns = array();
-		foreach ( Campaigns::all() as $campaign ) {
+		foreach ( Campaigns::visible_all() as $campaign ) {
 			$campaigns[ $campaign['type'] . '-' . $campaign['id'] ] = array(
 				'key'  => $campaign['type'] . '-' . $campaign['id'],
 				'name' => (string) $campaign['name'],
@@ -328,7 +332,7 @@ final class QueueController extends RestController {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function log_tries( \WP_REST_Request $request ) {
-		$tries = Queue::log_tries( (int) $request['id'] );
+		$tries = Queue::log_tries( (int) $request['id'], Accounts::allowed() );
 		if ( null === $tries ) {
 			return $this->not_found( __( 'This log entry does not exist.', 'social-integrations' ) );
 		}

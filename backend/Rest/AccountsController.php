@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Rest;
 
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Networks\Accounts;
@@ -41,11 +42,11 @@ final class AccountsController extends RestController {
 	 * Registers routes.
 	 */
 	public function register_routes(): void {
-		$this->route( '/networks', \WP_REST_Server::READABLE, array( $this, 'networks' ) );
-		$this->route( '/accounts', \WP_REST_Server::READABLE, array( $this, 'accounts' ) );
-		$this->route( '/accounts/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'connect' ) );
-		$this->route( '/accounts/(?P<id>[a-z0-9_-]+)', \WP_REST_Server::DELETABLE, array( $this, 'disconnect' ) );
-		$this->route( '/apps/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'save_app' ) );
+		$this->route( '/networks', \WP_REST_Server::READABLE, array( $this, 'networks' ), array(), Capabilities::VIEW );
+		$this->route( '/accounts', \WP_REST_Server::READABLE, array( $this, 'accounts' ), array(), Capabilities::VIEW );
+		$this->route( '/accounts/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'connect' ), array(), Capabilities::MANAGE_ACCOUNTS );
+		$this->route( '/accounts/(?P<id>[a-z0-9_-]+)', \WP_REST_Server::DELETABLE, array( $this, 'disconnect' ), array(), Capabilities::MANAGE_ACCOUNTS );
+		$this->route( '/apps/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'save_app' ), array(), Capabilities::MANAGE_ACCOUNTS );
 	}
 
 	/**
@@ -68,7 +69,7 @@ final class AccountsController extends RestController {
 	 * Connected accounts, without credentials.
 	 */
 	public function accounts(): \WP_REST_Response {
-		return rest_ensure_response( Accounts::all() );
+		return rest_ensure_response( Accounts::visible() );
 	}
 
 	/**

@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Rest;
 
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\AI\AIException;
 use SocialIntegrations\AI\CaptionGenerator;
@@ -22,7 +23,7 @@ final class AIController extends RestController {
 	 * Registers routes.
 	 */
 	public function register_routes(): void {
-		$this->route( '/ai/caption', \WP_REST_Server::CREATABLE, array( $this, 'caption' ) );
+		$this->route( '/ai/caption', \WP_REST_Server::CREATABLE, array( $this, 'caption' ), array(), Capabilities::SHARE );
 	}
 
 	/**

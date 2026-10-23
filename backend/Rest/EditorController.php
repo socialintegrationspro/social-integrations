@@ -13,6 +13,7 @@ use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Dates;
 
 defined( 'ABSPATH' ) || exit;
@@ -52,7 +53,8 @@ final class EditorController extends RestController {
 					'type'    => 'string',
 					'default' => '',
 				),
-			)
+			),
+			Capabilities::SHARE
 		);
 	}
 
@@ -78,7 +80,7 @@ final class EditorController extends RestController {
 		}
 
 		$names = array();
-		foreach ( Accounts::all() as $account ) {
+		foreach ( Accounts::visible() as $account ) {
 			$names[ $account['id'] ] = $account;
 		}
 
@@ -92,7 +94,7 @@ final class EditorController extends RestController {
 			);
 		}
 
-		$rows   = Queue::for_post( $post->ID );
+		$rows   = Queue::for_post( $post->ID, 20, Accounts::allowed() );
 		$logs   = Queue::last_logs( wp_list_pluck( $rows, 'id' ) );
 		$shares = array();
 		foreach ( $rows as $row ) {
@@ -109,7 +111,7 @@ final class EditorController extends RestController {
 			);
 		}
 
-		$manage = current_user_can( 'manage_options' );
+		$manage = current_user_can( Capabilities::SHARE );
 		$state  = array(
 			'shared'     => (bool) get_post_meta( $post->ID, AutoShare::META_SHARED, true ),
 			'campaigns'  => $campaigns,
