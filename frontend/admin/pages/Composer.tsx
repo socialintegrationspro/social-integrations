@@ -164,8 +164,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   }
   const goBack = () => {
     leaveTo.current = ''
+    // Move the focus first, while the question is still on screen, so a quick Esc goes to the modal.
+    ;(focusBack.current?.isConnected ? focusBack.current : document.getElementById('sint-caption'))?.focus()
     setAskClose(false)
-    requestAnimationFrame(() => (focusBack.current?.isConnected ? focusBack.current : document.getElementById('sint-caption'))?.focus())
   }
   const requestClose = useCallback(() => closeNow.current(), [])
 
