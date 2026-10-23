@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { NetBadge } from '../../components/ui'
 import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
@@ -35,6 +35,18 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
   const counts = (tab === 'all' ? nets : [tab]).map((n) => ({ n, len: measure(captionFor(n), network(n)), limit: network(n)?.char_limit ?? 0 }))
   const over = counts.filter((c) => c.len > c.limit)
 
+  // Tabs pattern: Left, Right, Home and End move between tabs; Tab goes on to the caption.
+  const tabKeys = (e: KeyboardEvent<HTMLDivElement>) => {
+    const keys = ['all', ...nets]
+    const at = keys.indexOf(tab)
+    const next = e.key === 'ArrowRight' ? at + 1 : e.key === 'ArrowLeft' ? at - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? keys.length - 1 : null
+    if (next === null) return
+    e.preventDefault()
+    const key = keys[(next + keys.length) % keys.length]!
+    setTab(key)
+    requestAnimationFrame(() => (e.currentTarget.querySelector<HTMLButtonElement>(`[data-tab="${key}"]`) ?? null)?.focus())
+  }
+
   const insert = (token: string) => {
     const el = area.current
     const value = tokens ? token.replace(/\{(\w+)\}/, (_m, k: string) => tokens[k] ?? token) : token
@@ -45,13 +57,13 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
 
   return (
     <>
-      <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-        <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
+      <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }} onKeyDown={tabKeys}>
+        <button type="button" role="tab" data-tab="all" aria-selected={tab === 'all'} tabIndex={tab === 'all' ? 0 : -1} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
         {nets.map((n) => {
           const label = network(n)?.label ?? n
           const short = compact && tab !== n
           return (
-            <button key={n} type="button" role="tab" aria-selected={tab === n} className={`${tab === n ? 'on' : ''}${short ? ' icon' : ''}`} aria-label={short ? (edited(n) ? sprintf(__('%s, edited', 'social-integrations'), label) : label) : undefined} title={short ? label : undefined} onClick={() => setTab(n)}>
+            <button key={n} type="button" role="tab" data-tab={n} aria-selected={tab === n} tabIndex={tab === n ? 0 : -1} className={`${tab === n ? 'on' : ''}${short ? ' icon' : ''}`} aria-label={short ? (edited(n) ? sprintf(__('%s, edited', 'social-integrations'), label) : label) : undefined} title={short ? label : undefined} onClick={() => setTab(n)}>
               <NetBadge network={n} color={network(n)?.color} size={18} />
               {!short && label}
               {edited(n) && <span className="sint-tab-dot" aria-label={short ? undefined : __('Edited', 'social-integrations')} />}

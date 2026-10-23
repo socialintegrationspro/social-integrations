@@ -2,7 +2,7 @@ import { useState, type FocusEvent } from 'react'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { FieldMap, Network, PostField } from '../lib/types'
-import { NetBadge, Toggle } from './ui'
+import { Icon, NetBadge, Toggle } from './ui'
 
 /** Key of the values for all networks. */
 export const ALL = '*'
@@ -75,6 +75,8 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
   const { network } = useStore()
   // Token chips show below the field that has the focus.
   const [focus, setFocus] = useState('')
+  // The field whose list of networks is open.
+  const [listed, setListed] = useState('')
   const all = tab === 'all'
   const fields = tabFields(nets, tab, network)
   if (fields.length === 0) return null
@@ -107,9 +109,10 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
         const names = on.map((n) => network(n)?.label ?? n).join(', ')
         const appliesTo = all && nets.length > 1 && (
           on.length > 4 ? (
-            <span className="sint-post-field-nets count" title={names} aria-label={sprintf(__('For %s', 'social-integrations'), names)}>
+            <button type="button" className="sint-post-field-nets count" aria-expanded={listed === field.name} aria-controls={`${id}-nets`} onClick={() => setListed(listed === field.name ? '' : field.name)}>
               {on.length === nets.length ? __('All networks', 'social-integrations') : sprintf(__('%d networks', 'social-integrations'), on.length)}
-            </span>
+              <Icon name="down" size={12} stroke={2.4} />
+            </button>
           ) : (
             <span className="sint-post-field-nets" aria-label={sprintf(__('For %s', 'social-integrations'), names)}>
               {on.map((n) => <NetBadge key={n} network={n} color={network(n)?.color} size={16} />)}
@@ -117,6 +120,16 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
           )
         )
         const hidden = field.name === 'format' && current === 'auto' ? on.filter((n) => mediaHidesCard.includes(n)) : []
+        const netList = listed === field.name && (
+          <span id={`${id}-nets`} className="sint-post-field-netlist">
+            {on.map((n) => (
+              <span key={n}>
+                <NetBadge network={n} color={network(n)?.color} size={16} />
+                {network(n)?.label ?? n}
+              </span>
+            ))}
+          </span>
+        )
 
         if (field.type === 'toggle') {
           return (
@@ -126,6 +139,7 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
                 {field.label}
                 {appliesTo}
               </span>
+              {netList}
               {help && <small>{help}</small>}
             </div>
           )
@@ -133,7 +147,11 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
 
         return (
           <div key={field.name} className="sint-field">
-            <label htmlFor={id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>{field.label}{appliesTo}</label>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label htmlFor={id} style={{ fontSize: 13, fontWeight: 600 }}>{field.label}</label>
+              {appliesTo}
+            </span>
+            {netList}
             {field.type === 'select' ? (
               <select id={id} className="sint-select" value={current} onChange={(e) => set(e.target.value)}>
                 {(field.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -150,11 +168,17 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
             )}
             {/* The note replaces the help: it says what happens to this post, and how to change it. */}
             {hidden.length > 0 ? (
-              <small className="sint-post-field-note" title={hidden.map((n) => network(n)?.label ?? n).join(', ')}>
+              <div className="sint-post-field-note" role="note">
                 {all && hidden.length > 1
                   ? sprintf(__('The post has media, so %d networks show the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), hidden.length)
                   : sprintf(__('The post has media, so %s shows the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), network(hidden[0]!)?.label ?? hidden[0])}
-              </small>
+                {all && hidden.length > 1 && (
+                  <details>
+                    <summary>{__('Show the networks', 'social-integrations')}</summary>
+                    {hidden.map((n) => network(n)?.label ?? n).join(', ')}
+                  </details>
+                )}
+              </div>
             ) : (
               help && <small>{help}</small>
             )}

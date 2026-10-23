@@ -906,10 +906,18 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-field-preview dd { order: 2; margin: 0; min-width: 0; max-width: 70%; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }
 
 /* Caption tabs with many networks: a tab shows its logo only, except the selected tab. */
-.sint-root .sint-seg button.icon { padding: 0 10px; position: relative; }
+.sint-root .sint-seg button.icon { padding: 0 10px; min-width: 44px; justify-content: center; position: relative; }
 .sint-root .sint-tab-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--today); flex: none; }
 .sint-root .sint-seg button.icon .sint-tab-dot { position: absolute; top: 5px; right: 5px; }
 .sint-root .sint-post-fields-intro { grid-column: 1 / -1; margin: -6px 0 0; font-size: 12px; color: var(--muted); }
 .sint-root .sint-post-field-note { display: block; padding: 8px 10px; border-radius: var(--r-sm); background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--text-2) !important; }
 .sint-root .sint-select.sm { height: 36px; font-size: 13px; padding-top: 0; padding-bottom: 0; }
-.sint-root .sint-post-field-nets.count { font-size: 12px; font-weight: 600; color: var(--muted); padding: 2px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); cursor: help; }
+/* "8 networks": a button that lists the networks of the option. */
+.sint-root .sint-post-field-nets.count { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 0 10px; border-radius: 999px; background: var(--raised); border: 1px solid var(--border); cursor: pointer; }
+.sint-root .sint-post-field-nets.count:hover { border-color: var(--hover-border); color: var(--text); }
+.sint-root .sint-post-field-nets.count[aria-expanded='true'] svg { transform: rotate(180deg); }
+.sint-root .sint-post-field-netlist { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--raised); font-size: 12px; color: var(--text-2); }
+.sint-root .sint-post-field-netlist > span { display: inline-flex; align-items: center; gap: 6px; }
+.sint-root .sint-post-field-note { font-size: 12px; line-height: 1.5; }
+.sint-root .sint-post-field-note details { margin-top: 6px; }
+.sint-root .sint-post-field-note summary { cursor: pointer; font-weight: 600; color: var(--link); }
