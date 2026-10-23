@@ -12,8 +12,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Posts to Threads through the Threads API (graph.threads.net).
  *
- * The user signs in with their own Meta app. The short-lived token is swapped for a
- * long-lived one (60 days) that refresh() renews. Publishing creates a media
+ * The user signs in with their own Meta app. The plugin exchanges the short-lived token
+ * for a long-lived one (60 days) that refresh() renews. Publishing creates a media
  * container, then publishes it.
  */
 class Threads extends AbstractNetwork {
@@ -115,7 +115,7 @@ class Threads extends AbstractNetwork {
 	}
 
 	/**
-	 * Swaps the code for a long-lived token.
+	 * Exchanges the code for a long-lived token.
 	 *
 	 * @param array  $app          App fields.
 	 * @param string $code         Code from the callback.
@@ -157,7 +157,7 @@ class Threads extends AbstractNetwork {
 	}
 
 	/**
-	 * Renews the long-lived token. Works once the token is a day old and not yet expired.
+	 * Renews the long-lived token. It works when the token is at least one day old and not expired.
 	 *
 	 * @param array $app         App fields.
 	 * @param array $credentials Current credentials.
@@ -212,8 +212,8 @@ class Threads extends AbstractNetwork {
 	 * Publishes a post.
 	 *
 	 * Two or more media items become a carousel, one becomes an image or video post,
-	 * and text alone becomes a text post (with the link as an attachment). Media are
-	 * passed by public URL, so Threads must be able to download them.
+	 * and text alone becomes a text post (with the link as an attachment). The method
+	 * sends media as public URLs, so Threads can download them.
 	 *
 	 * @param array $credentials ['access_token', 'user_id'].
 	 * @param array $payload     Share payload.
@@ -398,7 +398,7 @@ class Threads extends AbstractNetwork {
 	}
 
 	/**
-	 * Waits until Threads has processed a container.
+	 * Waits until Threads processes a container.
 	 *
 	 * @param string $id          Container ID.
 	 * @param string $token       Access token.

@@ -10,7 +10,7 @@ namespace SocialIntegrations\AI;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Sends JSON, decodes JSON, and turns error answers into messages a person can act on.
+ * Sends JSON, decodes JSON, and changes error answers into messages that tell a person what to do.
  */
 abstract class AbstractProvider implements ProviderInterface {
 

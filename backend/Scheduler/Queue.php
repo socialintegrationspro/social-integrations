@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Reads and writes rows of `{prefix}sint_queue` and `{prefix}sint_logs`.
- * Dates are stored in UTC.
+ * The plugin stores dates in UTC.
  */
 final class Queue {
 
@@ -285,7 +285,7 @@ final class Queue {
 		global $wpdb;
 		$logs  = Migrations::logs_table();
 		$queue = Migrations::queue_table();
-		// A log row without a queue row stands alone, as its own share and batch.
+		// A log row without a queue row is its own share and batch.
 		$shares = "SELECT l.id, l.queue_id, l.post_id, l.network, l.account_id, l.status, l.message, l.remote_url, l.created_at, t.tries,
 				COALESCE(NULLIF(q.batch_id, ''), CONCAT('l', l.id)) AS batch_id, COALESCE(q.campaign_key, '') AS campaign_key, COALESCE(q.caption, '') AS caption
 			FROM {$logs} l
@@ -391,7 +391,7 @@ final class Queue {
 
 	/**
 	 * Sent and failed shares since a date, counted for each day and network. A share counts
-	 * on the day it was due to go out.
+	 * on the day that it became due.
 	 *
 	 * @param string $from   UTC 'Y-m-d H:i:s'.
 	 * @param int    $offset Seconds to add to UTC to get the site's time.

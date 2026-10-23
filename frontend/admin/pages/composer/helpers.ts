@@ -34,7 +34,7 @@ function toNextWeek(): number {
   return (config.weekStart - day + 7) % 7 || 7
 }
 
-/** Quick picks for the share time. `live` is the local time the post goes live, if it is scheduled. */
+/** Preset times for the share. `live` is the local time when the post is published, if it is scheduled. */
 export function timePresets(live: string): { label: string; value: string }[] {
   return [
     { label: __('In an hour', 'social-integrations'), value: defaultLocal() },

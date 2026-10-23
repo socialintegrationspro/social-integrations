@@ -1,18 +1,14 @@
 export interface SintConfig {
   restUrl: string
-  wpRestUrl: string
   nonce: string
-  adminUrl: string
   pageUrl: string
-  version: string
-  siteName: string
   timezone: string
   gmtOffset: number
   weekStart: number
   redirectUri: string
   /** The sign-in error of the last connect, kept on the server. Empty when there is none. */
   oauthError: string
-  user: { name: string; avatar: string }
+  user: { name: string }
   /** Whether an AI provider and its key are set. */
   ai: { ready: boolean }
 }
@@ -40,17 +36,13 @@ declare global {
 
 export const config: SintConfig = window.sintConfig ?? {
   restUrl: '/wp-json/sint/v1/',
-  wpRestUrl: '/wp-json/wp/v2/',
   nonce: '',
-  adminUrl: '/wp-admin/',
   pageUrl: '/wp-admin/admin.php?page=social-integrations',
   oauthError: '',
-  version: 'dev',
-  siteName: 'WordPress',
   timezone: 'UTC',
   gmtOffset: 0,
   weekStart: 1,
   redirectUri: '',
-  user: { name: '', avatar: '' },
+  user: { name: '' },
   ai: { ready: false },
 }

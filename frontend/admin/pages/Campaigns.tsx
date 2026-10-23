@@ -87,7 +87,9 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
   }
   const open = (c: CampaignItem, copy: boolean) => openComposer({ campaign: { type: c.type, id: c.id, accounts: c.accounts, copy } })
 
-  const types = Array.from(new Set((items ?? []).map((c) => c.type)))
+  // Sorted by label, so the tabs keep their places when a new campaign comes first in the list.
+  const typeLabel = (t: string) => handlers[t]?.label ?? t
+  const types = Array.from(new Set((items ?? []).map((c) => c.type))).sort((a, b) => typeLabel(a).localeCompare(typeLabel(b)))
   const shown = (items ?? []).filter((c) => filter === 'all' || c.type === filter)
   const { rows: pageRows, pager } = usePaged(shown, filter)
 
@@ -113,7 +115,7 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
               <div className="sint-seg" role="tablist" aria-label={__('Campaign type', 'social-integrations')} style={{ alignSelf: 'flex-start' }}>
                 <button type="button" role="tab" aria-selected={filter === 'all'} className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>{__('All', 'social-integrations')}</button>
                 {types.map((t) => (
-                  <button key={t} type="button" role="tab" aria-selected={filter === t} className={filter === t ? 'on' : ''} onClick={() => setFilter(t)}>{handlers[t]?.label ?? t}</button>
+                  <button key={t} type="button" role="tab" aria-selected={filter === t} className={filter === t ? 'on' : ''} onClick={() => setFilter(t)}>{typeLabel(t)}</button>
                 ))}
               </div>
             )}

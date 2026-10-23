@@ -72,7 +72,7 @@ export function LogPage({ params, go }: PageProps) {
     auto: { label: __('Auto-post', 'social-integrations') },
   })
 
-  // Search after the user stops typing.
+  // Search after the last change to the text.
   useEffect(() => {
     const t = window.setTimeout(() => setSearch(typed.trim()), 300)
     return () => window.clearTimeout(t)
@@ -319,7 +319,7 @@ export function LogPage({ params, go }: PageProps) {
         ) : data.items.length === 0 ? (
           <div className="sint-card">
             {status === 'failed' && !campaign && !search && !from && !to ? (
-              // Nothing failed is good news, not an empty search.
+              // No failed share is a good result, not an empty search.
               <Empty title={__('No failed shares', 'social-integrations')}>
                 <span className="sint-empty-ok" aria-hidden="true"><Icon name="check" size={22} stroke={2.4} /></span>
                 <p className="sint-sub">{__('The plugin sent every share in the log.', 'social-integrations')}</p>

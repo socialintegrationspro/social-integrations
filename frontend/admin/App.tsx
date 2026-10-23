@@ -79,7 +79,7 @@ function Shell() {
           </button>
         </div>
       </header>
-      {/* A new screen rises into place. The panel remounts, so each screen starts at the top. */}
+      {/* A new screen moves up into position. The panel remounts, so each screen starts at the top. */}
       <m.main key={current.path} className="sint-main" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: easeOut }}>
         <Page key={`${current.path}-${refresh}`} openComposer={openComposer} params={params} go={go} />
       </m.main>

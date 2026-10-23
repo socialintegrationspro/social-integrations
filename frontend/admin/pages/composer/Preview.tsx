@@ -48,7 +48,7 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
             </div>
           </div>
           <div style={{ padding: '0 12px 12px', fontSize: 14, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {[...captionFor(net.key)].slice(0, net.char_limit).join('') || <span style={{ color: '#8a8d91' }}>{__('Your caption appears here.', 'social-integrations')}</span>}
+            {[...captionFor(net.key)].slice(0, net.char_limit).join('') || <span style={{ color: '#65676b' }}>{__('Your caption appears here.', 'social-integrations')}</span>}
           </div>
           {chosenMedia.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: chosenMedia.length > 1 ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>

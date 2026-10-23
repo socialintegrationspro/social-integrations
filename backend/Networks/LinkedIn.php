@@ -101,7 +101,7 @@ class LinkedIn extends AbstractNetwork {
 	}
 
 	/**
-	 * Swaps the code for an access token.
+	 * Exchanges the code for an access token.
 	 *
 	 * @param array  $app          App fields.
 	 * @param string $code         Code from the callback.
@@ -122,7 +122,7 @@ class LinkedIn extends AbstractNetwork {
 
 	/**
 	 * Uses the refresh token when the app has one. LinkedIn gives refresh tokens
-	 * only to apps it has approved for them; other tokens last 60 days.
+	 * only to apps that it approved for them; other tokens last 60 days.
 	 *
 	 * @param array $app         App fields.
 	 * @param array $credentials Current credentials.
@@ -171,7 +171,7 @@ class LinkedIn extends AbstractNetwork {
 	/**
 	 * Publishes a post on the member's profile.
 	 *
-	 * Images become an IMAGE post (each image uploaded first). A link without images
+	 * Images become an IMAGE post (the method uploads each image first). A link without images
 	 * becomes an ARTICLE post with a preview card. Otherwise a text post.
 	 *
 	 * @param array $credentials ['access_token', 'member_id'].
@@ -349,7 +349,7 @@ class LinkedIn extends AbstractNetwork {
 			$credentials['refresh_token'] = (string) $data['refresh_token'];
 		}
 
-		// The member ID is needed to author posts; read it once here.
+		// Posts need the member ID as the author; read it once here.
 		try {
 			$profile = $this->fetch_profile( $credentials );
 			if ( ! empty( $profile['remote_id'] ) ) {

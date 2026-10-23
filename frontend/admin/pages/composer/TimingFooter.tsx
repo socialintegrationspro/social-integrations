@@ -8,10 +8,10 @@ import { timePresets, type When } from './helpers'
 interface Props {
   when: When
   setWhen: (when: When) => void
-  /** Site-time datetime-local value of the picked time. */
+  /** Site-time datetime-local value of the selected time. */
   local: string
   setLocal: (local: string) => void
-  /** Local time the selected post goes live, if it is scheduled. */
+  /** Local time when the selected post is published, if it is scheduled. */
   live: string
   /** Controls from the `sint.composer.options` filter. */
   optionControls: { key: string; component: (props: ComposerOptionProps) => JSX.Element }[]
@@ -21,7 +21,7 @@ interface Props {
   children: ReactNode
 }
 
-/** The modal footer: Now or a picked time, quick picks, option controls and the save buttons. */
+/** The modal footer: Now or a selected time, preset times, option controls and the save buttons. */
 export function TimingFooter({ when, setWhen, local, setLocal, live, optionControls, options, setOption, children }: Props) {
   return (
     <>

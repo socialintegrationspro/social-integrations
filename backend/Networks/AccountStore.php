@@ -1,6 +1,6 @@
 <?php
 /**
- * Where connected accounts are kept.
+ * Where the plugin keeps connected accounts.
  *
  * @package SocialIntegrations
  */
@@ -29,11 +29,11 @@ interface AccountStore {
 	public function persist( array $accounts ): void;
 
 	/**
-	 * The ID a connected profile is saved under. An ID already in $accounts replaces
+	 * The ID that the store saves a connected account under. An ID already in $accounts replaces
 	 * that account.
 	 *
 	 * @param string               $network   Network key.
-	 * @param string               $remote_id The profile's ID on the network.
+	 * @param string               $remote_id The account's ID on the network.
 	 * @param array<string, array> $accounts  Current accounts.
 	 */
 	public function id_for( string $network, string $remote_id, array $accounts ): string;

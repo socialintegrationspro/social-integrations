@@ -1,5 +1,5 @@
 // The block editor bundle: the Social Integrations sidebar and the "Social" control in
-// the block toolbar. Loaded by backend/Editor/SidebarPanel.php.
+// the block toolbar. backend/Editor/SidebarPanel.php loads it.
 import './editor.css'
 import { registerBlockControl } from './BlockControl'
 import { ShareIcon } from './icon'

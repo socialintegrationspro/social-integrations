@@ -1,9 +1,8 @@
-import { __, _n, sprintf, type BlockUse } from './wp'
+import { __, _n, config, sprintf, type BlockUse } from './wp'
 
-/** A network key as a name: 'linkedin' → 'LinkedIn'. Other keys get a capital letter. */
+/** A network's label, such as 'Facebook Page'. An unknown key gets a capital letter. */
 export function networkName(key: string): string {
-  const names: Record<string, string> = { linkedin: 'LinkedIn', facebook: 'Facebook', bluesky: 'Bluesky', threads: 'Threads', telegram: 'Telegram' }
-  return names[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
+  return config.networkNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
 }
 
 export function ruleLabel(use: string): string {

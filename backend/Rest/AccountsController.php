@@ -49,7 +49,7 @@ final class AccountsController extends RestController {
 	}
 
 	/**
-	 * Networks, with whether their app fields are filled in.
+	 * Networks, with whether their app fields are complete.
 	 */
 	public function networks(): \WP_REST_Response {
 		$list = array();

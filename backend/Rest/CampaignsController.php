@@ -13,8 +13,8 @@ use SocialIntegrations\Campaigns\Campaigns;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Lists campaigns; reads and deletes any; replaces single ones; adds, updates and turns
- * auto-post ones on or off.
+ * Lists campaigns; reads and deletes any; replaces single ones; adds, updates, activates
+ * and deactivates auto-post ones.
  */
 final class CampaignsController extends RestController {
 
@@ -91,7 +91,7 @@ final class CampaignsController extends RestController {
 	}
 
 	/**
-	 * Turns an auto-post campaign on or off. Body: { active: bool }.
+	 * Activates or deactivates an auto-post campaign. Body: { active: bool }.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error

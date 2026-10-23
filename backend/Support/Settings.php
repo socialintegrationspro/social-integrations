@@ -124,7 +124,7 @@ final class Settings {
 	}
 
 	/**
-	 * Caption templates for single networks. Empty ones are dropped.
+	 * Caption templates for single networks. The plugin removes empty ones.
 	 *
 	 * @param array $input Network => template.
 	 * @return array<string, string>
@@ -142,8 +142,8 @@ final class Settings {
 	}
 
 	/**
-	 * Chosen images as media items, read again from the media library so only real
-	 * attachments are kept.
+	 * Selected images as media items. The plugin reads them again from the media library,
+	 * so it keeps only real attachments.
 	 *
 	 * @param array $input Media items or attachment IDs.
 	 */

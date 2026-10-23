@@ -84,7 +84,7 @@ function SocialControl({ name, clientId, attributes, setAttributes }: BlockEditP
 
 /** Adds the sintSocial attribute to every block type and the control to the toolbar. */
 export function registerBlockControl() {
-  // The attribute must exist in the editor too, or the editor drops it when it saves.
+  // The attribute must exist in the editor too, or the editor removes it when it saves.
   wp.hooks.addFilter('blocks.registerBlockType', 'social-integrations/attribute', (settings: { attributes?: Record<string, unknown> }) => ({
     ...settings,
     attributes: { ...settings.attributes, sintSocial: { type: 'object', default: {} } },

@@ -12,8 +12,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Posts to Bluesky through the AT Protocol.
  *
- * The user enters their handle and an app password. A session (access and refresh
- * JWTs) is created from them and renewed when it runs out.
+ * The user enters their handle and an app password. The plugin creates a session (access
+ * and refresh JWTs) from them and renews it when it expires.
  */
 class Bluesky extends AbstractNetwork {
 
@@ -73,7 +73,7 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
-	 * Fields the user fills in.
+	 * Fields that the user completes.
 	 */
 	public function connect_fields(): array {
 		return array(
@@ -179,13 +179,13 @@ class Bluesky extends AbstractNetwork {
 	/**
 	 * Publishes a post.
 	 *
-	 * Links and hashtags in the text become facets. Images (up to four, with alt text)
-	 * are embedded; a link without images becomes a link card.
+	 * Links and hashtags in the text become facets. The post embeds images (up to four,
+	 * with alt text); a link without images becomes a link card.
 	 *
-	 * The session is renewed first when its access token is about to run out, and once
-	 * more if Bluesky reports it expired. When that happens the result also holds
-	 * 'credentials' with the renewed session; the caller saves them with
-	 * Accounts::update_credentials(), or the next share has to renew again.
+	 * The method renews the session first when its access token expires soon, and once
+	 * more if Bluesky reports it expired. Then the result also holds 'credentials' with
+	 * the renewed session. The caller saves them with Accounts::update_credentials(),
+	 * or the next share must renew the session again.
 	 *
 	 * @param array $credentials ['handle', 'app_password', 'did', 'access_jwt', 'refresh_jwt'].
 	 * @param array $payload     Share payload.
@@ -483,10 +483,10 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
-	 * Scales an image down to a JPEG when it is larger than Bluesky accepts.
+	 * Converts an image to a smaller JPEG when it is larger than Bluesky accepts.
 	 *
 	 * @param array $file ['bytes', 'mime'].
-	 * @throws NetworkException When the image cannot be made small enough.
+	 * @throws NetworkException When the method cannot make the image small enough.
 	 */
 	private function shrink( array $file ): array {
 		if ( strlen( $file['bytes'] ) <= self::MAX_BLOB ) {
@@ -590,7 +590,7 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
-	 * Credentials from a session answer, keeping the app password.
+	 * Credentials from a session answer, with the app password from the previous credentials.
 	 *
 	 * @param array $data     Session answer.
 	 * @param array $previous Previous credentials.
@@ -606,7 +606,7 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
-	 * Whether a JWT runs out within a minute.
+	 * Whether a JWT expires within a minute.
 	 *
 	 * @param string $jwt Token.
 	 */

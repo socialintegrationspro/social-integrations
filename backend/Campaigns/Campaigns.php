@@ -20,15 +20,15 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * A single campaign is one post from the composer: its text, media and time, and the
- * queue rows that share it, one per account. It keeps what the composer sent, so it can
- * be edited or duplicated later. Auto-post campaigns (see Auto) share new posts on
+ * queue rows that share it, one per account. It keeps what the composer sent, so a user
+ * can edit or duplicate it later. Auto-post campaigns (see Auto) share new posts on
  * publish; their rows link to them the same way.
  */
 final class Campaigns {
 
 	/**
-	 * Queue statuses not sent yet. Editing or deleting a campaign replaces or removes
-	 * these rows; rows already sent stay in the share log.
+	 * Queue statuses not sent yet. When a user edits or deletes a campaign, the plugin
+	 * replaces or removes these rows. Rows already sent stay in the share log.
 	 */
 	const UNSENT = array( 'draft', 'scheduled', 'failed' );
 
@@ -127,8 +127,8 @@ final class Campaigns {
 	}
 
 	/**
-	 * Replaces a single campaign with a new composer body: its unsent shares go, and the
-	 * new ones are added. Shares already sent stay in the log.
+	 * Replaces a single campaign with a new composer body: the plugin removes its unsent
+	 * shares and adds the new ones. Shares already sent stay in the log.
 	 *
 	 * @param int   $id   Campaign ID.
 	 * @param array $body Composer body, checked.
@@ -324,7 +324,7 @@ final class Campaigns {
 			return array( 'created' => $created );
 		}
 
-		// "Now" sends during this request, so the person sees the result at once and
+		// "Now" sends during this request, so the person sees the result immediately and
 		// the share does not depend on WP-Cron. Later times wait for the scheduler.
 		if ( '' === $data['scheduled_at'] ) {
 			$publisher = new Publisher( Plugin::instance()->networks );

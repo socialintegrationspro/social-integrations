@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Stores one account for each network in the `sint_accounts` option.
- * Credentials and app secrets are encrypted at rest and never leave the server.
+ * The plugin encrypts credentials and app secrets at rest. They never leave the server.
  */
 final class Accounts {
 
@@ -51,7 +51,7 @@ final class Accounts {
 	}
 
 	/**
-	 * Saves a connected account. The store decides its ID; an existing ID is replaced.
+	 * Saves a connected account. The store decides its ID; the account replaces an account with the same ID.
 	 *
 	 * @param string $network     Network key.
 	 * @param array  $profile     ['remote_id', 'name', 'username', 'avatar', 'profile_url'].
@@ -149,7 +149,7 @@ final class Accounts {
 	}
 
 	/**
-	 * Whether the app fields of a network are filled in.
+	 * Whether the app fields of a network are complete.
 	 *
 	 * @param string $network Network key.
 	 */
@@ -174,7 +174,7 @@ final class Accounts {
 	}
 
 	/**
-	 * Credentials are stored as a flat map of strings; nested values become JSON.
+	 * The plugin stores credentials as a flat map of strings; nested values become JSON.
 	 *
 	 * @param array $credentials Credentials.
 	 */

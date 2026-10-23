@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * The share log keeps what a network answered, so a developer can find the cause of an
- * error. Tokens, keys and passwords are replaced before the log stores anything.
+ * error. The plugin replaces tokens, keys and passwords before the log stores anything.
  */
 final class Redact {
 

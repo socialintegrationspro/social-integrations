@@ -145,7 +145,7 @@ final class ContentController extends RestController {
 		if ( ! $post ) {
 			return $this->not_found( __( 'This item does not exist.', 'social-integrations' ) );
 		}
-		// `media` picks another media source for this build only, as the composer asks for it.
+		// `media` selects another media source for this build only, as the composer asks for it.
 		$media = sanitize_key( (string) $request['media'] );
 		if ( ! in_array( $media, ShareBuilder::MEDIA_SOURCES, true ) || 'custom' === $media ) {
 			return rest_ensure_response( ( new ShareBuilder() )->build( $post ) );

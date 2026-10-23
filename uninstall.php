@@ -1,6 +1,6 @@
 <?php
 /**
- * Removes the plugin's options and tables when the plugin is deleted. On a multisite
+ * Removes the plugin's options and tables when a user deletes the plugin. On a multisite
  * network, it removes them from every site.
  *
  * @package SocialIntegrations

@@ -10,7 +10,7 @@ namespace SocialIntegrations\Support;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Exception messages are escaped with esc_html() where they are thrown. The REST API and
+ * The code that throws an exception escapes its message with esc_html(). The REST API and
  * the share log send plain text, and the admin app escapes it when it shows it.
  */
 final class Errors {

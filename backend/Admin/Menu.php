@@ -30,7 +30,7 @@ final class Menu {
 	 */
 	public function add_menu(): void {
 		$icon = 'data:image/svg+xml;base64,' . base64_encode( // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#a7aaad" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>'
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#a7aaad" d="M6 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM18 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM18 14.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM7.8 9.9l8.4-4 .85 1.8-8.4 4zM7.8 14.1l.85-1.8 8.4 4-.85 1.8z"/></svg>'
 		);
 		add_menu_page(
 			__( 'Social Integrations', 'social-integrations' ),

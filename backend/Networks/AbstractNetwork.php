@@ -14,18 +14,18 @@ defined( 'ABSPATH' ) || exit;
 /**
  * One subclass per network. Register it through the `sint/network_classes` filter.
  *
- * Connecting is a per-network strategy:
+ * Each network has its own connection strategy:
  * - 'oauth2'      — the user creates an app on the network, enters its client ID and
  *                   secret (app_fields()), and signs in through authorization_url().
  * - 'token'       — the user pastes a token (connect_fields()), checked in authenticate().
  * - 'credentials' — the user enters a handle and an app password, checked in authenticate().
  *
- * Credentials arrays are stored encrypted and are never sent to the browser.
+ * The plugin stores credentials arrays encrypted and never sends them to the browser.
  */
 abstract class AbstractNetwork {
 
 	/**
-	 * Most requests kept in one trace.
+	 * Maximum number of requests in one trace.
 	 */
 	const TRACE_MAX = 10;
 
@@ -186,7 +186,7 @@ abstract class AbstractNetwork {
 	}
 
 	/**
-	 * Swaps the sign-in code for credentials.
+	 * Exchanges the sign-in code for credentials.
 	 *
 	 * @param array  $app          Decrypted app fields.
 	 * @param string $code         Code from the callback.
@@ -293,7 +293,7 @@ abstract class AbstractNetwork {
 		$body = is_array( $body ) ? $body : array();
 
 		if ( $code >= 400 ) {
-			// Only the message is shown. The error code and the status are data for the log; the trace keeps the body.
+			// The UI shows only the message. The error code and the status are data for the log; the trace keeps the body.
 			throw new NetworkException( $this->error_code( $code, $body ), esc_html( $this->error_message( $code, $body ) ), $code ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 		return $body;
@@ -313,7 +313,7 @@ abstract class AbstractNetwork {
 	}
 
 	/**
-	 * Adds query arguments to a URL. The arguments are encoded as RFC 3986.
+	 * Adds query arguments to a URL. The method encodes the arguments as RFC 3986.
 	 *
 	 * @param string $base  URL without a query string.
 	 * @param array  $query Query arguments.
@@ -339,7 +339,7 @@ abstract class AbstractNetwork {
 	/**
 	 * Downloads an image from a URL in the post. wp_safe_remote_get() refuses private and
 	 * local addresses, also after a redirect, so a URL in a post cannot reach the server's
-	 * own network. Only an image up to MAX_IMAGE bytes is returned.
+	 * own network. The method returns only an image up to MAX_IMAGE bytes.
 	 *
 	 * @param string $url Image URL.
 	 * @return array|null ['bytes', 'mime'], or null when the URL gives no usable image.
@@ -438,7 +438,7 @@ abstract class AbstractNetwork {
 	}
 
 	/**
-	 * Machine code for an error answer. 'expired' marks the account for reconnecting.
+	 * Machine code for an error answer. 'expired' marks the account as one to reconnect.
 	 *
 	 * @param int   $status HTTP status.
 	 * @param array $body   Decoded body.

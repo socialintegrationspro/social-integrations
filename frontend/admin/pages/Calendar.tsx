@@ -73,7 +73,7 @@ export function CalendarPage({ openComposer }: PageProps) {
   const days = useMemo(() => Array.from({ length: period.days }, (_, i) => new Date(start.getTime() + i * DAY_MS)), [start, period.days])
 
   const load = useCallback(() => {
-    // Ask a day either side, because the site's time zone shifts the period edges.
+    // Request one more day on each side, because the site's time zone moves the edges of the period.
     const from = new Date(start.getTime() - DAY_MS).toISOString()
     const to = new Date(start.getTime() + (period.days + 1) * DAY_MS).toISOString()
     setItems(null)
@@ -89,7 +89,9 @@ export function CalendarPage({ openComposer }: PageProps) {
     if (!loaded || !box) return
     const row = box.querySelector<HTMLElement>('.sint-week .cell.today:has(.now)')
     const head = box.querySelector<HTMLElement>('.sint-week.head')
-    box.scrollTop = row ? Math.max(0, row.offsetTop - (head?.offsetHeight ?? 0) - 12) : 0
+    // Measure from the box itself: the row's offsetParent is an outer panel.
+    const top = row ? row.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop : 0
+    box.scrollTop = row ? Math.max(0, top - (head?.offsetHeight ?? 0) - 12) : 0
   }, [loaded, view, offset])
 
   const types = postTypes.map((t) => t.name)
@@ -133,7 +135,7 @@ export function CalendarPage({ openComposer }: PageProps) {
   const snippet = (item: QueueItem) => (item.post?.title && item.caption.trim() !== item.post.title ? item.caption.trim() : '')
   const account = (item: QueueItem) => accounts.find((a) => a.id === item.account_id)
 
-  // Shares that have not gone out yet open in the composer; sent ones are a record.
+  // Shares that the plugin did not send yet open in the composer; sent shares are a record.
   const title = (item: QueueItem) =>
     editable(item) ? (
       <button type="button" className="sint-pc-open" title={item.caption} onClick={() => openComposer({ item })}>
@@ -202,7 +204,7 @@ export function CalendarPage({ openComposer }: PageProps) {
     )
   }
 
-  // Filter `sint.calendar.view`: another plugin may supply a different calendar body.
+  // Filter `sint.calendar.view`: another plugin can supply a different calendar body.
   const CustomView = applyFilters<null | ((p: CalendarViewProps) => JSX.Element)>('sint.calendar.view', null, view)
 
   return (
@@ -399,7 +401,7 @@ function StatusPill({ item }: { item: QueueItem }) {
   }
 }
 
-/** Deletes on a second click, so one stray tap does not lose a share. */
+/** Deletes on a second click, so one accidental tap does not delete a share. */
 function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
   const [armed, setArmed] = useState(false)
   useEffect(() => {

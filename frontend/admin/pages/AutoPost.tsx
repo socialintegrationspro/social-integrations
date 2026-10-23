@@ -14,7 +14,7 @@ export interface AutoPostOptionProps {
   campaignId: number
   /** Post types the campaign shares. */
   postTypes: string[]
-  /** Called on Save with the saved campaign's ID, after the campaign is saved. */
+  /** The tab calls the registered function on Save with the ID of the saved campaign. */
   registerSave: (key: string, save: (id: number) => Promise<unknown>) => void
 }
 
@@ -202,9 +202,10 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
                 <option value="days">{__('days', 'social-integrations')}</option>
               </select>
             </span>
-            <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {/* Even columns: two rows of two in the narrow column, one row when there is space. */}
+            <span style={{ display: 'grid', gap: 6, gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}>
               {[{ value: 0, unit: 'minutes' as Unit, label: __('Immediately', 'social-integrations') }, { value: 10, unit: 'minutes' as Unit, label: __('10 min', 'social-integrations') }, { value: 1, unit: 'hours' as Unit, label: __('1 hour', 'social-integrations') }, { value: 1, unit: 'days' as Unit, label: __('1 day', 'social-integrations') }].map((p) => (
-                <button key={p.label} type="button" className={`sint-chip${c.delay.value === p.value && (p.value === 0 || c.delay.unit === p.unit) ? ' on' : ''}`} onClick={() => set({ delay: { value: p.value, unit: p.unit } })}>{p.label}</button>
+                <button key={p.label} type="button" className={`sint-chip${c.delay.value === p.value && (p.value === 0 || c.delay.unit === p.unit) ? ' on' : ''}`} style={{ justifyContent: 'center' }} onClick={() => set({ delay: { value: p.value, unit: p.unit } })}>{p.label}</button>
               ))}
             </span>
             <small>{delayText}</small>

@@ -27,8 +27,8 @@ final class AutoShare {
 	const CRON_HOOK     = 'sint_auto_share_post';
 
 	/**
-	 * The block editor saves post meta and terms in a second request; the shares are
-	 * worked out this many seconds after publish, when those are saved.
+	 * The block editor saves post meta and terms in a second request; the plugin
+	 * calculates the shares this many seconds after publish, when those are saved.
 	 */
 	const SETTLE = 15;
 
@@ -77,7 +77,7 @@ final class AutoShare {
 			return;
 		}
 
-		// Accounts the editor chose for this post replace every campaign's accounts.
+		// Accounts the editor selected for this post replace every campaign's accounts.
 		$chosen    = get_post_meta( $post_id, self::META_ACCOUNTS, true );
 		$chosen    = is_array( $chosen ) ? array_values( array_filter( $chosen ) ) : array();
 		$published = (int) get_post_time( 'U', true, $post );

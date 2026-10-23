@@ -33,7 +33,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/** A number that counts up to its value. It shows the value at once when motion is reduced. */
+/** A number that counts up to its value. It shows the value immediately when motion is reduced. */
 export function CountUp({ value }: { value: number }) {
   const reduce = useReducedMotion()
   const count = useMotionValue(reduce ? value : 0)

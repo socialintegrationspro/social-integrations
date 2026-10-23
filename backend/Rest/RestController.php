@@ -10,8 +10,8 @@ namespace SocialIntegrations\Rest;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Shared namespace and permission check. The REST nonce is checked by WordPress
- * through the X-WP-Nonce header the admin app sends.
+ * Shared namespace and permission check. WordPress checks the REST nonce through
+ * the X-WP-Nonce header that the admin app sends.
  */
 abstract class RestController {
 
@@ -57,7 +57,7 @@ abstract class RestController {
 	}
 
 	/**
-	 * Error response with a message a person can act on.
+	 * Error response with a message that tells a person what to do.
 	 *
 	 * @param string $code    Machine code.
 	 * @param string $message Message.

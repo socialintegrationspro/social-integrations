@@ -100,10 +100,10 @@ final class Auto {
 	}
 
 	/**
-	 * Turns a campaign on or off.
+	 * Activates or deactivates a campaign.
 	 *
 	 * @param int  $id     Campaign ID.
-	 * @param bool $active On.
+	 * @param bool $active True to activate.
 	 */
 	public static function set_active( int $id, bool $active ): ?array {
 		$campaign = Campaigns::get( $id );
@@ -115,7 +115,7 @@ final class Auto {
 	}
 
 	/**
-	 * Every auto-post campaign, oldest first, so the first one made wins an account.
+	 * Every auto-post campaign, oldest first, so the oldest campaign gets an account first.
 	 *
 	 * @return array[]
 	 */
@@ -177,7 +177,7 @@ final class Auto {
 	}
 
 	/**
-	 * Turns the per post type rules of version 2 into auto-post campaigns, once.
+	 * Changes the per post type rules of version 2 into auto-post campaigns, one time.
 	 */
 	public static function migrate(): void {
 		$settings = get_option( Settings::OPTION, array() );

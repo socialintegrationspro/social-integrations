@@ -25,25 +25,25 @@ const SOURCES = (): { value: MediaSource; label: string }[] => [
 interface Props {
   value: ShareTemplate
   onChange: (patch: Partial<ShareTemplate>) => void
-  /** Networks of the chosen accounts; each gets a caption tab. */
+  /** Networks of the selected accounts; each gets a caption tab. */
   nets: string[]
   /** 'all' or a network key in `nets`. */
   tab: string
   setTab: (tab: string) => void
-  /** Placeholder of the caption for all channels. */
+  /** Placeholder of the caption for all networks. */
   placeholder: string
-  /** Help below the caption for all channels. */
+  /** Help below the caption for all networks. */
   hint?: string
 }
 
-/** Caption tabs, the caption with token chips, and the media source with chosen images. */
+/** Caption tabs, the caption with token chips, and the media source with selected images. */
 export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder, hint }: Props) {
   const { network } = useStore()
   const toast = useToast()
   const all = tab === 'all'
 
   const text = all ? value.caption : value.captions[tab] ?? ''
-  // An empty network caption falls back to the caption for all channels.
+  // An empty network caption uses the caption for all networks instead.
   const setText = (v: string) => {
     if (all) return onChange({ caption: v })
     const captions = { ...value.captions }

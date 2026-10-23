@@ -32,15 +32,15 @@ final class BlockSupport {
 	 */
 	public function register_meta(): void {
 		// The caption and the accounts change what a share sends and where, so only a user who
-		// manages the plugin sets them. Turning sharing off for a post only stops a share, so
-		// anyone who can edit the post can do it.
+		// manages the plugin sets them. The setting that stops sharing for a post only stops a
+		// share, so any user who can edit the post can set it.
 		$manage   = static function () {
 			return current_user_can( 'manage_options' );
 		};
 		$own_post = static function ( $allowed, $meta_key, $post_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- WordPress passes these first.
 			return current_user_can( 'edit_post', (int) $post_id );
 		};
-		// The editor sends every meta key it got back when it saves, also keys it did not
+		// The editor sends every meta key it received when it saves, also keys it did not
 		// change. The REST API checks the permission for a key that has no stored value, so
 		// a user who cannot set the caption and the accounts must not get them at all.
 		$admin_rest = current_user_can( 'manage_options' );
@@ -99,7 +99,7 @@ final class BlockSupport {
 	}
 
 	/**
-	 * Lets every block keep the `sintSocial` attribute when rendered on the server.
+	 * Lets every block keep the `sintSocial` attribute when the server renders it.
 	 *
 	 * @param array $args Block type arguments.
 	 */

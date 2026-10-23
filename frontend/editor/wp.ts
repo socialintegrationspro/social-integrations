@@ -33,8 +33,9 @@ declare global {
 export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
 
 export interface EditorConfig {
-  canManage: boolean
   pageUrl: string
+  /** Network labels by key, such as 'Facebook Page'. */
+  networkNames: Record<string, string>
   blockOverride: boolean
   blockRules: Record<string, BlockUse>
   blockFallback: BlockUse
@@ -42,8 +43,8 @@ export interface EditorConfig {
 
 export const wp = window.wp
 export const config: EditorConfig = window.sintEditor ?? {
-  canManage: false,
   pageUrl: '',
+  networkNames: {},
   blockOverride: false,
   blockRules: {},
   blockFallback: 'text',

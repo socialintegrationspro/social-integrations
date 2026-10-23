@@ -27,13 +27,13 @@ final class ShareBuilder {
 	 * - auto:     marked blocks, then the featured image, then the other block media.
 	 * - featured: the featured image, or the first block media when there is none.
 	 * - content:  media from the post's blocks only.
-	 * - custom:   the images chosen in the template.
+	 * - custom:   the images selected in the template.
 	 * - none:     text and link only.
 	 */
 	const MEDIA_SOURCES = array( 'auto', 'featured', 'content', 'custom', 'none' );
 
 	/**
-	 * Parsed blocks and tokens by post ID, so building for several accounts parses once.
+	 * Parsed blocks and tokens by post ID, so the plugin parses a post one time for several accounts.
 	 *
 	 * @var array<int, array>
 	 */

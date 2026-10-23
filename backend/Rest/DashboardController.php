@@ -9,6 +9,7 @@ namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Campaigns\Campaigns;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Scheduler\Queue;
 use SocialIntegrations\Support\Dates;
 
@@ -129,18 +130,7 @@ final class DashboardController extends RestController {
 					),
 					'total'  => count( $campaigns ),
 				),
-				'upcoming'  => array_map(
-					function ( array $row ): array {
-						return array(
-							'id'           => $row['id'],
-							'network'      => $row['network'],
-							'account_id'   => $row['account_id'],
-							'title'        => $this->title( $row['post_id'], (string) $row['caption'] ),
-							'scheduled_at' => Dates::iso( $row['scheduled_at'] ),
-						);
-					},
-					Queue::upcoming()
-				),
+				'upcoming'  => $this->upcoming(),
 				'recent'    => array_map(
 					function ( array $row ): array {
 						return array(
@@ -158,6 +148,33 @@ final class DashboardController extends RestController {
 				),
 			)
 		);
+	}
+
+	/**
+	 * The next shares: queued ones, and planned ones that other plugins add.
+	 */
+	private function upcoming(): array {
+		$limit  = 6;
+		$shares = array_map(
+			function ( array $row ): array {
+				return array(
+					'id'           => $row['id'],
+					'network'      => $row['network'],
+					'account_id'   => $row['account_id'],
+					'title'        => $this->title( $row['post_id'], (string) $row['caption'] ),
+					'scheduled_at' => Dates::iso( $row['scheduled_at'] ),
+				);
+			},
+			Queue::upcoming( $limit )
+		);
+		$shares = array_values( array_filter( (array) apply_filters( Hooks::UPCOMING_SHARES, $shares ), 'is_array' ) );
+		usort(
+			$shares,
+			static function ( array $a, array $b ): int {
+				return strtotime( (string) ( $a['scheduled_at'] ?? '' ) ) <=> strtotime( (string) ( $b['scheduled_at'] ?? '' ) );
+			}
+		);
+		return array_slice( $shares, 0, $limit );
 	}
 
 	/**

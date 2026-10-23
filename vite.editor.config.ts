@@ -8,7 +8,8 @@ export default defineConfig({
   esbuild: { jsx: 'transform', jsxFactory: 'h', jsxFragment: 'Fragment', minifyIdentifiers: false },
   build: {
     outDir: 'build/editor',
-    emptyOutDir: true,
+    // A watch build keeps the last good files, so a failed rebuild does not empty build/.
+    emptyOutDir: !process.argv.includes('--watch'),
     lib: { entry: 'frontend/editor/index.tsx', formats: ['iife'], name: 'sintEditor', fileName: () => 'editor.js', cssFileName: 'editor' },
   },
 })

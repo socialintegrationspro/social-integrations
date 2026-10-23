@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Writes with the person's own Anthropic API key.
  *
- * The WordPress HTTP API is used instead of the Anthropic PHP SDK, so the plugin
+ * The plugin uses the WordPress HTTP API instead of the Anthropic PHP SDK, so it
  * keeps PHP 7.4 support and ships no extra dependencies.
  */
 final class Claude extends AbstractProvider {

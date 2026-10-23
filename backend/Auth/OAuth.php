@@ -23,12 +23,12 @@ defined( 'ABSPATH' ) || exit;
  * 1. The admin app calls POST /oauth/{network}/start and sends the user to the URL it returns.
  * 2. The network sends the user back to /social-integrations/oauth/callback
  *    (or /?sint_oauth_callback=1 without pretty permalinks). The callback URL is the
- *    same for every network, so it can be registered exactly in the network app; the
- *    network key travels in the state. The logged-in cookie identifies the user.
- *    admin-post.php?action=sint_oauth_callback still works for apps registered with it.
- * 3. When the sign-in can post as several things (Facebook Pages), the choices are
- *    kept for a short time and the admin app lets the user pick one through
- *    GET/POST /oauth/{network}/entities. Otherwise the account is saved right away.
+ *    same for every network, so the user can register it exactly in the network app;
+ *    the state holds the network key. The logged-in cookie identifies the user.
+ *    admin-post.php?action=sint_oauth_callback still works for apps that use it.
+ * 3. When the sign-in can post as several things (Facebook Pages), the plugin keeps
+ *    the choices for a short time and the admin app lets the user select one through
+ *    GET/POST /oauth/{network}/entities. Otherwise the plugin saves the account immediately.
  */
 final class OAuth {
 
@@ -85,7 +85,7 @@ final class OAuth {
 
 	/**
 	 * Maps /social-integrations/oauth/callback to the callback. Flushes the rules once
-	 * when they do not hold it yet, for example right after an update.
+	 * when they do not hold it yet, for example immediately after an update.
 	 */
 	public static function add_rewrite_rule(): void {
 		$regex = '^' . self::CALLBACK_PATH . '/?$';
@@ -168,7 +168,7 @@ final class OAuth {
 	}
 
 	/**
-	 * Whether the current user may connect accounts.
+	 * Whether the current user can connect accounts.
 	 */
 	public function can_manage(): bool {
 		return current_user_can( 'manage_options' );
@@ -226,7 +226,7 @@ final class OAuth {
 	}
 
 	/**
-	 * GET /oauth/{network}/entities — choices waiting to be picked, without credentials.
+	 * GET /oauth/{network}/entities — choices that the user did not select yet, without credentials.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -250,7 +250,7 @@ final class OAuth {
 	}
 
 	/**
-	 * POST /oauth/{network}/entities — saves the picked choice as the account.
+	 * POST /oauth/{network}/entities — saves the selected choice as the account.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -381,7 +381,7 @@ final class OAuth {
 	}
 
 	/**
-	 * Keeps the things a sign-in can post as, for the person to pick from, then stops.
+	 * Keeps the things a sign-in can post as, for the user to select from, then stops.
 	 *
 	 * @param AbstractNetwork $network  Network.
 	 * @param array[]         $entities From connectable_entities().

@@ -101,27 +101,19 @@ final class Assets {
 	 * Data for `window.sintConfig`.
 	 */
 	private function config(): array {
-		$user = wp_get_current_user();
 		return apply_filters(
 			Hooks::ADMIN_CONFIG,
 			array(
 				'restUrl'     => esc_url_raw( rest_url( 'sint/v1/' ) ),
-				'wpRestUrl'   => esc_url_raw( rest_url( 'wp/v2/' ) ),
 				'nonce'       => wp_create_nonce( 'wp_rest' ),
-				'adminUrl'    => esc_url_raw( admin_url() ),
 				'pageUrl'     => esc_url_raw( Menu::url() ),
-				'version'     => SINT_VERSION,
-				'siteName'    => get_bloginfo( 'name' ),
 				'timezone'    => wp_timezone_string(),
 				'gmtOffset'   => (float) get_option( 'gmt_offset' ),
 				'weekStart'   => (int) get_option( 'start_of_week', 1 ),
 				'redirectUri' => OAuth::redirect_uri(),
 				'oauthError'  => OAuth::take_error(),
 				'ai'          => array( 'ready' => null !== Providers::current() ),
-				'user'        => array(
-					'name'   => $user->display_name,
-					'avatar' => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
-				),
+				'user'        => array( 'name' => wp_get_current_user()->display_name ),
 			)
 		);
 	}

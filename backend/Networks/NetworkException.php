@@ -10,7 +10,7 @@ namespace SocialIntegrations\Networks;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Carries a machine code ('expired', 'http_403', ...) and a message a person can act on.
+ * Carries a machine code ('expired', 'http_403', ...) and a message that tells the user what to do.
  */
 class NetworkException extends \RuntimeException {
 

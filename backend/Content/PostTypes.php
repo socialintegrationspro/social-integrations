@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 final class PostTypes {
 
 	/**
-	 * Post types that never have a page worth sharing.
+	 * Post types that never have a page to share.
 	 */
 	const EXCLUDED = array( 'attachment', 'wp_block', 'wp_template', 'wp_template_part', 'wp_navigation', 'wp_font_family', 'wp_font_face' );
 

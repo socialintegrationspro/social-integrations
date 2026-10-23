@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 export type Theme = 'dark' | 'light'
 const KEY = 'sint-theme'
 
-// The choice is a per-browser convenience, so it lives in localStorage.
+// The choice is a per-browser convenience, so the app keeps it in localStorage.
 // Without a saved choice the app follows the system setting.
 function initial(): Theme {
   try {

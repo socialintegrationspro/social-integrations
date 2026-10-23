@@ -83,7 +83,7 @@ final class Plugin {
 
 		Migrations::maybe_upgrade();
 
-		// Multisite: a deleted site's tables go with it.
+		// Multisite: WordPress deletes the plugin's tables with a deleted site.
 		add_filter(
 			'wpmu_drop_tables',
 			static function ( $tables ) {
@@ -95,11 +95,11 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
 		( new BlockSupport() )->register();
-		( new SidebarPanel() )->register();
+		( new SidebarPanel( $this->networks ) )->register();
 		( new AutoShare() )->register();
 		( new Publisher( $this->networks ) )->register();
 
-		// Once a day, delete share log rows older than the Settings choice.
+		// Once a day, delete share log rows older than the period in Settings.
 		add_action( self::PRUNE_HOOK, array( $this, 'prune_logs' ) );
 		Cron::ensure( self::PRUNE_HOOK, 'daily', HOUR_IN_SECONDS );
 

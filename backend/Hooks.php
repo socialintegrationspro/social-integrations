@@ -2,7 +2,7 @@
 /**
  * Public extension points.
  *
- * Every filter and action other plugins may use is named here, so the list of
+ * Every filter and action other plugins can use is named here, so the list of
  * supported hooks lives in one place.
  *
  * @package SocialIntegrations
@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
 final class Hooks {
 
 	/**
-	 * Action. Fires at the end of `plugins_loaded` (priority 10) when the plugin has booted.
+	 * Action. Fires at the end of `plugins_loaded` (priority 10) after the plugin boots.
 	 * Receives the Plugin instance.
 	 */
 	const LOADED = 'sint/loaded';
@@ -85,9 +85,9 @@ final class Hooks {
 	const SHARE_COMPLETED = 'sint/share_completed';
 
 	/**
-	 * Filter. Whether an auto-post campaign shares a post. Runs when the post's shares are
-	 * about to be queued, a few seconds after it is published, so its terms and meta are
-	 * saved. Only campaigns that are on and include the post's type are asked.
+	 * Filter. Whether an auto-post campaign shares a post. Runs before the plugin queues the
+	 * post's shares, a few seconds after the post is published, so its terms and meta are
+	 * saved. The plugin asks only active campaigns that include the post's type.
 	 *
 	 * @param bool     $match    True.
 	 * @param \WP_Post $post
@@ -113,8 +113,8 @@ final class Hooks {
 	const AI_PROVIDERS = 'sint/ai_providers';
 
 	/**
-	 * Filter. The template a share is built from. Starts as the post type's template;
-	 * a filter can return another one for an account or a context.
+	 * Filter. The template that the plugin builds a share from. It starts as the post type's
+	 * template; a filter can return another one for an account or a context.
 	 *
 	 * @param array    $template ['caption' => string, 'captions' => array<network, string>,
 	 *                           'media' => 'auto'|'featured'|'content'|'custom'|'none',
@@ -126,8 +126,8 @@ final class Hooks {
 	const SHARE_TEMPLATE = 'sint/share_template';
 
 	/**
-	 * Action. Fires when shares are added, before any is sent: from the admin app, or on
-	 * publish.
+	 * Action. Fires when the plugin adds shares, before it sends any: from the admin app, or
+	 * on publish.
 	 *
 	 * @param int[] $ids     Queue row IDs, one per account.
 	 * @param array $options From the admin app: the unsanitized `options` the composer sent
@@ -144,4 +144,13 @@ final class Hooks {
 	 *                       'last_at', 'sent', 'total', 'updated_at', 'actions' ].
 	 */
 	const CAMPAIGNS = 'sint/campaigns';
+
+	/**
+	 * Filter. The next shares on the Dashboard. Add shares that are planned but not in the
+	 * queue yet. The plugin sorts the list by time and shows the first ones.
+	 *
+	 * @param array[] $shares Each: [ 'id' => int|string, 'network', 'account_id', 'title',
+	 *                        'scheduled_at' => ISO 8601 time ].
+	 */
+	const UPCOMING_SHARES = 'sint/upcoming_shares';
 }

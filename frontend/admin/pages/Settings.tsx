@@ -10,16 +10,30 @@ import type { BlockType, BlockUse, Settings } from '../lib/types'
 export function SettingsPage(_props: PageProps) {
   const toast = useToast()
   const [settings, setSettings] = useState<Settings | null>(null)
+  // The settings as the server last sent them, to tell when there are unsaved changes.
+  const [saved, setSaved] = useState('')
   const [blocks, setBlocks] = useState<BlockType[]>([])
   const [saving, setSaving] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  // API keys typed in this visit. A key is sent once and never comes back.
+  // API keys typed in this visit. The app sends a key once, and the server never sends it back.
   const [keys, setKeys] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
-    api.get<Settings>('settings').then((r) => setSettings(r.data))
+    api.get<Settings>('settings').then((r) => {
+      setSettings(r.data)
+      setSaved(JSON.stringify(r.data))
+    })
     api.get<{ blocks: BlockType[] }>('blocks').then((r) => setBlocks(r.data.blocks))
   }, [])
+
+  const dirty = !!settings && (JSON.stringify(settings) !== saved || Object.values(keys).some((k) => k !== ''))
+  // The browser asks before it leaves or reloads the page with unsaved changes.
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
   // Filter `sint.settings.sections`: other plugins add cards below free's own. Each card saves its own data.
   const sections = applyFilters<{ key: string; component: ComponentType }[]>('sint.settings.sections', [])
@@ -38,6 +52,7 @@ export function SettingsPage(_props: PageProps) {
     try {
       const r = await api.post<Settings>('settings', { ...settings, ai_keys: keys })
       setSettings(r.data)
+      setSaved(JSON.stringify(r.data))
       setKeys({})
       const chosen = r.data.ai_providers.find((p) => p.key === r.data.ai.provider)
       config.ai.ready = !!chosen && (!chosen.needs_key || chosen.has_key)
@@ -62,6 +77,7 @@ export function SettingsPage(_props: PageProps) {
   return (
     <>
       <Header title={__('Settings', 'social-integrations')}>
+        {dirty && !saving && <span className="sint-sub" role="status" style={{ fontSize: 13 }}>{__('Unsaved changes', 'social-integrations')}</span>}
         <button type="button" className="sint-btn primary" onClick={save} disabled={saving}>{saving ? __('Saving…', 'social-integrations') : __('Save changes', 'social-integrations')}</button>
       </Header>
       <div className="sint-body">

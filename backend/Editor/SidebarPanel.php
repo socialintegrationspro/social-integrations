@@ -9,6 +9,7 @@ namespace SocialIntegrations\Editor;
 
 use SocialIntegrations\Admin\Menu;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -21,6 +22,22 @@ defined( 'ABSPATH' ) || exit;
 final class SidebarPanel {
 
 	const HANDLE = 'sint-editor';
+
+	/**
+	 * Network registry.
+	 *
+	 * @var Registry
+	 */
+	private $networks;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Registry $networks Network registry.
+	 */
+	public function __construct( Registry $networks ) {
+		$this->networks = $networks;
+	}
 
 	/**
 	 * Registers hooks.
@@ -55,9 +72,13 @@ final class SidebarPanel {
 	 * Data for `window.sintEditor`. Holds no secrets.
 	 */
 	private function config(): array {
+		$names = array();
+		foreach ( $this->networks->all() as $network ) {
+			$names[ $network->key() ] = $network->label();
+		}
 		return array(
-			'canManage'     => current_user_can( 'manage_options' ),
 			'pageUrl'       => esc_url_raw( Menu::url() ),
+			'networkNames'  => (object) $names,
 			'blockOverride' => (bool) Settings::get( 'allow_block_override', true ),
 			'blockRules'    => (object) Settings::get( 'blocks', array() ),
 			'blockFallback' => (string) Settings::get( 'block_fallback', 'text' ),

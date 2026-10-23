@@ -29,7 +29,7 @@ export interface ComposerSeed {
   campaign?: CampaignRef
 }
 
-/** A campaign the composer opens: its `type` picks the tab. */
+/** A campaign the composer opens: its `type` selects the tab. */
 export interface CampaignRef {
   type: string
   id: number | string
@@ -56,7 +56,7 @@ export interface ComposerOptionProps {
   options: Record<string, unknown>
   setOption: (key: string, value: unknown) => void
   when: When
-  /** Site-time datetime-local value of the picked time. */
+  /** Site-time datetime-local value of the selected time. */
   local: string
 }
 
@@ -66,7 +66,7 @@ export interface ComposerModeProps {
   selected: string[]
   onClose: () => void
   onSaved: () => void
-  /** The campaign of this mode's type being edited or copied. */
+  /** The campaign of this mode's type that the user edits or copies. */
   campaign?: CampaignRef
 }
 
@@ -122,10 +122,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [options, setOptions] = useState<Record<string, unknown>>({})
   const keepSaved = useRef(!!from)
 
-  // Filter `sint.composer.modes`: other ways to share from this modal, such as many posts at once.
+  // Filter `sint.composer.modes`: other ways to share from this modal, such as many posts at the same time.
   const modes = item ? [] : [...applyFilters<ComposerMode[]>('sint.composer.modes', []), { value: 'auto', label: __('Auto-post', 'social-integrations'), component: AutoPost }]
   const Mode = modes.find((m) => m.value === mode)?.component
-  // Filter `sint.composer.options`: controls next to the timing of a new share, such as repeating it.
+  // Filter `sint.composer.options`: controls next to the timing of a new share, such as a control that repeats it.
   const optionControls = item ? [] : applyFilters<{ key: string; component: (props: ComposerOptionProps) => JSX.Element }[]>('sint.composer.options', [])
   const setOption = (key: string, value: unknown) => setOptions((o) => ({ ...o, [key]: value }))
 
@@ -207,10 +207,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const over = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
   const canSend = !busy && selected.length > 0 && caption.trim() !== '' && over.length === 0
   const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
-  // With a post selected and its built caption untouched, AI writes a new caption; otherwise it improves the text.
+  // With a post selected and its built caption unchanged, AI writes a new caption; otherwise it improves the text.
   const fresh = !!postId && text === (built?.caption ?? '')
 
-  /** Drafts the current tab's caption from the post, or improves the text written so far. */
+  /** Writes a draft of the current tab's caption from the post, or improves the current text. */
   const writeWithAI = async () => {
     const limits = (tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500)
     setWriting(true)
@@ -270,11 +270,11 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     })
     const failed = (r.data.results ?? []).filter((x) => x.status !== 'published')
     if (failed.length) {
-      // Keep the composer open so the person can fix the caption or reconnect and try again.
+      // Keep the composer open so the user can fix the caption or reconnect and try again.
       toast(failed.map(rejected).join(' '), true)
       return false
     }
-    toast(draft ? __('Draft saved.', 'social-integrations') : r.data.results ? sprintf(__('Shared to %d accounts.', 'social-integrations'), r.data.results.length) : __('Added to the calendar.', 'social-integrations'))
+    toast(draft ? __('Draft saved.', 'social-integrations') : r.data.results ? sprintf(__('Shared to %d accounts.', 'social-integrations'), r.data.results.length) : editing ? __('Saved to the calendar.', 'social-integrations') : __('Added to the calendar.', 'social-integrations'))
     return true
   }
 
@@ -300,7 +300,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         <TimingFooter when={when} setWhen={setWhen} local={local} setLocal={setLocal} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
           <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
           <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
-            {when === 'now' ? __('Share now', 'social-integrations') : upcoming ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
+            {when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
           </button>
         </TimingFooter>
       )}

@@ -70,7 +70,7 @@ class Facebook extends AbstractNetwork {
 	}
 
 	/**
-	 * Permissions requested at sign-in.
+	 * Permissions that the sign-in requests.
 	 *
 	 * The first three list Pages and post to them; business_management also lists
 	 * Pages owned by a Business Portfolio.
@@ -100,7 +100,7 @@ class Facebook extends AbstractNetwork {
 	}
 
 	/**
-	 * Swaps the code for a long-lived user token.
+	 * Exchanges the code for a long-lived user token.
 	 *
 	 * @param array  $app          App fields.
 	 * @param string $code         Code from the callback.
@@ -184,7 +184,7 @@ class Facebook extends AbstractNetwork {
 			$pages
 		);
 
-		// Pages owned by a Business Portfolio do not show up in /me/accounts.
+		// Pages owned by a Business Portfolio do not appear in /me/accounts.
 		try {
 			$businesses = $this->graph_get(
 				'/me/businesses',
@@ -228,8 +228,8 @@ class Facebook extends AbstractNetwork {
 	 * Publishes to the Page.
 	 *
 	 * Text and link go to /{page-id}/feed. One image goes to /{page-id}/photos with
-	 * the text as its caption. Several images are uploaded unpublished, then attached
-	 * to one feed post.
+	 * the text as its caption. The method uploads several images unpublished, then
+	 * attaches them to one feed post.
 	 *
 	 * @param array $credentials ['page_id', 'access_token'].
 	 * @param array $payload     Share payload.
@@ -327,7 +327,7 @@ class Facebook extends AbstractNetwork {
 	}
 
 	/**
-	 * Adds Pages from a Graph list to $pages, keyed by ID. Pages without a token are skipped.
+	 * Adds Pages from a Graph list to $pages, keyed by ID. It skips Pages without a token.
 	 *
 	 * @param array $response Graph list.
 	 * @param array $pages    Pages found so far.

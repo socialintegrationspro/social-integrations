@@ -14,7 +14,7 @@ use SocialIntegrations\Support\Settings;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Lists providers and keeps their API keys encrypted. Keys are never sent to the browser.
+ * Lists providers and keeps their API keys encrypted. The plugin never sends keys to the browser.
  */
 final class Providers {
 
@@ -37,7 +37,7 @@ final class Providers {
 	}
 
 	/**
-	 * The provider chosen in Settings, when it is ready to write.
+	 * The provider selected in Settings, when it is ready to write.
 	 */
 	public static function current(): ?ProviderInterface {
 		$ai       = (array) Settings::get( 'ai', array() );

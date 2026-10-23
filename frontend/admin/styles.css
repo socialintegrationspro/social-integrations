@@ -1,6 +1,6 @@
 /* Scoped to the plugin page: body.sint-admin-page and #sint-app. */
 body.sint-admin-page { background: #141414; }
-body.sint-admin-page.sint-light { background: #eceae4; }
+body.sint-admin-page.sint-light { background: #f4f2ec; }
 body.sint-admin-page #wpcontent { padding-left: 0; }
 body.sint-admin-page #wpbody-content { padding-bottom: 0; }
 body.sint-admin-page #wpfooter { display: none; }
@@ -17,7 +17,7 @@ body.sint-admin-page #wpfooter { display: none; }
   --text: #f5f5f4;
   --text-2: #d6d3d1;
   --muted: #a8a29e;
-  --faint: #8f8a85;
+  --faint: #9a958f;
   --ink: #f5f5f4;
   --on-ink: #1c1c1c;
   --accent: #f7d046;
@@ -96,13 +96,13 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-root input[type='checkbox']:checked::before { content: none; }
 
 
-/* Day mode: soft grey-to-yellow ground, frosted white panels, charcoal active states.
+/* Day mode: flat warm ground, solid white panels with a thin border, charcoal active states.
    Yellow fills carry dark text; yellow is never used as text on white. */
 .sint-root[data-theme='light'] {
-  --ground: linear-gradient(155deg, #e4e5e8 0%, #eeede8 42%, #f7efcf 78%, #fbe7a1 100%);
-  --bg: #f1f0ec;
-  --panel: rgba(255, 255, 255, 0.58);
-  --raised: rgba(255, 255, 255, 0.78);
+  --ground: #f4f2ec;
+  --bg: #f4f2ec;
+  --panel: #ffffff;
+  --raised: #f8f7f3;
   --card: #ffffff;
   --line: rgba(28, 28, 28, 0.08);
   --border: rgba(28, 28, 28, 0.1);
@@ -122,12 +122,12 @@ body.sint-admin-page #wpfooter { display: none; }
   --link-hover: #5c4200;
   --today: #7a5800;
   --on-today: #ffffff;
-  --ok: #059669;
+  --ok: #2f8f5b;
   --ok-soft: #e3f5ec;
-  --ok-text: #047857;
-  --bad: #dc2626;
+  --ok-text: #256f48;
+  --bad: #c2413a;
   --bad-soft: #fdecec;
-  --bad-text: #b42318;
+  --bad-text: #a8342e;
   --warn: #f59e0b;
   --warn-soft: #fef3c7;
   --warn-text: #92400e;
@@ -138,31 +138,35 @@ body.sint-admin-page #wpfooter { display: none; }
   --icon: #2b2b2b;
   --count-on: #3d3d3a;
   --toggle-off: #d6d4ce;
-  --table: rgba(255, 255, 255, 0.7);
+  --table: #ffffff;
   --selected: #fbf3d2;
   --thumb: #e8e6df;
-  --cell: rgba(255, 255, 255, 0.62);
+  --cell: #f8f7f3;
   --cell-today: #fcf3cf;
   --head-today: #f6cd3f;
   --hatch-a: rgba(28, 28, 28, 0.07);
-  --hatch-b: rgba(255, 255, 255, 0.35);
+  --hatch-b: #faf9f6;
   --sched-border: #e5bb2a;
-  --published-bg: rgba(255, 255, 255, 0.6);
+  --published-bg: #ffffff;
   --failed-bg: #fef2f2;
   --tok-bg: #fbf0c4;
   --tok-border: #ecd27a;
   --overlay: rgba(28, 28, 28, 0.32);
   --skel-a: rgba(28, 28, 28, 0.06);
-  --skel-b: rgba(255, 255, 255, 0.7);
-  --side: rgba(255, 255, 255, 0.45);
+  --skel-b: #f8f7f3;
+  --side: #faf9f6;
   --field: #ffffff;
   --field-border: rgba(28, 28, 28, 0.14);
   --avatar: #2b2b2b;
   --feature: #262626;
   --feature-line: rgba(255, 255, 255, 0.1);
-  --shadow: 0 1px 2px rgba(28, 28, 28, 0.04), 0 12px 32px -18px rgba(28, 28, 28, 0.18);
+  --shadow: 0 1px 2px rgba(28, 28, 28, 0.04);
   color-scheme: light;
 }
+.sint-root[data-theme='light'] .sint-main,
+.sint-root[data-theme='light'] .sint-nav,
+.sint-root[data-theme='light'] .sint-tools a,
+.sint-root[data-theme='light'] .sint-theme { border: 1px solid var(--border); }
 .sint-root[data-theme='light'] .sint-pc { border-color: var(--border); }
 .sint-root[data-theme='light'] .sint-pc .c { color: var(--muted); }
 .sint-root[data-theme='light'] .sint-pc.failed { border-color: var(--bad-border); }
@@ -202,7 +206,7 @@ body.sint-admin-page #wpfooter { display: none; }
   .sint-main { overflow-y: auto; scrollbar-gutter: stable; min-height: 0; }
   /* The sticky title paints the panel over the same fixed ground, so it matches the panel and hides what scrolls below. */
   .sint-main > .sint-head { position: sticky; top: 0; z-index: 5; background: linear-gradient(var(--panel), var(--panel)), var(--ground); background-attachment: fixed; }
-  /* Calendar: the panel stops scrolling. The toolbar and weekday row stay; the grid and the channel list scroll on their own. */
+  /* Calendar: the panel stops scrolling. The toolbar and weekday row stay; the grid and the account list scroll independently. */
   .sint-main:has(> .sint-cal-layout) { overflow: hidden; }
   .sint-root .sint-cal-layout { flex-wrap: nowrap; min-height: 0; }
   .sint-root .sint-cal-side { overflow-y: auto; scrollbar-width: thin; }
@@ -213,7 +217,7 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-main { scrollbar-width: thin; scrollbar-color: var(--hover-border) transparent; }
 
 /* Desktop keeps the top bar on one row: below 1280px the brand and Settings show only their icons,
-   and below 1100px the nav drops its icons. A nav that is still too wide scrolls sideways. */
+   and below 1100px the nav removes its icons. A nav that is still too wide scrolls sideways. */
 @media (min-width: 783px) {
   .sint-top { flex-wrap: nowrap; }
 }
@@ -280,7 +284,9 @@ body.sint-admin-page #wpfooter { display: none; }
 
 /* Network badge and avatars */
 .sint-net { width: 20px; height: 20px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 9px; flex: 0 0 auto; }
-.sint-net svg { width: 10px; height: 10px; }
+.sint-net svg { width: 56%; height: 56%; }
+/* Night mode: a faint ring keeps black badges (Threads, X) visible on dark panels. */
+.sint-root:not([data-theme='light']) .sint-net { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
 .sint-nets { display: flex; }
 .sint-nets .sint-net { border: 2px solid var(--panel); margin-left: -6px; }
 .sint-nets .sint-net:first-child { margin-left: 0; }
@@ -394,7 +400,6 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-pc-who .n { flex: 1; min-width: 0; font-size: 11px; font-weight: 600; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sint-pc-who .sint-avatar { width: 24px; height: 24px; font-size: 10px; }
 .sint-pc-who .sint-avatar .sint-net { width: 14px; height: 14px; right: -4px; bottom: -4px; }
-.sint-pc-who .sint-avatar .sint-net svg { width: 8px; height: 8px; }
 .sint-pc-thumb { width: 32px; height: 32px; border-radius: var(--r-sm); object-fit: cover; flex: 0 0 auto; }
 .sint-pc-act { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sint-pc-tools { display: inline-flex; gap: 4px; margin-left: auto; position: relative; z-index: 1; }
@@ -479,8 +484,6 @@ body.folded .sint-overlay { left: 36px; }
 .sint-acc { background: var(--raised); border: 1px solid var(--border); border-radius: var(--r-card); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .sint-acc.expired { border-color: var(--warn-border); }
 .sint-acc.add { background: transparent; border-style: dashed; }
-.sint-acc.add .sint-net svg { width: 24px; height: 24px; }
-.sint-acc.add .sint-net { font-size: 18px; }
 .sint-kv { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; gap: 10px; }
 .sint-kv span:first-child { flex: 1; display: flex; align-items: baseline; gap: 8px; }
 .sint-kv span:first-child::after { content: ''; flex: 1; border-bottom: 1.5px dotted var(--hover-border); transform: translateY(-3px); }
@@ -543,7 +546,6 @@ body.folded .sint-overlay { left: 36px; }
 .sint-log-av.failed { box-shadow: 0 0 0 2px var(--table), 0 0 0 4px var(--bad); }
 .sint-log-avatars .sint-avatar { width: 30px; height: 30px; font-size: 11px; }
 .sint-log-avatars .sint-avatar .sint-net { width: 14px; height: 14px; right: -3px; bottom: -3px; border-width: 1.5px; }
-.sint-log-avatars .sint-avatar .sint-net svg { width: 8px; height: 8px; }
 .sint-log-more { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: var(--line); color: var(--text-2); font-size: 11px; font-weight: 700; }
 .sint-log-detail td { padding: 0 14px 14px; background: var(--cell); }
 .sint-log-shares { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
@@ -551,7 +553,6 @@ body.folded .sint-overlay { left: 36px; }
 .sint-log-share-item + .sint-log-share-item { border-top: 1px solid var(--line); }
 .sint-log-share .sint-avatar { width: 32px; height: 32px; font-size: 12px; }
 .sint-log-share .sint-avatar .sint-net { width: 16px; height: 16px; right: -4px; bottom: -4px; }
-.sint-log-share .sint-avatar .sint-net svg { width: 9px; height: 9px; }
 .sint-log-who { flex: 1 1 200px; min-width: 0; }
 .sint-log-who .n { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sint-log-result { display: inline-flex; align-items: center; gap: 6px; width: 92px; font-size: 12px; font-weight: 600; white-space: nowrap; }

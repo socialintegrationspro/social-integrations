@@ -1,6 +1,6 @@
 <?php
 /**
- * Writes captions with the chosen AI provider.
+ * Writes captions with the selected AI provider.
  *
  * @package SocialIntegrations
  */
@@ -14,8 +14,8 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Builds the request from a post (or a caption to improve), the tone in Settings and
- * the length the networks allow, then cleans up the answer. The post link is added by
- * the plugin after the text, so the AI never writes or changes it.
+ * the length the networks allow, then cleans the answer. The plugin adds the post link
+ * after the text, so the AI never writes or changes it.
  */
 final class CaptionGenerator {
 
@@ -76,7 +76,7 @@ final class CaptionGenerator {
 	}
 
 	/**
-	 * Removes wrapping quotes and shortens at a word when the answer is too long.
+	 * Removes the quotes around the answer, and shortens it at a word when it is too long.
 	 *
 	 * @param string $text Answer.
 	 * @param int    $max  Maximum characters.

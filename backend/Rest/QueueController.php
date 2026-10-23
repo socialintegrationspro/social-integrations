@@ -131,7 +131,7 @@ final class QueueController extends RestController {
 		if ( isset( $body['media'] ) ) {
 			$fields['media'] = Campaigns::media( $body['media'] );
 		}
-		// The scheduler may have claimed the row since it was read.
+		// The scheduler can claim the row after this request reads it.
 		if ( ! Queue::update( $job['id'], $fields, $job['status'] ) ) {
 			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
@@ -152,7 +152,7 @@ final class QueueController extends RestController {
 	}
 
 	/**
-	 * Deletes a share that has not been sent.
+	 * Deletes a share that is not sent yet.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -191,8 +191,8 @@ final class QueueController extends RestController {
 		if ( is_wp_error( $job ) ) {
 			return $job;
 		}
-		// Only a failed share goes again, so a sent share or one that is being sent is not
-		// posted twice.
+		// The plugin sends only a failed share again, so it never posts a sent share, or a
+		// share in progress, two times.
 		$reset = Queue::update(
 			$job['id'],
 			array(
@@ -347,7 +347,7 @@ final class QueueController extends RestController {
 
 	/**
 	 * Deletes share log entries. Body: { keys: string[] } (entry keys, at most 100).
-	 * The shares stay in the calendar; only their log rows go.
+	 * The shares stay in the calendar; the plugin deletes only their log rows.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error

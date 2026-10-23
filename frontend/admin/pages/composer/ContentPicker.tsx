@@ -80,7 +80,7 @@ function itemDate(item: ContentItem): string {
   return fmtDate(item.date)
 }
 
-/** Where an item from the site stands with sharing. */
+/** The share status of an item from the site. */
 function ShareState({ item }: { item: ContentItem }) {
   const sent = item.shares.filter((x) => x.status === 'published').length
   const failed = item.shares.length - sent

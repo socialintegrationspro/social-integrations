@@ -74,7 +74,7 @@ class Telegram extends AbstractNetwork {
 	}
 
 	/**
-	 * Fields the user fills in.
+	 * Fields that the user completes.
 	 */
 	public function connect_fields(): array {
 		return array(
@@ -207,7 +207,7 @@ class Telegram extends AbstractNetwork {
 	 *
 	 * Several images go as an album (sendMediaGroup), one video with sendVideo, one
 	 * image with sendPhoto, and text with sendMessage. Telegram allows 1024 characters
-	 * under media; a longer text is sent as its own message after the media.
+	 * under media; the method sends a longer text as its own message after the media.
 	 *
 	 * @param array $credentials ['bot_token', 'chat_id', 'username'].
 	 * @param array $payload     Share payload.
@@ -314,7 +314,7 @@ class Telegram extends AbstractNetwork {
 	}
 
 	/**
-	 * Sends a text message, previewing the link when there is one.
+	 * Sends a text message, with a link preview when there is a link.
 	 *
 	 * @param string $token Bot token.
 	 * @param string $chat  Chat ID.

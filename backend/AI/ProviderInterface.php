@@ -42,7 +42,7 @@ interface ProviderInterface {
 	 * @param string $key    API key, or '' when needs_key() is false.
 	 * @param string $model  Model, or '' for the default.
 	 * @return string The text.
-	 * @throws AIException When no text comes back.
+	 * @throws AIException When the provider returns no text.
 	 */
 	public function write( string $system, string $prompt, string $key, string $model ): string;
 }
