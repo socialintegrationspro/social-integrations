@@ -8,6 +8,7 @@
 namespace SocialIntegrations;
 
 use SocialIntegrations\Admin\Assets;
+use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Admin\Menu;
 use SocialIntegrations\Database\Migrations;
@@ -82,6 +83,7 @@ final class Plugin {
 		Capabilities::register();
 		$this->networks = new Registry();
 		( new OAuth( $this->networks ) )->register();
+		( new Broker() )->register();
 
 		Migrations::maybe_upgrade();
 

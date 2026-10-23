@@ -173,4 +173,28 @@ final class Hooks {
 	 *                        'scheduled_at' => ISO 8601 time ].
 	 */
 	const UPCOMING_SHARES = 'sint/upcoming_shares';
+
+	/**
+	 * Filter. Finishes an OAuth sign-in that a plugin started with
+	 * \SocialIntegrations\Auth\ConnectSession::begin() and a context type other than 'admin'.
+	 * Check the context, finish the sign-in (ConnectSession::exchange(), then Accounts::save()),
+	 * and return true. The plugin then stops the request. When no filter returns true, the
+	 * plugin shows "This sign-in link is not valid."
+	 *
+	 * @param bool   $handled False.
+	 * @param array  $session ['network', 'method', 'context', 'verifier'], already used.
+	 * @param string $code    Code from the network; empty when the sign-in failed.
+	 * @param string $error   Error from the network; empty when there is none.
+	 */
+	const OAUTH_CALLBACK = 'sint/oauth_callback';
+
+	/**
+	 * Action. Fires after the plugin renews the credentials of an account before a share.
+	 *
+	 * @param string $account_id Account ID.
+	 * @param array  $old        Credentials before the renewal.
+	 * @param array  $fresh      Credentials after the renewal, as saved.
+	 * @param string $network    Network key.
+	 */
+	const CREDENTIALS_RENEWED = 'sint/credentials_renewed';
 }

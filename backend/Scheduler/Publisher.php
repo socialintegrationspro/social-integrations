@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Support\Cron;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Hooks;
@@ -128,7 +129,7 @@ final class Publisher {
 				throw new NetworkException( 'expired', esc_html( sprintf( __( '%s sign-in expired. Reconnect the account.', 'social-integrations' ), $network->label() ) ) );
 			}
 
-			$credentials = $this->fresh_credentials( $network, (string) $job['account_id'], (array) $account['credentials'] );
+			$credentials = $this->fresh_credentials( $network, $account );
 			$answer      = $network->publish( $credentials, $this->payload( $job ) );
 			if ( ! empty( $answer['credentials'] ) && is_array( $answer['credentials'] ) ) {
 				Accounts::update_credentials( (string) $job['account_id'], $answer['credentials'] );
@@ -201,17 +202,23 @@ final class Publisher {
 	 * Renews credentials that expire within five minutes, when the network can.
 	 * A failed renewal keeps the old ones; the share then reports the sign-in problem.
 	 *
-	 * @param AbstractNetwork $network     Network.
-	 * @param string          $account_id  Account ID.
-	 * @param array           $credentials Current credentials.
+	 * An account that signed in with the Social Integrations app renews on that server,
+	 * because the server keeps the app secret.
+	 *
+	 * @param AbstractNetwork $network Network.
+	 * @param array           $account Account from Accounts::get().
 	 */
-	private function fresh_credentials( AbstractNetwork $network, string $account_id, array $credentials ): array {
-		$expires = (int) ( $credentials['expires_at'] ?? 0 );
+	private function fresh_credentials( AbstractNetwork $network, array $account ): array {
+		$account_id  = (string) $account['id'];
+		$credentials = (array) $account['credentials'];
+		$expires     = (int) ( $credentials['expires_at'] ?? 0 );
 		if ( ! $expires || $expires - 5 * MINUTE_IN_SECONDS > time() ) {
 			return $credentials;
 		}
 		try {
-			$fresh = $network->refresh( Accounts::app( $network->key() ), $credentials );
+			$fresh = 'broker' === $account['via']
+				? Broker::refresh( $network, $credentials )
+				: $network->refresh( Accounts::app( $network->key() ), $credentials );
 		} catch ( NetworkException $e ) {
 			return $credentials;
 		}
@@ -220,6 +227,7 @@ final class Publisher {
 		}
 		$fresh = array_merge( $credentials, $fresh );
 		Accounts::update_credentials( $account_id, $fresh );
+		do_action( Hooks::CREDENTIALS_RENEWED, $account_id, $credentials, $fresh, $network->key() );
 		return $fresh;
 	}
 

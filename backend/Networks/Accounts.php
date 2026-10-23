@@ -30,7 +30,7 @@ final class Accounts {
 		$accounts = array();
 		foreach ( self::stored() as $account ) {
 			unset( $account['credentials'] );
-			$accounts[] = $account;
+			$accounts[] = self::with_via( $account );
 		}
 		return apply_filters( Hooks::ACCOUNTS, $accounts );
 	}
@@ -91,7 +91,7 @@ final class Accounts {
 		if ( ! isset( $stored[ $id ] ) ) {
 			return null;
 		}
-		$account                = $stored[ $id ];
+		$account                = self::with_via( $stored[ $id ] );
 		$account['credentials'] = Encryption::decrypt_array( (array) ( $account['credentials'] ?? array() ) );
 		return $account;
 	}
@@ -102,9 +102,10 @@ final class Accounts {
 	 * @param string $network     Network key.
 	 * @param array  $profile     ['remote_id', 'name', 'username', 'avatar', 'profile_url'].
 	 * @param array  $credentials Plain credentials.
+	 * @param string $via         How the account signed in: 'app' (own developer app), or another method.
 	 * @return array The account, without credentials.
 	 */
-	public static function save( string $network, array $profile, array $credentials ): array {
+	public static function save( string $network, array $profile, array $credentials, string $via = 'app' ): array {
 		$stored        = self::stored();
 		$network       = sanitize_key( $network );
 		$remote_id     = sanitize_text_field( (string) ( $profile['remote_id'] ?? '' ) );
@@ -118,6 +119,7 @@ final class Accounts {
 			'avatar'       => esc_url_raw( (string) ( $profile['avatar'] ?? '' ) ),
 			'profile_url'  => esc_url_raw( (string) ( $profile['profile_url'] ?? '' ) ),
 			'status'       => 'connected',
+			'via'          => sanitize_key( $via ),
 			'connected_at' => gmdate( 'c' ),
 			'expires_at'   => isset( $credentials['expires_at'] ) ? gmdate( 'c', (int) $credentials['expires_at'] ) : null,
 		);
@@ -202,6 +204,16 @@ final class Accounts {
 	public static function has_app( string $network ): bool {
 		$app = self::app( $network );
 		return ! empty( $app['client_id'] ) && ! empty( $app['client_secret'] );
+	}
+
+	/**
+	 * An account with its sign-in method. Accounts saved before the method was stored used their own app.
+	 *
+	 * @param array $account Stored account.
+	 */
+	private static function with_via( array $account ): array {
+		$account['via'] = (string) ( $account['via'] ?? 'app' );
+		return $account;
 	}
 
 	/**

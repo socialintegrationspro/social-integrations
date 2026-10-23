@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Auth;
 
 use SocialIntegrations\Admin\Menu;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Networks\Accounts;
@@ -30,6 +31,9 @@ defined( 'ABSPATH' ) || exit;
  * 3. When the sign-in can post as several things (Facebook Pages), the plugin keeps
  *    the choices for a short time and the admin app lets the user select one through
  *    GET/POST /oauth/{network}/entities. Otherwise the plugin saves the account immediately.
+ *
+ * ConnectSession keeps the state. A session that the admin app did not start goes to the
+ * `sint/oauth_callback` filter.
  */
 final class OAuth {
 
@@ -37,10 +41,8 @@ final class OAuth {
 	const ACTION          = 'sint_oauth_callback';
 	const QUERY_VAR       = 'sint_oauth_callback';
 	const CALLBACK_PATH   = 'social-integrations/oauth/callback';
-	const STATE_PREFIX    = 'sint_oauth_state_';
 	const PENDING_PREFIX  = 'sint_oauth_pending_';
 	const ERROR_PREFIX    = 'sint_oauth_error_';
-	const STATE_TTL       = 10 * MINUTE_IN_SECONDS;
 	const PENDING_TTL     = 15 * MINUTE_IN_SECONDS;
 	const NETWORK_PATTERN = '(?P<network>[a-z0-9_-]+)';
 
@@ -138,7 +140,13 @@ final class OAuth {
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'start' ),
 				'permission_callback' => array( $this, 'can_manage' ),
-				'args'                => $network_arg,
+				'args'                => $network_arg + array(
+					'method' => array(
+						'type'    => 'string',
+						'enum'    => ConnectSession::METHODS,
+						'default' => 'app',
+					),
+				),
 			)
 		);
 
@@ -186,41 +194,16 @@ final class OAuth {
 		if ( is_wp_error( $network ) ) {
 			return $network;
 		}
-		if ( ! Accounts::has_app( $network->key() ) ) {
-			return new \WP_Error(
-				'sint_no_app',
-				/* translators: %s: network name */
-				sprintf( __( 'Enter the app ID and secret of your %s app first.', 'social-integrations' ), $network->label() ),
-				array( 'status' => 400 )
-			);
-		}
-
-		$state    = wp_generate_password( 40, false, false );
-		$verifier = $network->pkce() ? wp_generate_password( 64, false, false ) : '';
-		set_transient(
-			self::STATE_PREFIX . $state,
+		$url = ConnectSession::begin(
+			$network,
+			(string) $request['method'],
 			array(
-				'user_id'  => get_current_user_id(),
-				'network'  => $network->key(),
-				'verifier' => $verifier,
-			),
-			self::STATE_TTL
+				'type'    => 'admin',
+				'user_id' => get_current_user_id(),
+			)
 		);
-
-		$url = $network->authorization_url( Accounts::app( $network->key() ), self::redirect_uri(), $state );
-		if ( '' !== $url && '' !== $verifier ) {
-			$challenge = rtrim( strtr( base64_encode( hash( 'sha256', $verifier, true ) ), '+/', '-_' ), '=' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- PKCE challenge, RFC 7636.
-			$url       = add_query_arg(
-				array(
-					'code_challenge'        => $challenge,
-					'code_challenge_method' => 'S256',
-				),
-				$url
-			);
-		}
-		if ( '' === $url ) {
-			delete_transient( self::STATE_PREFIX . $state );
-			return new \WP_Error( 'sint_no_url', __( 'This network did not provide a sign-in address.', 'social-integrations' ), array( 'status' => 500 ) );
+		if ( is_wp_error( $url ) ) {
+			return $url;
 		}
 
 		return rest_ensure_response( array( 'url' => $url ) );
@@ -282,7 +265,8 @@ final class OAuth {
 					'avatar'      => $entity['avatar'],
 					'profile_url' => $entity['profile_url'],
 				),
-				$credentials
+				$credentials,
+				(string) ( $entity['via'] ?? 'app' )
 			);
 			delete_transient( $this->pending_key( $key ) );
 			return rest_ensure_response( $account );
@@ -296,15 +280,25 @@ final class OAuth {
 	 * Always ends with a redirect and exit.
 	 */
 	public function handle_callback(): void {
-		list( $state, $code, $error ) = $this->callback_params();
+		list( $state, $code, $error, $handoff ) = $this->callback_params();
+
+		$session = ConnectSession::take( $state );
+		if ( null !== $session && 'broker' === $session['method'] ) {
+			$code = $handoff;
+		}
+		$type = (string) ( $session['context']['type'] ?? '' );
+		if ( null !== $session && 'admin' !== $type ) {
+			$this->external_callback( $session, $code, $error );
+		}
 
 		if ( ! current_user_can( Capabilities::MANAGE_ACCOUNTS ) ) {
 			$this->finish( 'error', __( 'You are not allowed to connect accounts.', 'social-integrations' ) );
 		}
+		if ( null === $session || (int) ( $session['context']['user_id'] ?? 0 ) !== get_current_user_id() ) {
+			$this->finish( 'error', __( 'The plugin cannot verify the sign-in, or the sign-in took too long. Connect again.', 'social-integrations' ) );
+		}
 
-		$saved = $this->verify_state( $state );
-
-		$network = $this->oauth_network( (string) ( $saved['network'] ?? '' ) );
+		$network = $this->oauth_network( (string) $session['network'] );
 		if ( is_wp_error( $network ) ) {
 			$this->finish( 'error', $network->get_error_message() );
 		}
@@ -320,15 +314,11 @@ final class OAuth {
 		}
 
 		try {
-			$app = Accounts::app( $key );
-			if ( ! empty( $saved['verifier'] ) ) {
-				$app['code_verifier'] = (string) $saved['verifier'];
-			}
-			$credentials = $network->exchange_code( $app, $code, self::redirect_uri() );
+			$credentials = ConnectSession::exchange( $network, $session, $code );
 			$entities    = $network->connectable_entities( $credentials );
 
 			if ( is_array( $entities ) ) {
-				$this->store_entities( $network, $entities );
+				$this->store_entities( $network, $entities, $session['method'] );
 			}
 
 			$profile = $network->fetch_profile( $credentials );
@@ -336,7 +326,7 @@ final class OAuth {
 				/* translators: %s: network name */
 				$this->finish( 'error', sprintf( __( '%s did not return the account profile. Connect again.', 'social-integrations' ), $network->label() ) );
 			}
-			Accounts::save( $key, $profile, $credentials );
+			Accounts::save( $key, $profile, $credentials, $session['method'] );
 		} catch ( NetworkException $e ) {
 			$this->finish( 'error', Errors::text( $e ) );
 		}
@@ -345,40 +335,46 @@ final class OAuth {
 	}
 
 	/**
-	 * State, code and error from the callback URL.
+	 * Gives a session that the admin app did not start to the plugin that started it, then stops.
 	 *
-	 * @return string[] [ $state, $code, $error ].
+	 * @param array  $session From ConnectSession::take().
+	 * @param string $code    Code from the callback URL.
+	 * @param string $error   Error from the callback URL.
 	 */
-	private function callback_params(): array {
-		// The state checked in verify_state() protects this request, not a nonce.
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$state = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
-		$code  = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
-		$error = '';
-		if ( isset( $_GET['error_description'] ) ) {
-			$error = sanitize_text_field( wp_unslash( $_GET['error_description'] ) );
-		} elseif ( isset( $_GET['error'] ) ) {
-			$error = sanitize_text_field( wp_unslash( $_GET['error'] ) );
+	private function external_callback( array $session, string $code, string $error ): void {
+		/** This filter is documented in backend/Hooks.php */
+		$handled = apply_filters( Hooks::OAUTH_CALLBACK, false, $session, $code, $error );
+		if ( ! $handled ) {
+			wp_die(
+				esc_html__( 'This sign-in link is not valid.', 'social-integrations' ),
+				esc_html__( 'Sign-in', 'social-integrations' ),
+				array( 'response' => 400 )
+			);
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-		return array( $state, $code, $error );
+		exit;
 	}
 
 	/**
-	 * The saved sign-in for a state, used once. Stops with an error when it is not the current user's.
+	 * State, code and error from the callback URL.
 	 *
-	 * @param string $state State from the callback URL.
-	 * @return array ['network', 'user_id', 'verifier'?].
+	 * @return string[] [ $state, $code, $error, $handoff ]. The Social Integrations app sends a handoff code.
 	 */
-	private function verify_state( string $state ): array {
-		$saved = '' !== $state ? get_transient( self::STATE_PREFIX . $state ) : false;
-		if ( '' !== $state ) {
-			delete_transient( self::STATE_PREFIX . $state );
+	private function callback_params(): array {
+		// The state checked in ConnectSession::take() protects this request, not a nonce.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$state   = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
+		$code    = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
+		$handoff = isset( $_GET['handoff'] ) ? sanitize_text_field( wp_unslash( $_GET['handoff'] ) ) : '';
+		$error   = '';
+		if ( isset( $_GET['error_description'] ) ) {
+			$error = sanitize_text_field( wp_unslash( $_GET['error_description'] ) );
+		} else {
+			// WordPress removes `error` from $_GET because it is a reserved query var; read the URL.
+			wp_parse_str( isset( $_SERVER['QUERY_STRING'] ) ? wp_unslash( $_SERVER['QUERY_STRING'] ) : '', $query ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The value is sanitized below.
+			$error = isset( $query['error'] ) && is_string( $query['error'] ) ? sanitize_text_field( $query['error'] ) : '';
 		}
-		if ( ! is_array( $saved ) || (int) ( $saved['user_id'] ?? 0 ) !== get_current_user_id() ) {
-			$this->finish( 'error', __( 'The plugin cannot verify the sign-in, or the sign-in took too long. Connect again.', 'social-integrations' ) );
-		}
-		return $saved;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		return array( $state, $code, $error, $handoff );
 	}
 
 	/**
@@ -386,8 +382,9 @@ final class OAuth {
 	 *
 	 * @param AbstractNetwork $network  Network.
 	 * @param array[]         $entities From connectable_entities().
+	 * @param string          $via      Sign-in method of the session.
 	 */
-	private function store_entities( AbstractNetwork $network, array $entities ): void {
+	private function store_entities( AbstractNetwork $network, array $entities, string $via ): void {
 		$stored = array();
 		foreach ( $entities as $entity ) {
 			if ( empty( $entity['remote_id'] ) || empty( $entity['credentials'] ) || ! is_array( $entity['credentials'] ) ) {
@@ -400,6 +397,7 @@ final class OAuth {
 				'avatar'      => esc_url_raw( (string) ( $entity['avatar'] ?? '' ) ),
 				'profile_url' => esc_url_raw( (string) ( $entity['profile_url'] ?? '' ) ),
 				'credentials' => Encryption::encrypt( (string) wp_json_encode( $entity['credentials'] ) ),
+				'via'         => $via,
 			);
 		}
 		if ( empty( $stored ) ) {

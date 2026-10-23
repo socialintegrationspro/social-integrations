@@ -29,6 +29,10 @@ The uncompiled source of the admin app is in the `frontend/` folder of the publi
 
 This plugin sends data to a third-party service only when you connect an account or share content to it.
 
+= Social Integrations app (app.socialintegrations.com) =
+To connect Facebook, Threads or LinkedIn without your own developer app, select "Connect with Social Integrations". The plugin then registers your site with app.socialintegrations.com and sends the site address and the network name. The network sends you back through that server. The server exchanges the sign-in code and gives the access token to your site once. The server does not keep the token. When the token expires, the plugin sends it to the server to renew it. To show the "Connect with Social Integrations" choice, the Accounts screen gets the list of supported networks from the server. This request sends no data about you or your site. If you use your own app for each network, the plugin sends nothing else to this server.
+Terms: https://socialintegrations.com/terms — Privacy: https://socialintegrations.com/privacy
+
 = Facebook (Meta Graph API) =
 When you connect a Facebook Page and when a share runs, the plugin sends the caption, the post link and the selected images to graph.facebook.com.
 Terms: https://www.facebook.com/terms.php — Privacy: https://www.facebook.com/privacy/policy/

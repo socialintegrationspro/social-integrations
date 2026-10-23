@@ -42,6 +42,13 @@ abstract class AbstractNetwork {
 	private $trace = array();
 
 	/**
+	 * Headers of the last answer that request() received.
+	 *
+	 * @var array|\ArrayAccess
+	 */
+	private $last_headers = array();
+
+	/**
 	 * Returns the requests made since the last call, and starts a new trace. Each request:
 	 * [ 'method', 'url', 'status' (0 on a transport error), 'ms', 'response', 'error'? ].
 	 */
@@ -150,6 +157,25 @@ abstract class AbstractNetwork {
 	 */
 	public function pkce(): bool {
 		return false;
+	}
+
+	/**
+	 * The network's name on the Social Integrations app server (Auth\Broker). Empty when
+	 * the server cannot sign in to this network; the user then uses their own app.
+	 */
+	public function broker_key(): string {
+		return 'oauth2' === $this->auth_type() ? $this->key() : '';
+	}
+
+	/**
+	 * Adds what the network needs to the credentials that the Social Integrations app returns.
+	 * They are the same as exchange_code() returns, but the server reads only the token
+	 * answer. For example, LinkedIn reads the member ID here.
+	 *
+	 * @param array $credentials Credentials from the server.
+	 */
+	public function complete_credentials( array $credentials ): array {
+		return $credentials;
 	}
 
 	/**
@@ -264,9 +290,10 @@ abstract class AbstractNetwork {
 		$args['method']  = $method;
 		$args['timeout'] = $args['timeout'] ?? 30;
 
-		$start    = microtime( true );
-		$response = wp_remote_request( $url, $args );
-		$step     = array(
+		$start              = microtime( true );
+		$response           = wp_remote_request( $url, $args );
+		$this->last_headers = is_wp_error( $response ) ? array() : wp_remote_retrieve_headers( $response );
+		$step               = array(
 			'method' => $method,
 			'url'    => Redact::url( $url ),
 			'ms'     => (int) round( ( microtime( true ) - $start ) * 1000 ),
@@ -297,6 +324,17 @@ abstract class AbstractNetwork {
 			throw new NetworkException( $this->error_code( $code, $body ), esc_html( $this->error_message( $code, $body ) ), $code ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 		return $body;
+	}
+
+	/**
+	 * A header of the last answer that request() received, for example an ID that a
+	 * network sends in a header. Empty when the answer did not have it.
+	 *
+	 * @param string $name Header name, in any case.
+	 */
+	protected function last_header( string $name ): string {
+		$value = $this->last_headers[ strtolower( $name ) ] ?? '';
+		return is_array( $value ) ? (string) reset( $value ) : (string) $value;
 	}
 
 	/**

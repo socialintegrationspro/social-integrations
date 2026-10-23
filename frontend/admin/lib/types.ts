@@ -12,6 +12,8 @@ export interface Network {
   app_fields: Field[]
   app_setup_url: string
   app_configured: boolean
+  /** OAuth sign-in methods: 'broker' is the Social Integrations app, 'app' the user's own app. Empty for other networks. */
+  methods: string[]
 }
 
 export interface Field {
@@ -31,6 +33,8 @@ export interface Account {
   avatar: string
   profile_url: string
   status: 'connected' | 'expired'
+  /** How the account signed in: 'app' is the user's own developer app. */
+  via: string
   connected_at: string
   expires_at: string | null
 }

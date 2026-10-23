@@ -350,6 +350,12 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-copy .sint-btn { height: 42px; flex: 0 0 auto; }
 .sint-copy .sint-btn.copied { color: var(--ok-text); border-color: var(--ok-border); }
 .sint-field { display: flex; flex-direction: column; gap: 6px; }
+.sint-method { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 44px; padding: 14px 16px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--raised); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.sint-method:hover:not(:disabled) { border-color: var(--hover-border); }
+.sint-method:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sint-method:disabled { cursor: default; opacity: .7; }
+.sint-method-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.sint-method-text { color: var(--muted); font-size: 13px; }
 .sint-ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 4px 20px 20px; }
 .sint-btn.ai { border-color: var(--tok-border); background: var(--tok-bg); color: var(--accent-text); }
 .sint-field > span { font-size: 13px; font-weight: 600; }

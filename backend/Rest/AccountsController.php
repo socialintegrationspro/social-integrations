@@ -9,6 +9,7 @@ namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
+use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\NetworkException;
@@ -55,7 +56,14 @@ final class AccountsController extends RestController {
 	public function networks(): \WP_REST_Response {
 		$list = array();
 		foreach ( $this->networks->all() as $network ) {
-			$list[] = $network->to_array() + array( 'app_configured' => Accounts::has_app( $network->key() ) );
+			$methods = array();
+			if ( 'oauth2' === $network->auth_type() ) {
+				$methods = Broker::supports( $network ) ? array( 'broker', 'app' ) : array( 'app' );
+			}
+			$list[] = $network->to_array() + array(
+				'app_configured' => Accounts::has_app( $network->key() ),
+				'methods'        => $methods,
+			);
 		}
 		return rest_ensure_response(
 			array(

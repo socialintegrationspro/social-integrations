@@ -13,6 +13,7 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 require_once __DIR__ . '/backend/Support/Sites.php';
 require_once __DIR__ . '/backend/Support/Settings.php';
 require_once __DIR__ . '/backend/Networks/Accounts.php';
+require_once __DIR__ . '/backend/Auth/Broker.php';
 require_once __DIR__ . '/backend/AI/Providers.php';
 require_once __DIR__ . '/backend/Database/Migrations.php';
 require_once __DIR__ . '/backend/Scheduler/AutoShare.php';
@@ -20,6 +21,7 @@ require_once __DIR__ . '/backend/Scheduler/Publisher.php';
 require_once __DIR__ . '/backend/Plugin.php';
 
 use SocialIntegrations\AI\Providers;
+use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Database\Migrations;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Plugin;
@@ -31,7 +33,7 @@ use SocialIntegrations\Support\Sites;
 $sint_uninstall = static function () {
 	global $wpdb;
 
-	foreach ( array( Settings::OPTION, Accounts::OPTION, Accounts::APP_OPTION, Providers::KEYS_OPTION, Migrations::VERSION_OPTION ) as $option ) {
+	foreach ( array( Settings::OPTION, Accounts::OPTION, Accounts::APP_OPTION, Broker::OPTION, Providers::KEYS_OPTION, Migrations::VERSION_OPTION ) as $option ) {
 		delete_option( $option );
 	}
 

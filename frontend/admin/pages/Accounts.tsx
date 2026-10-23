@@ -18,7 +18,9 @@ interface Entity {
 export function AccountsPage({ params, go }: PageProps) {
   const { networks, accounts, network, reload, redirectUri } = useStore()
   const toast = useToast()
-  const [connecting, setConnecting] = useState<Network | null>(null)
+  // `via` is set for Reconnect, so the account signs in again with the same method.
+  const [connecting, setConnectingState] = useState<{ network: Network; via?: string } | null>(null)
+  const setConnecting = (network: Network | null, via?: string) => setConnectingState(network ? { network, via } : null)
   // The URL only flags an error; the text comes from the server, so a link cannot set it.
   const [error, setError] = useState(params.get('error') ? config.oauthError : '')
   const pick = params.get('pick')
@@ -65,6 +67,8 @@ export function AccountsPage({ params, go }: PageProps) {
   return (
     <>
       <Header title={__('Accounts', 'social-integrations')}>
+        {/* Filter `sint.accounts.actions`: other plugins add buttons next to Refresh. */}
+        {applyFilters<ReactNode[]>('sint.accounts.actions', [], { go, reload })}
         <RefreshButton loading={refreshing} onClick={refresh} label={__('Refresh the accounts', 'social-integrations')} />
       </Header>
       <div className="sint-body">
@@ -85,7 +89,7 @@ export function AccountsPage({ params, go }: PageProps) {
               <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
               <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.', 'social-integrations')}</div>
             </div>
-            <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null)}>{__('Reconnect', 'social-integrations')}</button>
+            <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null, a.via)}>{__('Reconnect', 'social-integrations')}</button>
           </div>
         ))}
 
@@ -130,10 +134,11 @@ export function AccountsPage({ params, go }: PageProps) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {account.username && <div className="sint-kv"><span>{__('Handle', 'social-integrations')}</span><span>{account.username}</span></div>}
                       <div className="sint-kv"><span>{__('Connected', 'social-integrations')}</span><span>{fmtDate(account.connected_at)}</span></div>
+                      {n.auth_type === 'oauth2' && <div className="sint-kv"><span>{__('App', 'social-integrations')}</span><span>{account.via === 'broker' ? __('Social Integrations app', 'social-integrations') : __('Your own app', 'social-integrations')}</span></div>}
                       <div className="sint-kv"><span>{__('Caption limit', 'social-integrations')}</span><span>{sprintf(__('%s characters', 'social-integrations'), n.char_limit.toLocaleString())}</span></div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n)}>{__('Reconnect', 'social-integrations')}</button>}
+                      {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n, account.via)}>{__('Reconnect', 'social-integrations')}</button>}
                       {account.profile_url && (
                         <a className="sint-btn sm" href={account.profile_url} target="_blank" rel="noreferrer">
                           {__('Open', 'social-integrations')} <Icon name="external" size={14} />
@@ -153,33 +158,62 @@ export function AccountsPage({ params, go }: PageProps) {
         </div>
       </div>
 
-      {connecting && <ConnectModal network={connecting} redirectUri={redirectUri} onClose={() => setConnecting(null)} onDone={() => { setConnecting(null); reload() }} />}
+      {connecting && <ConnectModal network={connecting.network} via={connecting.via} redirectUri={redirectUri} onClose={() => setConnecting(null)} onDone={() => { setConnecting(null); reload() }} />}
       {pick && network(pick) && <PickEntity network={network(pick)!} onClose={() => go('accounts')} onDone={() => { reload(); go('accounts') }} />}
     </>
   )
 }
 
-function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Network; redirectUri: string; onClose: () => void; onDone: () => void }) {
+type Method = 'broker' | 'app'
+
+function ConnectModal({ network, via, redirectUri, onClose, onDone }: { network: Network; via?: string; redirectUri: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const [values, setValues] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [appReady, setAppReady] = useState(network.app_configured)
   const oauth = network.auth_type === 'oauth2'
-  const fields = oauth && !appReady ? network.app_fields : network.connect_fields
+  const methods = network.methods as Method[]
+  // One method, or the method of the account to reconnect: no choice step.
+  const [method, setMethod] = useState<Method | null>(() => {
+    if (via && methods.includes(via as Method)) return via as Method
+    return methods.length === 1 ? methods[0]! : null
+  })
+  const ownApp = oauth && method === 'app'
+  const fields = ownApp && !appReady ? network.app_fields : oauth ? [] : network.connect_fields
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const signIn = async (m: Method) => {
+    const r = await api.post<{ url: string }>(`oauth/${network.key}/start`, { method: m })
+    window.location.href = r.data.url
+  }
+
+  const startBroker = async () => {
     setBusy(true)
     setError('')
     try {
-      if (oauth && !appReady) {
+      await signIn('broker')
+      return
+    } catch (err) {
+      setError((err as Error).message)
+    }
+    setBusy(false)
+  }
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (oauth && method === 'broker') {
+      await startBroker()
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      if (ownApp && !appReady) {
         await api.post(`apps/${network.key}`, values)
         setAppReady(true)
         setValues({})
-      } else if (oauth) {
-        const r = await api.post<{ url: string }>(`oauth/${network.key}/start`)
-        window.location.href = r.data.url
+      } else if (ownApp) {
+        await signIn('app')
         return
       } else {
         await api.post(`accounts/${network.key}`, values)
@@ -194,8 +228,29 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
 
   return (
     <Modal title={sprintf(__('Connect %s', 'social-integrations'), network.label)} onClose={onClose} narrow>
+      {oauth && method === null ? (
+        <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p className="sint-sub">{sprintf(__('Select how this site signs in to %s.', 'social-integrations'), network.label)}</p>
+          <button type="button" className="sint-method" disabled={busy} onClick={startBroker}>
+            <span className="sint-method-title">
+              {busy && <Spinner size={14} />}
+              {__('Connect with Social Integrations', 'social-integrations')}
+            </span>
+            <span className="sint-method-text">{sprintf(__('Sign in to %s. You do not need a developer app.', 'social-integrations'), network.label)}</span>
+          </button>
+          <button type="button" className="sint-method" disabled={busy} onClick={() => setMethod('app')}>
+            <span className="sint-method-title">{__('Use my own app', 'social-integrations')}</span>
+            <span className="sint-method-text">{sprintf(__('Enter the details of an app that you created on the %s developer site.', 'social-integrations'), network.label)}</span>
+          </button>
+          {error && <div className="sint-banner bad" style={{ padding: '10px 14px' }}>{error}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" className="sint-btn ghost" onClick={onClose}>{__('Cancel', 'social-integrations')}</button>
+          </div>
+        </div>
+      ) : (
       <form onSubmit={submit} style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {oauth && !appReady && (
+        {oauth && method === 'broker' && <p className="sint-sub">{sprintf(__('Sign in to %s to give this site permission to post. The Social Integrations app connects the account.', 'social-integrations'), network.label)}</p>}
+        {ownApp && !appReady && (
           <>
             <p className="sint-sub">{sprintf(__('%s connects through an app that you create on its developer site. Enter the app details. Then sign in.', 'social-integrations'), network.label)}</p>
             <div className="sint-field">
@@ -210,7 +265,7 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
             )}
           </>
         )}
-        {oauth && appReady && <p className="sint-sub">{sprintf(__('Sign in to %s to give this site permission to post.', 'social-integrations'), network.label)}</p>}
+        {ownApp && appReady && <p className="sint-sub">{sprintf(__('Sign in to %s to give this site permission to post.', 'social-integrations'), network.label)}</p>}
         {fields.map((f) => (
           <label key={f.name} className="sint-field">
             <span>{f.label}</span>
@@ -220,15 +275,19 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
         ))}
         {error && <div className="sint-banner bad" style={{ padding: '10px 14px' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          {oauth && appReady && (
+          {oauth && methods.length > 1 && (
+            <button type="button" className="sint-btn ghost" onClick={() => { setMethod(null); setError('') }}>{__('Back', 'social-integrations')}</button>
+          )}
+          {ownApp && appReady && (
             <button type="button" className="sint-btn ghost" onClick={() => setAppReady(false)}>{__('Change app', 'social-integrations')}</button>
           )}
           <button type="button" className="sint-btn ghost" onClick={onClose}>{__('Cancel', 'social-integrations')}</button>
           <button type="submit" className="sint-btn primary" disabled={busy}>
-            {busy ? __('Wait…', 'social-integrations') : oauth && !appReady ? __('Save app', 'social-integrations') : oauth ? sprintf(__('Sign in to %s', 'social-integrations'), network.label) : __('Connect', 'social-integrations')}
+            {busy ? __('Wait…', 'social-integrations') : ownApp && !appReady ? __('Save app', 'social-integrations') : oauth ? sprintf(__('Sign in to %s', 'social-integrations'), network.label) : __('Connect', 'social-integrations')}
           </button>
         </div>
       </form>
+      )}
     </Modal>
   )
 }
