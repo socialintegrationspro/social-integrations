@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { m } from 'motion/react'
 import { Header, type PageProps } from '../components/Header'
-import { AccountAvatar, Icon, NetBadge, Segmented } from '../components/ui'
+import { AccountAvatar, Icon, LoadError, NetBadge, RefreshButton, Segmented } from '../components/ui'
 import { config } from '../lib/config'
 import { fmtStamp } from '../lib/format'
 import { useFetch } from '../lib/hooks'
@@ -20,6 +20,8 @@ export function DashboardPage({ openComposer, go }: PageProps) {
   const fetched = useFetch<DashboardData>(`dashboard?days=${period}`)
   const data = fetched.data
   const error = !!fetched.error
+  // The numbers of the other period stay, dimmed, until this period loads.
+  const dim = fetched.stale || (fetched.loading && !!data)
 
   const account = (id: string) => accounts.find((a) => a.id === id)
   const expired = accounts.filter((a) => a.status === 'expired')
@@ -48,6 +50,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
             { value: '30', label: __('30 days', 'social-integrations') },
           ]}
         />
+        <RefreshButton loading={fetched.loading} onClick={() => fetched.reload()} label={__('Refresh the dashboard', 'social-integrations')} />
         <button type="button" className="sint-btn primary" onClick={() => openComposer()}>
           <Icon name="plus" size={16} stroke={2.2} />
           {__('New campaign', 'social-integrations')}
@@ -64,21 +67,20 @@ export function DashboardPage({ openComposer, go }: PageProps) {
           </div>
         ))}
 
-        {error && (
-          <div className="sint-banner bad" role="alert">
-            <Icon name="alert" size={20} />
-            {__('The dashboard did not load. Refresh the page.', 'social-integrations')}
-          </div>
-        )}
+        {error && <LoadError message={__('The dashboard did not load.', 'social-integrations')} onRetry={() => fetched.reload()} busy={fetched.loading} />}
 
         {!data && !error && (
-          <div className="sint-dash" aria-busy="true" aria-label={__('Wait', 'social-integrations')}>
-            {[0, 1, 2, 3].map((i) => <div key={i} className="sint-skeleton" style={{ height: 220 }} />)}
+          <div aria-busy="true" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <span className="sint-sr">{__('Loading', 'social-integrations')}</span>
+            <div className="sint-skeleton" style={{ height: 96 }} />
+            <div className="sint-dash">
+              {['wide', '', '', 'wide', ''].map((size, i) => <div key={i} className={`sint-skeleton ${size}`} />)}
+            </div>
           </div>
         )}
 
         {data && t && (
-          <>
+          <div className={dim ? 'sint-loading' : undefined} aria-busy={dim} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <m.section className="sint-dash-top" variants={stagger} initial="hidden" animate="show">
               <m.div variants={rise} className="sint-strip-wrap"><StatusStrip totals={t} /></m.div>
               <m.dl className="sint-stats" variants={rise}>
@@ -190,7 +192,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
                 {data.networks.length ? <NetworkBars rows={data.networks} network={network} /> : <p className="sint-sub">{__('No shares in this period.', 'social-integrations')}</p>}
               </m.section>
             </m.div>
-          </>
+          </div>
         )}
       </div>
     </>

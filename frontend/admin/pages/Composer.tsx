@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Icon, Modal, Segmented, useToast } from '../components/ui'
+import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
@@ -114,6 +114,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [when, setWhen] = useState<When>(upcoming || seed.at ? 'pick' : 'now')
   const [local, setLocal] = useState(() => (upcoming ? utcToLocal(item!.scheduled_at) : seed.at ? utcToLocal(seed.at) : defaultLocal()))
   const [busy, setBusy] = useState(false)
+  // A saved single campaign loads before its form shows, so the answer cannot replace what the user types.
+  const [opening, setOpening] = useState(campaign?.type === 'single')
+  // True while the caption and media of the selected post load.
+  const [building, setBuilding] = useState(false)
   const [writing, setWriting] = useState(false)
   // The text before the last AI answer, for Undo.
   const [beforeAI, setBeforeAI] = useState<string | null>(null)
@@ -154,12 +158,13 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         setLocal(utcToLocal(c.scheduled_at))
       }
       if (c.post_id) setPostId(c.post_id)
-    }, (e) => toast((e as Error).message, true))
+    }, (e) => toast((e as Error).message, true)).finally(() => setOpening(false))
   }, [])
 
   useEffect(() => {
     if (!postId) return
     setMediaFrom('')
+    setBuilding(true)
     api.get<BuiltShare>(`content/${postId}/share`).then((r) => {
       setBuilt(r.data)
       if (keepSaved.current) {
@@ -169,20 +174,21 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         return
       }
       applyBuilt(r.data)
-    })
+    }, (e) => toast((e as Error).message, true)).finally(() => setBuilding(false))
   }, [postId])
 
   /** Media from another source; images added by hand stay. */
   const changeMediaFrom = (source: MediaSource | '') => {
     setMediaFrom(source)
     if (!postId) return
+    setBuilding(true)
     api.get<BuiltShare>(`content/${postId}/share${source ? `?media=${source}` : ''}`).then((r) => {
       const fromPost = new Set(built?.media.map((m) => m.url) ?? [])
       const added = media.filter((m) => !fromPost.has(m.url))
       setBuilt((b) => (b ? { ...b, media: r.data.media } : r.data))
       setMedia(addNew(r.data.media, added))
       setMediaOn([...r.data.media.map((m) => m.url), ...added.filter((m) => mediaOn.includes(m.url)).map((m) => m.url)])
-    })
+    }, (e) => toast((e as Error).message, true)).finally(() => setBuilding(false))
   }
 
   const pickPost = (r: ContentItem) => {
@@ -205,7 +211,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const chosenMedia = media.filter((m) => mediaOn.includes(m.url))
   const title = contentSearch.results.find((r) => r.id === postId)?.title ?? built?.tokens.title ?? ''
   const over = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
-  const canSend = !busy && selected.length > 0 && caption.trim() !== '' && over.length === 0
+  const canSend = !busy && !building && !opening && selected.length > 0 && caption.trim() !== '' && over.length === 0
   const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
   // With a post selected and its built caption unchanged, AI writes a new caption; otherwise it improves the text.
   const fresh = !!postId && text === (built?.caption ?? '')
@@ -298,7 +304,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       onClose={onClose}
       footer={Mode ? undefined : (
         <TimingFooter when={when} setWhen={setWhen} local={local} setLocal={setLocal} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
-          <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
+          <button type="button" className="sint-btn ghost" disabled={busy || building || opening || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
           <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
             {when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
           </button>
@@ -309,7 +315,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           {modes.length > 0 && !editing && (
             <Segmented<string> label={__('What to share', 'social-integrations')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post', 'social-integrations') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
           )}
-          {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)' }}>{title}</span>}
+          {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{building && <Spinner size={12} />}{title}</span>}
         </>
       }
     >
@@ -321,7 +327,16 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
           {!item && <ContentPicker search={contentSearch} postId={postId} onPick={pickPost} onClear={clearPost} />}
 
-          <section style={{ flex: '999 1 440px', minWidth: 0, padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <section className={building ? 'sint-loading' : undefined} aria-busy={building || opening} style={{ flex: '999 1 440px', minWidth: 0, padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {opening ? (
+              <>
+                <span className="sint-sr">{__('Loading', 'social-integrations')}</span>
+                <div className="sint-skeleton" style={{ height: 44 }} />
+                <div className="sint-skeleton" style={{ height: 200 }} />
+                <div className="sint-skeleton" style={{ height: 88 }} />
+              </>
+            ) : (
+            <>
             <CaptionEditor
               nets={nets}
               tab={tab}
@@ -362,6 +377,8 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
             {(media.length > 0 || !!postId) && (
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
+            )}
+            </>
             )}
           </section>
 

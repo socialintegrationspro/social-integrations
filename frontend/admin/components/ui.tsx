@@ -370,6 +370,70 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
   )
 }
 
+/** A small turning ring for work that has no place to show a skeleton. */
+export function Spinner({ size = 16, label }: { size?: number; label?: string }) {
+  return (
+    <span className="sint-spinner" style={{ width: size, height: size }} role={label ? 'status' : undefined} aria-hidden={label ? undefined : true}>
+      {label && <span className="sint-sr">{label}</span>}
+    </span>
+  )
+}
+
+/** Loads the data of a screen again. The icon turns while the request runs. */
+export function RefreshButton({ loading, onClick, label = __('Refresh', 'social-integrations') }: { loading: boolean; onClick: () => void; label?: string }) {
+  return (
+    <button type="button" className={`sint-icon-btn sint-refresh${loading ? ' spinning' : ''}`} onClick={onClick} disabled={loading} aria-label={label} title={label} aria-busy={loading}>
+      <Icon name="retry" size={17} stroke={2} />
+    </button>
+  )
+}
+
+/** Data that did not load: the problem, then a button that loads it again. */
+export function LoadError({ message, onRetry, busy }: { message: string; onRetry: () => void; busy?: boolean }) {
+  return (
+    <div className="sint-banner bad" role="alert">
+      {/* In a narrow column the button goes below the message. */}
+      <span style={{ flex: '1 1 200px', minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ flex: 'none', display: 'inline-flex' }}><Icon name="alert" size={20} /></span>
+        <span style={{ minWidth: 0 }}>{message}</span>
+      </span>
+      <button type="button" className="sint-btn sm" onClick={onRetry} disabled={busy}>
+        {busy ? <Spinner size={14} /> : <Icon name="retry" size={14} stroke={2} />}
+        {__('Try again', 'social-integrations')}
+      </button>
+    </div>
+  )
+}
+
+/** A table shape while the first rows load. */
+export function SkeletonTable({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="sint-table-wrap sint-skel-table" aria-busy="true">
+      <span className="sint-sr">{__('Loading', 'social-integrations')}</span>
+      {Array.from({ length: rows + 1 }, (_, r) => (
+        <div key={r} className={`sint-skel-row${r === 0 ? ' head' : ''}`} style={{ gridTemplateColumns: `2fr repeat(${cols - 1}, 1fr)` }}>
+          {Array.from({ length: cols }, (_, c) => <span key={c} className="sint-skeleton" />)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** A list shape (avatar, two lines) while the first items load. */
+export function SkeletonList({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="sint-skel-list" aria-busy="true">
+      <span className="sint-sr">{__('Loading', 'social-integrations')}</span>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="sint-skel-item">
+          <span className="sint-skeleton dot" />
+          <span className="lines"><span className="sint-skeleton" /><span className="sint-skeleton short" /></span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const PAGE_SIZES = [10, 20, 30]
 const PAGE_SIZE_KEY = 'sint-page-size'
 

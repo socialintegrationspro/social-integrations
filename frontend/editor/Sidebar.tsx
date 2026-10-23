@@ -32,15 +32,18 @@ export function SidebarContent() {
   const { editPost } = wp.data.useDispatch('core/editor')
   const [state, setState] = useState<EditorState | null>(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const wasSaving = useRef(false)
 
   const load = () => {
+    setLoading(true)
     getState(post.id)
       .then((s) => {
         setState(s)
         setError('')
       })
-      .catch((e: unknown) => setError(errorText(e, __('The share status did not load. Reload the page.', 'social-integrations'))))
+      .catch((e: unknown) => setError(errorText(e, __('The share status did not load.', 'social-integrations'))))
+      .finally(() => setLoading(false))
   }
 
   // Load on open, and again after each save, so new shares show.
@@ -55,8 +58,13 @@ export function SidebarContent() {
 
   const setMeta = (meta: Meta) => editPost({ meta })
 
-  if (error) {
-    return <Notice status="error" isDismissible={false}>{error}</Notice>
+  if (error && !state) {
+    return (
+      <Notice status="error" isDismissible={false} actions={loading ? [] : [{ label: __('Try again', 'social-integrations'), onClick: load }]}>
+        {error}
+        {loading && <Spinner />}
+      </Notice>
+    )
   }
   if (!state) {
     return <div className="sint-ed-loading"><Spinner /></div>
@@ -71,7 +79,7 @@ export function SidebarContent() {
           <CaptionPanel post={post} onChange={(caption) => setMeta({ _sint_caption: caption })} />
         </Fragment>
       )}
-      <SharesPanel state={state} />
+      <SharesPanel state={state} loading={loading} error={error} onRefresh={load} />
     </Fragment>
   )
 }
@@ -142,13 +150,20 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
   const [preview, setPreview] = useState<EditorPreview | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState('')
+  const [previewFailed, setPreviewFailed] = useState(false)
 
   // The preview follows the editor, one second after the last change.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       getPreview(post.id, { title: post.title, content: post.content, excerpt: post.excerpt, caption })
-        .then(setPreview)
-        .catch(() => setPreview(null))
+        .then((p) => {
+          setPreview(p)
+          setPreviewFailed(false)
+        })
+        .catch(() => {
+          setPreview(null)
+          setPreviewFailed(true)
+        })
     }, 1000)
     return () => window.clearTimeout(timer)
   }, [post.id, post.title, post.content, post.excerpt, caption])
@@ -192,7 +207,8 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
         {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
       </PanelBody>
       <PanelBody title={__('Preview', 'social-integrations')} initialOpen={false}>
-        {!preview && <Spinner />}
+        {!preview && !previewFailed && <Spinner />}
+        {previewFailed && <p className="sint-ed-help">{__('The preview did not load. Change the post to try again.', 'social-integrations')}</p>}
         {preview && (
           <Fragment>
             <div className="sint-ed-preview">{preview.caption || __('The caption is empty.', 'social-integrations')}</div>
@@ -221,7 +237,7 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
   )
 }
 
-function SharesPanel({ state }: { state: EditorState }) {
+function SharesPanel({ state, loading, error, onRefresh }: { state: EditorState; loading: boolean; error: string; onRefresh: () => void }) {
   const format = wp.date.getSettings().formats.datetime
   return (
     <PanelBody title={__('Shares', 'social-integrations')} initialOpen={state.shares.length > 0}>
@@ -241,9 +257,15 @@ function SharesPanel({ state }: { state: EditorState }) {
           </li>
         ))}
       </ul>
-      {state.can_manage && state.shares.length > 0 && (
-        <ExternalLink href={`${config.pageUrl}#/log`}>{__('Open the share log', 'social-integrations')}</ExternalLink>
-      )}
+      {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
+      <div className="sint-ed-row">
+        <Button variant="secondary" size="compact" onClick={onRefresh} isBusy={loading} disabled={loading}>
+          {__('Refresh', 'social-integrations')}
+        </Button>
+        {state.can_manage && state.shares.length > 0 && (
+          <ExternalLink href={`${config.pageUrl}#/log`}>{__('Open the share log', 'social-integrations')}</ExternalLink>
+        )}
+      </div>
     </PanelBody>
   )
 }

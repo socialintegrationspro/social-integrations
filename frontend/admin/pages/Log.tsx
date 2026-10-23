@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { AccountAvatar, copyText, Empty, Icon, Modal, NetBadge, Pagination, usePageSize, useToast } from '../components/ui'
+import { AccountAvatar, copyText, Empty, Icon, LoadError, Modal, NetBadge, Pagination, RefreshButton, SkeletonList, SkeletonTable, usePageSize, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
 import { fmtStamp, siteParts } from '../lib/format'
 import { applyFilters, useFetch } from '../lib/hooks'
@@ -85,9 +85,6 @@ export function LogPage({ params, go }: PageProps) {
 
   const log = useFetch<LogData>(`logs?${query({ page, per_page: size, campaign, status, search, from, to })}`)
   const { data, loading, reload: load } = log
-  useEffect(() => {
-    if (!loading && log.error) toast(log.error, true)
-  }, [loading])
   useEffect(() => {
     if (firstOpened.current || !data?.items[0]) return
     firstOpened.current = true
@@ -248,10 +245,7 @@ export function LogPage({ params, go }: PageProps) {
   return (
     <>
       <Header title={__('Share log', 'social-integrations')}>
-        <button type="button" className="sint-btn ghost sm" onClick={() => load()} disabled={loading} aria-label={__('Refresh the log', 'social-integrations')}>
-          <Icon name="retry" size={14} stroke={2} />
-          {__('Refresh', 'social-integrations')}
-        </button>
+        <RefreshButton loading={loading} onClick={() => load()} label={__('Refresh the log', 'social-integrations')} />
       </Header>
       <div className="sint-body">
         <div className="sint-log-filters">
@@ -296,8 +290,10 @@ export function LogPage({ params, go }: PageProps) {
           </div>
         </div>
 
+        {log.error && <LoadError message={sprintf(__('The share log did not load. %s', 'social-integrations'), log.error)} onRetry={() => load()} busy={loading} />}
+
         {data === null ? (
-          <div className="sint-skeleton" style={{ height: 300 }} />
+          !log.error && <SkeletonTable cols={6} rows={size > 10 ? 8 : 5} />
         ) : data.items.length === 0 ? (
           <div className="sint-card">
             {status === 'failed' && !campaign && !search && !from && !to ? (
@@ -493,8 +489,8 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
 
         <section>
           <h3 className="sint-label" style={{ marginBottom: 12 }}>{tries ? (tries.length === 1 ? __('1 try', 'social-integrations') : sprintf(__('%d tries', 'social-integrations'), tries.length)) : __('Tries', 'social-integrations')}</h3>
-          {error && <div className="sint-log-msg">{error}</div>}
-          {!tries && !error && <div className="sint-skeleton" style={{ height: 120 }} />}
+          {error && <LoadError message={sprintf(__('The tries did not load. %s', 'social-integrations'), error)} onRetry={() => fetched.reload()} busy={fetched.loading} />}
+          {!tries && !error && <SkeletonList rows={2} />}
           {tries && (
             <ol className="sint-sd-tries">
               {tries.map((t, i) => (

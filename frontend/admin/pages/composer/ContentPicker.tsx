@@ -1,30 +1,65 @@
-import { useEffect, useState } from 'react'
-import { Icon, typeColor } from '../../components/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Icon, LoadError, SkeletonList, Spinner, typeColor } from '../../components/ui'
 import { api, query } from '../../lib/api'
 import { fmtDate } from '../../lib/format'
 import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
 import type { ContentItem } from '../../lib/types'
 
-/** Search state for the content list; results load 250 ms after the last change. */
+const PER_PAGE = 8
+
+/** Search state for the content list; results load 250 ms after the last change. "Show more" adds the next page. */
 export function useContentSearch() {
   const [type, setType] = useState('any')
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<ContentItem[]>([])
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(1)
   // False until the first answer, so the list does not show "no posts" while it loads.
   const [loaded, setLoaded] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  // Only the answer to the newest request is used.
+  const request = useRef(0)
+
+  const fetchPage = (next: number) => {
+    const id = ++request.current
+    setLoading(true)
+    setError('')
+    api.get<ContentItem[]>(`content?${query({ type, search, per_page: PER_PAGE, page: next })}`).then(
+      (r) => {
+        if (id !== request.current) return
+        setResults((list) => (next === 1 ? r.data : [...list, ...r.data.filter((x) => !list.some((y) => y.id === x.id))]))
+        setPage(next)
+        setPages(Math.max(1, r.totalPages))
+        setLoaded(true)
+        setLoading(false)
+      },
+      (e) => {
+        if (id !== request.current) return
+        if (next === 1) setResults([])
+        setError((e as Error).message)
+        setLoaded(true)
+        setLoading(false)
+      },
+    )
+  }
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      api
-        .get<ContentItem[]>(`content?${query({ type, search, per_page: 8 })}`)
-        .then((r) => setResults(r.data), () => setResults([]))
-        .finally(() => setLoaded(true))
-    }, 250)
-    return () => clearTimeout(t)
+    setLoading(true)
+    const t = setTimeout(() => fetchPage(1), 250)
+    return () => {
+      clearTimeout(t)
+      request.current++
+    }
+    // fetchPage reads type and search from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, search])
 
-  return { type, setType, search, setSearch, results, loaded }
+  const more = page < pages ? () => fetchPage(page + 1) : undefined
+  const retry = () => fetchPage(results.length ? page + 1 : 1)
+
+  return { type, setType, search, setSearch, results, loaded, loading, error, more, retry }
 }
 
 interface Props {
@@ -35,7 +70,7 @@ interface Props {
 }
 
 /** The "From your site" column: search posts of any type and select one to share. */
-export function ContentPicker({ search: { type, setType, search, setSearch, results, loaded }, postId, onPick, onClear }: Props) {
+export function ContentPicker({ search: { type, setType, search, setSearch, results, loaded, loading, error, more, retry }, postId, onPick, onClear }: Props) {
   const { postTypes } = useStore()
   const types = postTypes.map((t) => t.name)
 
@@ -46,6 +81,7 @@ export function ContentPicker({ search: { type, setType, search, setSearch, resu
         <Icon name="search" size={16} stroke={2} />
         <span className="sint-sr">{__('Search content', 'social-integrations')}</span>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={__('Search any post type', 'social-integrations')} />
+        {loading && loaded && <Spinner size={14} label={__('Loading', 'social-integrations')} />}
       </label>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button type="button" className={`sint-chip${type === 'any' ? ' on' : ''}`} onClick={() => setType('any')}>{__('All', 'social-integrations')}</button>
@@ -53,7 +89,8 @@ export function ContentPicker({ search: { type, setType, search, setSearch, resu
           <button key={t.name} type="button" className={`sint-chip${type === t.name ? ' on' : ''}`} onClick={() => setType(t.name)}>{t.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }} aria-busy={loading}>
+        {!loaded && <SkeletonList rows={5} />}
         {results.map((r) => (
           <button key={r.id} type="button" className={`sint-item${r.id === postId ? ' on' : ''}`} onClick={() => onPick(r)}>
             {r.thumbnail ? <img className="sint-thumb" src={r.thumbnail} alt="" style={{ width: 48, height: 48 }} /> : <span className="sint-thumb" style={{ width: 48, height: 48 }} />}
@@ -69,7 +106,14 @@ export function ContentPicker({ search: { type, setType, search, setSearch, resu
             </span>
           </button>
         ))}
-        {loaded && results.length === 0 && (
+        {error && <LoadError message={__('The posts did not load.', 'social-integrations')} onRetry={retry} busy={loading} />}
+        {more && !error && (
+          <button type="button" className="sint-btn ghost sm sint-more" onClick={more} disabled={loading}>
+            {loading && <Spinner size={14} />}
+            {__('Show more', 'social-integrations')}
+          </button>
+        )}
+        {loaded && !error && results.length === 0 && (
           <p className="sint-sub" style={{ fontSize: 13, padding: '8px 4px' }}>
             {search.trim() ? __('No posts match the search.', 'social-integrations') : __('There are no posts yet.', 'social-integrations')}
           </p>

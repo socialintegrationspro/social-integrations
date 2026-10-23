@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { m } from 'motion/react'
 import { easeOut } from '../lib/motion'
 import { Header, type PageProps } from '../components/Header'
-import { AccountAvatar, Empty, Icon, NetBadge, Segmented, typeColor, useToast } from '../components/ui'
+import { AccountAvatar, Empty, Icon, LoadError, NetBadge, RefreshButton, Segmented, typeColor, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate, fmtTime, siteParts } from '../lib/format'
@@ -268,10 +268,13 @@ export function CalendarPage({ openComposer }: PageProps) {
               </button>
             </div>
             <button type="button" className="sint-btn" onClick={() => move(0)}>{__('Today', 'social-integrations')}</button>
+            <RefreshButton loading={queue.loading} onClick={() => load()} label={__('Refresh the calendar', 'social-integrations')} />
             <div style={{ marginLeft: 'auto' }}>
               <Segmented label={__('View', 'social-integrations')} value={def.value} onChange={(v) => { setView(v); setDir(0); setOffset(0) }} options={views.map((v) => ({ value: v.value, label: v.label }))} />
             </div>
           </div>
+
+          {queue.error && <LoadError message={sprintf(__('The calendar did not load. %s', 'social-integrations'), queue.error)} onRetry={() => load()} busy={queue.loading} />}
 
           <div className="sint-cal-body" ref={body}>
           <m.div key={`${view}-${offset}`} initial={{ opacity: 0, x: dir * 28 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, ease: easeOut }}>

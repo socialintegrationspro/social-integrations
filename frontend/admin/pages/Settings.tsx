@@ -1,6 +1,6 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { Toggle, useToast } from '../components/ui'
+import { LoadError, Toggle, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { applyFilters, useFetch } from '../lib/hooks'
@@ -18,12 +18,20 @@ export function SettingsPage(_props: PageProps) {
   // API keys typed in this visit. The app sends a key once, and the server never sends it back.
   const [keys, setKeys] = useState<Record<string, string | null>>({})
 
-  useEffect(() => {
-    api.get<Settings>('settings').then((r) => {
-      setSettings(r.data)
-      setSaved(JSON.stringify(r.data))
-    })
-  }, [])
+  const [loadError, setLoadError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const load = () => {
+    setLoading(true)
+    setLoadError('')
+    api.get<Settings>('settings').then(
+      (r) => {
+        setSettings(r.data)
+        setSaved(JSON.stringify(r.data))
+      },
+      (e) => setLoadError((e as Error).message),
+    ).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
 
   const dirty = !!settings && (JSON.stringify(settings) !== saved || Object.values(keys).some((k) => k !== ''))
   // The browser asks before it leaves or reloads the page with unsaved changes.
@@ -37,7 +45,25 @@ export function SettingsPage(_props: PageProps) {
   // Filter `sint.settings.sections`: other plugins add cards below free's own. Each card saves its own data.
   const sections = applyFilters<{ key: string; component: ComponentType }[]>('sint.settings.sections', [])
 
-  if (!settings) return <><Header title={__('Settings', 'social-integrations')} /><div className="sint-body"><div className="sint-skeleton" style={{ height: 400 }} /></div></>
+  if (!settings) {
+    return (
+      <>
+        <Header title={__('Settings', 'social-integrations')} />
+        <div className="sint-body" aria-busy={loading}>
+          {loadError ? (
+            <LoadError message={sprintf(__('The settings did not load. %s', 'social-integrations'), loadError)} onRetry={load} busy={loading} />
+          ) : (
+            <>
+              <span className="sint-sr">{__('Loading', 'social-integrations')}</span>
+              <div className="sint-skeleton" style={{ height: 220, borderRadius: 'var(--r-card)' }} />
+              <div className="sint-skeleton" style={{ height: 160, borderRadius: 'var(--r-card)' }} />
+              <div className="sint-skeleton" style={{ height: 260, borderRadius: 'var(--r-card)' }} />
+            </>
+          )}
+        </div>
+      </>
+    )
+  }
 
   const setBlock = (name: string, use: BlockUse | '') => {
     const next = { ...settings.blocks }

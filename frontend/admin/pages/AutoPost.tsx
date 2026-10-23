@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
-import { AccountToggle, Toggle, useToast } from '../components/ui'
+import { AccountToggle, LoadError, Toggle, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { applyFilters } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
@@ -50,21 +50,25 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   const [tab, setTab] = useState('all')
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [nameError, setNameError] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const savers = useRef<Record<string, (id: number) => Promise<unknown>>>({})
 
-  useEffect(() => {
+  const load = () => {
     if (!campaign) return
+    setLoadError('')
     api.get<AutoCampaign>(`campaigns/${campaign.id}`).then(
       (r) => {
         const d = r.data
         setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, name: campaign.copy ? sprintf(__('%s (copy)', 'social-integrations'), d.name) : d.name })
       },
-      (e) => toast((e as Error).message, true),
+      (e) => setLoadError((e as Error).message),
     )
-  }, [])
+  }
+  useEffect(load, [])
 
   // The latest published item of the campaign's post types, to preview with.
   const typesKey = c?.post_types.join(',') ?? ''
@@ -81,7 +85,14 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   useEffect(() => {
     if (!c || !sample) return setPreview(null)
     const t = setTimeout(() => {
-      api.post<BuiltShare>(`content/${sample.id}/share`, { template: c }).then((r) => setPreview(r.data), () => setPreview(null))
+      setPreviewFailed(false)
+      api.post<BuiltShare>(`content/${sample.id}/share`, { template: c }).then(
+        (r) => setPreview(r.data),
+        () => {
+          setPreview(null)
+          setPreviewFailed(true)
+        },
+      )
     }, 350)
     return () => clearTimeout(t)
   }, [key])
@@ -92,7 +103,20 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     savers.current[name] = fn
   }
 
-  if (!c) return <div style={{ padding: 22 }}><div className="sint-skeleton" style={{ height: 320 }} /></div>
+  if (!c) {
+    return (
+      <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }} aria-busy={!loadError}>
+        {loadError ? (
+          <LoadError message={sprintf(__('The campaign did not load. %s', 'social-integrations'), loadError)} onRetry={load} />
+        ) : (
+          <>
+            <div className="sint-skeleton" style={{ height: 48 }} />
+            <div className="sint-skeleton" style={{ height: 320 }} />
+          </>
+        )}
+      </div>
+    )
+  }
 
   const renderExtras = (area: 'posts' | 'when') =>
     extras.filter((x) => (x.area ?? 'when') === area).map(({ key: k, component: Extra }) => <Extra key={k} campaignId={source} postTypes={c.post_types} registerSave={registerSave} />)
@@ -171,6 +195,8 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
             <span className="sint-label">{sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : __('Preview', 'social-integrations')}</span>
             {sample === null ? (
               <p className="sint-sub">{__('No published post is available for the preview.', 'social-integrations')}</p>
+            ) : previewFailed ? (
+              <p className="sint-sub">{__('The preview did not load. Change the caption to try again.', 'social-integrations')}</p>
             ) : preview ? (
               <>
                 <p>{shownCaption}</p>

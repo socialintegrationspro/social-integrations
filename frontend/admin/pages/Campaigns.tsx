@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { Empty, Icon, Menu, NetBadge, Pagination, usePaged, useToast, type MenuItem } from '../components/ui'
+import { Empty, Icon, LoadError, Menu, NetBadge, Pagination, RefreshButton, SkeletonTable, usePaged, useToast, type MenuItem } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtStamp } from '../lib/format'
 import { applyFilters, useFetch } from '../lib/hooks'
@@ -50,7 +50,7 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
   const [busy, setBusy] = useState('')
 
   const campaigns = useFetch<CampaignItem[]>('campaigns')
-  const items = campaigns.data ?? (campaigns.error ? [] : null)
+  const items = campaigns.data
   const load = campaigns.reload
 
   // Filter `sint.campaigns.actions`: buttons for other campaign types, keyed by type.
@@ -96,14 +96,16 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
   return (
     <>
       <Header title={__('Campaigns', 'social-integrations')}>
+        <RefreshButton loading={campaigns.loading} onClick={() => load()} label={__('Refresh the campaigns', 'social-integrations')} />
         <button type="button" className="sint-btn primary" onClick={() => openComposer()}>
           <Icon name="plus" size={16} stroke={2.4} />
           {__('New campaign', 'social-integrations')}
         </button>
       </Header>
       <div className="sint-body">
+        {campaigns.error && <LoadError message={sprintf(__('The campaigns did not load. %s', 'social-integrations'), campaigns.error)} onRetry={() => load()} busy={campaigns.loading} />}
         {items === null ? (
-          <div className="sint-skeleton" style={{ height: 320 }} />
+          !campaigns.error && <SkeletonTable cols={6} />
         ) : items.length === 0 ? (
           <Empty title={__('No campaigns yet', 'social-integrations')}>
             <p className="sint-sub">{__('Share one post now or later, schedule many posts, or share new posts when you publish them.', 'social-integrations')}</p>
@@ -119,7 +121,7 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
                 ))}
               </div>
             )}
-            <div className="sint-table-wrap sint-camp-wrap">
+            <div className={`sint-table-wrap sint-camp-wrap${campaigns.loading ? ' sint-loading' : ''}`} aria-busy={campaigns.loading}>
               <table className="sint-table sint-camp-table">
                 <thead>
                   <tr>

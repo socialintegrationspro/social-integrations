@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { AccountAvatar, CopyField, Icon, Modal, NetBadge, useToast } from '../components/ui'
+import { AccountAvatar, CopyField, Icon, LoadError, Modal, NetBadge, RefreshButton, SkeletonList, Spinner, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate } from '../lib/format'
@@ -22,6 +22,19 @@ export function AccountsPage({ params, go }: PageProps) {
   // The URL only flags an error; the text comes from the server, so a link cannot set it.
   const [error, setError] = useState(params.get('error') ? config.oauthError : '')
   const pick = params.get('pick')
+  const [refreshing, setRefreshing] = useState(false)
+  // The ID of the account that the plugin disconnects now.
+  const [removing, setRemoving] = useState('')
+
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await reload()
+    } catch (e) {
+      toast(sprintf(__('The accounts did not load. %s', 'social-integrations'), (e as Error).message), true)
+    }
+    setRefreshing(false)
+  }
 
   useEffect(() => {
     const done = params.get('connected')
@@ -36,16 +49,24 @@ export function AccountsPage({ params, go }: PageProps) {
 
   const disconnect = async (account: Account) => {
     if (!window.confirm(sprintf(__('Disconnect %s? Scheduled shares to it will fail.', 'social-integrations'), account.name || account.username))) return
-    await api.del(`accounts/${account.id}`)
-    toast(__('Account disconnected.', 'social-integrations'))
-    reload()
+    setRemoving(account.id)
+    try {
+      await api.del(`accounts/${account.id}`)
+      toast(__('Account disconnected.', 'social-integrations'))
+      await reload()
+    } catch (e) {
+      toast((e as Error).message, true)
+    }
+    setRemoving('')
   }
 
   const expired = accounts.filter((a) => a.status === 'expired')
 
   return (
     <>
-      <Header title={__('Accounts', 'social-integrations')} />
+      <Header title={__('Accounts', 'social-integrations')}>
+        <RefreshButton loading={refreshing} onClick={refresh} label={__('Refresh the accounts', 'social-integrations')} />
+      </Header>
       <div className="sint-body">
         <p className="sint-sub">{__('The plugin keeps sign-in tokens encrypted on your site. It sends each token only to its network.', 'social-integrations')}</p>
 
@@ -68,7 +89,7 @@ export function AccountsPage({ params, go }: PageProps) {
           </div>
         ))}
 
-        <div className="sint-grid">
+        <div className={`sint-grid${refreshing ? ' sint-loading' : ''}`} aria-busy={refreshing}>
           {networks.map((n) => {
             const list = accounts.filter((a) => a.network === n.key)
             if (!list.length) {
@@ -118,7 +139,10 @@ export function AccountsPage({ params, go }: PageProps) {
                           {__('Open', 'social-integrations')} <Icon name="external" size={14} />
                         </a>
                       )}
-                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} onClick={() => disconnect(account)}>{__('Disconnect', 'social-integrations')}</button>
+                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} disabled={removing === account.id} onClick={() => disconnect(account)}>
+                        {removing === account.id && <Spinner size={14} />}
+                        {__('Disconnect', 'social-integrations')}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -215,8 +239,11 @@ function PickEntity({ network, onClose, onDone }: { network: Network; onClose: (
   const entities = fetched.stale ? null : fetched.data
   const loadError = fetched.error
   const [chooseError, setError] = useState('')
-  const error = chooseError || loadError
+  const [choosing, setChoosing] = useState('')
   const choose = async (e: Entity) => {
+    if (choosing) return
+    setChoosing(e.remote_id)
+    setError('')
     try {
       await api.post(`oauth/${network.key}/entities`, { remote_id: e.remote_id })
       toast(sprintf(__('%s is connected.', 'social-integrations'), e.name))
@@ -224,16 +251,20 @@ function PickEntity({ network, onClose, onDone }: { network: Network; onClose: (
     } catch (err) {
       setError((err as Error).message)
     }
+    setChoosing('')
   }
   return (
     <Modal title={sprintf(__('Select where to post on %s', 'social-integrations'), network.label)} onClose={onClose} narrow>
-      <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {error && <div className="sint-banner bad">{error}</div>}
-        {!entities && !error && <div className="sint-skeleton" style={{ height: 120 }} />}
+      <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 6 }} aria-busy={!entities || !!choosing}>
+        {chooseError && <div className="sint-banner bad" role="alert">{chooseError}</div>}
+        {loadError && <LoadError message={loadError} onRetry={() => fetched.reload()} busy={fetched.loading} />}
+        {!entities && !loadError && <SkeletonList rows={3} />}
+        {entities?.length === 0 && <p className="sint-sub">{sprintf(__('%s sent no place to post. Make sure that you gave permission for a page or an account.', 'social-integrations'), network.label)}</p>}
         {entities?.map((e) => (
-          <button key={e.remote_id} type="button" className="sint-item" onClick={() => choose(e)}>
+          <button key={e.remote_id} type="button" className="sint-item" disabled={!!choosing} onClick={() => choose(e)}>
             {e.avatar ? <img className="sint-thumb" src={e.avatar} alt="" style={{ borderRadius: 999 }} /> : <span className="sint-thumb" style={{ borderRadius: 999 }} />}
-            <span style={{ fontWeight: 600 }}>{e.name}</span>
+            <span style={{ fontWeight: 600, flex: 1 }}>{e.name}</span>
+            {choosing === e.remote_id && <Spinner size={16} />}
           </button>
         ))}
       </div>

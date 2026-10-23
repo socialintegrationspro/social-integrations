@@ -505,6 +505,22 @@ body.folded .sint-overlay { left: 36px; }
 .sint-empty h3 { color: var(--text); font-size: 20px; font-weight: 400; letter-spacing: -0.02em; }
 .sint-skeleton { background: linear-gradient(90deg, var(--skel-a), var(--skel-b), var(--skel-a)); background-size: 200% 100%; animation: sint-shimmer 1.2s infinite; border-radius: var(--r-md); }
 @keyframes sint-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sint-skel-table { padding: 8px 16px 16px; display: flex; flex-direction: column; }
+.sint-skel-row { display: grid; gap: 20px; align-items: center; height: 56px; border-bottom: 1px dashed var(--line); }
+.sint-skel-row:last-child { border-bottom: 0; }
+.sint-skel-row .sint-skeleton { height: 12px; border-radius: var(--r); }
+.sint-skel-row.head .sint-skeleton { height: 9px; width: 50%; opacity: 0.7; }
+.sint-skel-list { display: flex; flex-direction: column; gap: 6px; }
+.sint-skel-item { display: flex; align-items: center; gap: 12px; padding: 8px 4px; }
+.sint-skel-item .dot { width: 44px; height: 44px; flex: none; border-radius: var(--r-sm); }
+.sint-skel-item .lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sint-skel-item .lines .sint-skeleton { height: 11px; border-radius: var(--r); }
+.sint-skel-item .lines .short { width: 55%; }
+.sint-spinner { display: inline-block; flex: none; border-radius: 999px; border: 2px solid currentColor; border-right-color: transparent; opacity: 0.75; animation: sint-spin 0.7s linear infinite; }
+.sint-refresh.spinning svg { animation: sint-spin 0.8s linear infinite; }
+.sint-refresh:disabled { cursor: progress; }
+@keyframes sint-spin { to { transform: rotate(360deg); } }
+.sint-more { align-self: center; }
 /* Screen-reader text. The scrolling panel is its positioned parent, so it never adds height to the page. */
 .sint-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
@@ -717,6 +733,9 @@ body.folded .sint-overlay { left: 36px; }
 .sint-tile.feature { grid-column: span 3; grid-row: span 2; }
 .sint-tile.recent { grid-column: span 6; }
 .sint-tile.nets { grid-column: span 3; }
+/* The dashboard skeleton has the same places as the tiles. */
+.sint-dash > .sint-skeleton { min-height: 220px; border-radius: var(--r-card); grid-column: span 3; }
+.sint-dash > .sint-skeleton.wide { grid-column: span 6; }
 .sint-tile-head { display: flex; align-items: center; gap: 12px; min-height: 44px; }
 .sint-tile-head h2 { font-size: 22px; font-weight: 400; letter-spacing: -0.02em; }
 .sint-round { margin-left: auto; width: 44px; height: 44px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--card); color: var(--text); box-shadow: var(--shadow); border: 1px solid var(--line); }
@@ -729,6 +748,8 @@ body.folded .sint-overlay { left: 36px; }
   .sint-tile.chart, .sint-tile.recent { grid-column: span 12; }
   .sint-tile.ring, .sint-tile.nets { grid-column: span 6; }
   .sint-tile.feature { grid-column: span 6; grid-row: auto; }
+  .sint-dash > .sint-skeleton { grid-column: span 6; }
+  .sint-dash > .sint-skeleton.wide { grid-column: span 12; }
 }
 @media (max-width: 782px) {
   .sint-dash > * { grid-column: 1 / -1 !important; }
@@ -859,4 +880,6 @@ body.folded .sint-overlay { left: 36px; }
 .sint-btn:active:not(:disabled), .sint-icon-btn:active:not(:disabled), .sint-pc-tool:active:not(:disabled), .sint-chip:active, .sint-round:active, .sint-theme:active, .sint-nav a:active, .sint-tools a:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) {
   .sint-root *, .sint-root *::before, .sint-root *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  /* A busy indicator must still show that work continues, so it turns slowly. */
+  .sint-root .sint-spinner, .sint-root .sint-refresh.spinning svg { animation-duration: 2s !important; }
 }
