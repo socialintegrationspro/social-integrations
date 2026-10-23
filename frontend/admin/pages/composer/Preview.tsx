@@ -30,10 +30,10 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
 
   return (
     <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="sint-label">{__('Preview', 'social-integrations')}</span>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <span className="sint-label" style={{ paddingTop: 6 }}>{__('Preview', 'social-integrations')}</span>
         {canSwitch && (
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="group" aria-label={__('Preview network', 'social-integrations')}>
+          <span style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6, minWidth: 0 }} role="group" aria-label={__('Preview network', 'social-integrations')}>
             {nets.map((n) => (
               <button key={n} type="button" className="sint-prev-net" aria-pressed={n === preview} aria-label={network(n)?.label} onClick={() => setPreview(n)}>
                 <NetBadge network={n} color={network(n)?.color} size={22} />
