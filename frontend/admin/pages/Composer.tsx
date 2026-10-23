@@ -395,11 +395,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               }
             />
 
-            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} mediaHidesCard={cardHidden} />
 
             {(media.length > 0 || !!postId) && (
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
             )}
+
+            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} mediaHidesCard={cardHidden} />
 
             </>
             )}

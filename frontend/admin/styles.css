@@ -895,7 +895,7 @@ body.folded .sint-overlay { left: 36px; }
 }
 
 /* Post fields of a network: link card, post format, first comment and options. */
-.sint-root .sint-post-fields { border: 0; border-top: 1px dashed var(--line); margin: 0; padding: 14px 0 0; min-width: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.sint-root .sint-post-fields { border: 0; border-top: 1px dashed var(--line); margin: 0; padding: 14px 0 0; min-width: 0; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); max-width: 620px; }
 .sint-root .sint-post-fields > legend { padding: 0 8px 0 0; }
 .sint-root .sint-post-fields > .sint-field:has(textarea) { grid-column: 1 / -1; }
 .sint-root .sint-post-field-nets { display: inline-flex; gap: 4px; margin-left: auto; }
@@ -911,3 +911,5 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-seg button.icon .sint-tab-dot { position: absolute; top: 5px; right: 5px; }
 .sint-root .sint-post-fields-intro { grid-column: 1 / -1; margin: -6px 0 0; font-size: 12px; color: var(--muted); }
 .sint-root .sint-post-field-note { display: block; padding: 8px 10px; border-radius: var(--r-sm); background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--text-2) !important; }
+.sint-root .sint-select.sm { height: 36px; font-size: 13px; padding-top: 0; padding-bottom: 0; }
+.sint-root .sint-post-field-nets.count { font-size: 12px; font-weight: 600; color: var(--muted); padding: 2px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); cursor: help; }

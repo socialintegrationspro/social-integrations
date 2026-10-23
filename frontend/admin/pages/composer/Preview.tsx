@@ -21,16 +21,24 @@ interface Props {
   comment?: string
 }
 
-/** The right column: a post card for one network, then a fit check for each network. */
+/** The right column: a post card for one network, then what does not fit. */
 export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment }: Props) {
   const { network } = useStore()
   const net = preview ? network(preview) : undefined
+  const tooLong = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
+  const fewer = chosenMedia.length > 1 ? nets.filter((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) : []
 
   return (
     <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
         <span className="sint-label" style={{ paddingTop: 6 }}>{__('Preview', 'social-integrations')}</span>
-        {canSwitch && (
+        {canSwitch && nets.length > 4 && (
+          // Many networks: a list with names is easier to read than a row of logos.
+          <select className="sint-select sm" style={{ marginLeft: 'auto', maxWidth: 210 }} aria-label={__('Preview network', 'social-integrations')} value={preview} onChange={(e) => setPreview(e.target.value)}>
+            {nets.map((n) => <option key={n} value={n}>{network(n)?.label ?? n}</option>)}
+          </select>
+        )}
+        {canSwitch && nets.length <= 4 && (
           <span style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6, minWidth: 0 }} role="group" aria-label={__('Preview network', 'social-integrations')}>
             {nets.map((n) => (
               <button key={n} type="button" className="sint-prev-net" aria-pressed={n === preview} aria-label={network(n)?.label} onClick={() => setPreview(n)}>
@@ -84,11 +92,19 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
       )}
       {net && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: 'var(--text-2)' }}>
-          {nets.map((n) => <FitCheck key={n} network={n} caption={captionFor(n)} />)}
-          {chosenMedia.length > 0 && nets.some((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) && (
+          {/* One line when every caption fits; otherwise a line for each network that is too long. */}
+          {nets.length > 1 && tooLong.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'var(--warn-text)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
-              {__('Some networks accept fewer images. These networks get the first images.', 'social-integrations')}
+              <span style={{ color: 'var(--ok)' }}><Icon name="check" size={14} stroke={2.6} /></span>
+              {sprintf(__('The caption fits all %d networks.', 'social-integrations'), nets.length)}
+            </div>
+          ) : (
+            (nets.length > 1 ? tooLong : nets).map((n) => <FitCheck key={n} network={n} caption={captionFor(n)} />)
+          )}
+          {fewer.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{ color: 'var(--warn-text)', paddingTop: 1 }}><Icon name="alert" size={14} stroke={2.6} /></span>
+              {sprintf(__('These networks take fewer images and get the first ones: %s.', 'social-integrations'), fewer.map((n) => `${network(n)?.label ?? n} (${network(n)?.max_images ?? 1})`).join(', '))}
             </div>
           )}
         </div>

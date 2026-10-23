@@ -103,11 +103,20 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
         const help = all && on.some((n) => network(n)?.post_fields.find((f) => f.name === field.name)?.help !== field.help) ? '' : field.help
         const chips = tokens && field.tokens && focus === id
         const focusProps = { onFocus: () => setFocus(id), onBlur: (e: FocusEvent<HTMLElement>) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setFocus('') } }
+        // Which networks get the value: logos for a few, a count with the names on hover for many.
+        const names = on.map((n) => network(n)?.label ?? n).join(', ')
         const appliesTo = all && nets.length > 1 && (
-          <span className="sint-post-field-nets" aria-label={sprintf(__('For %s', 'social-integrations'), on.map((n) => network(n)?.label ?? n).join(', '))}>
-            {on.map((n) => <NetBadge key={n} network={n} color={network(n)?.color} size={16} />)}
-          </span>
+          on.length > 4 ? (
+            <span className="sint-post-field-nets count" title={names} aria-label={sprintf(__('For %s', 'social-integrations'), names)}>
+              {on.length === nets.length ? __('All networks', 'social-integrations') : sprintf(__('%d networks', 'social-integrations'), on.length)}
+            </span>
+          ) : (
+            <span className="sint-post-field-nets" aria-label={sprintf(__('For %s', 'social-integrations'), names)}>
+              {on.map((n) => <NetBadge key={n} network={n} color={network(n)?.color} size={16} />)}
+            </span>
+          )
         )
+        const hidden = field.name === 'format' && current === 'auto' ? on.filter((n) => mediaHidesCard.includes(n)) : []
 
         if (field.type === 'toggle') {
           return (
@@ -139,13 +148,15 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
                 {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText(shown + t)}>{t}</button>)}
               </span>
             )}
-            {help && <small>{help}</small>}
-            {field.name === 'format' && current === 'auto' && on.some((n) => mediaHidesCard.includes(n)) && (
-              <small className="sint-post-field-note">
-                {all
-                  ? sprintf(__('The post has media, so these networks show the media and no link card: %s. Select “Link card only” to show the card.', 'social-integrations'), on.filter((n) => mediaHidesCard.includes(n)).map((n) => network(n)?.label ?? n).join(', '))
-                  : sprintf(__('The post has media, so %s shows the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), network(tab)?.label ?? tab)}
+            {/* The note replaces the help: it says what happens to this post, and how to change it. */}
+            {hidden.length > 0 ? (
+              <small className="sint-post-field-note" title={hidden.map((n) => network(n)?.label ?? n).join(', ')}>
+                {all && hidden.length > 1
+                  ? sprintf(__('The post has media, so %d networks show the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), hidden.length)
+                  : sprintf(__('The post has media, so %s shows the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), network(hidden[0]!)?.label ?? hidden[0])}
               </small>
+            ) : (
+              help && <small>{help}</small>
             )}
           </div>
         )
