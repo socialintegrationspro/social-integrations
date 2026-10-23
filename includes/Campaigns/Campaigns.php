@@ -133,7 +133,7 @@ final class Campaigns {
 		}
 		$data = self::data( $body );
 		self::remove_unsent( $id );
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			Migrations::campaigns_table(),
 			array(
 				'name'       => mb_substr( self::name( $data ), 0, 191 ),
@@ -155,7 +155,7 @@ final class Campaigns {
 		self::remove_unsent( $id );
 		$queue = Migrations::queue_table();
 		$wpdb->query( $wpdb->prepare( "UPDATE {$queue} SET campaign_id = 0 WHERE campaign_id = %d", $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->delete( Migrations::campaigns_table(), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->delete( Migrations::campaigns_table(), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**

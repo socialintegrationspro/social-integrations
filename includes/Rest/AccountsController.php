@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Rest;
 
+use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\NetworkException;
@@ -94,7 +95,7 @@ final class AccountsController extends RestController {
 			$result  = $network->authenticate( $input );
 			$account = Accounts::save( $network->key(), (array) ( $result['profile'] ?? array() ), (array) ( $result['credentials'] ?? array() ) );
 		} catch ( NetworkException $e ) {
-			return $this->error( 'connect_failed', $e->getMessage() );
+			return $this->error( 'connect_failed', Errors::text( $e ) );
 		}
 		return rest_ensure_response( $account );
 	}

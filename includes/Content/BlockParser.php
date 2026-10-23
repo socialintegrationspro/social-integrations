@@ -140,11 +140,11 @@ final class BlockParser {
 	 * What one block adds.
 	 *
 	 * @param array  $block Parsed block.
-	 * @param string $use   Rule.
+	 * @param string $rule  Rule.
 	 * @param bool   $first Whether the editor asked to show this media first.
 	 * @return array ['text' => string, 'media' => array, 'links' => array].
 	 */
-	private function part( array $block, string $use, bool $first ): array {
+	private function part( array $block, string $rule, bool $first ): array {
 		$part  = array(
 			'text'  => '',
 			'media' => array(),
@@ -153,7 +153,7 @@ final class BlockParser {
 		$attrs = (array) ( $block['attrs'] ?? array() );
 		$html  = (string) ( $block['innerHTML'] ?? '' );
 
-		switch ( $use ) {
+		switch ( $rule ) {
 			case 'media':
 				$item = $this->media( $block['blockName'], $attrs, $html );
 				if ( $item ) {

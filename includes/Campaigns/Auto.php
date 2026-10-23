@@ -97,7 +97,7 @@ final class Auto {
 			if ( ! $current || 'auto' !== $current['type'] ) {
 				return null;
 			}
-			$wpdb->update( Migrations::campaigns_table(), $row, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->update( Migrations::campaigns_table(), $row, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		} else {
 			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				Migrations::campaigns_table(),

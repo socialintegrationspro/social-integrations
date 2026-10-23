@@ -188,7 +188,7 @@ class LinkedIn extends AbstractNetwork {
 			$member  = (string) ( $profile['remote_id'] ?? '' );
 		}
 		if ( '' === $token || '' === $member ) {
-			throw new NetworkException( 'expired', __( 'The LinkedIn account is not connected. Reconnect the account.', 'social-integrations' ) );
+			throw new NetworkException( 'expired', esc_html__( 'The LinkedIn account is not connected. Reconnect the account.', 'social-integrations' ) );
 		}
 
 		$author  = 'urn:li:person:' . $member;
@@ -247,7 +247,7 @@ class LinkedIn extends AbstractNetwork {
 
 		$post_id = (string) ( $data['id'] ?? '' );
 		if ( '' === $post_id ) {
-			throw new NetworkException( 'unknown', __( 'LinkedIn did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'LinkedIn did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
 		}
 
 		return array(
@@ -292,7 +292,7 @@ class LinkedIn extends AbstractNetwork {
 		$asset      = (string) ( $register['value']['asset'] ?? '' );
 		$upload_url = (string) ( $register['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'] ?? '' );
 		if ( '' === $asset || '' === $upload_url ) {
-			throw new NetworkException( 'media', __( 'LinkedIn did not accept the image upload. Try again later.', 'social-integrations' ) );
+			throw new NetworkException( 'media', esc_html__( 'LinkedIn did not accept the image upload. Try again later.', 'social-integrations' ) );
 		}
 
 		$this->request(
@@ -346,7 +346,7 @@ class LinkedIn extends AbstractNetwork {
 			}
 		}
 
-		throw new NetworkException( 'media', __( 'An image of the post could not be read, so it was not sent to LinkedIn.', 'social-integrations' ) );
+		throw new NetworkException( 'media', esc_html__( 'An image of the post could not be read, so it was not sent to LinkedIn.', 'social-integrations' ) );
 	}
 
 	/**
@@ -365,7 +365,7 @@ class LinkedIn extends AbstractNetwork {
 			)
 		);
 		if ( empty( $data['access_token'] ) ) {
-			throw new NetworkException( 'oauth', __( 'LinkedIn did not return an access token. Try connecting again.', 'social-integrations' ) );
+			throw new NetworkException( 'oauth', esc_html__( 'LinkedIn did not return an access token. Try connecting again.', 'social-integrations' ) );
 		}
 
 		$credentials = array( 'access_token' => (string) $data['access_token'] );

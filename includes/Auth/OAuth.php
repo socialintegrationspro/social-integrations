@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Auth;
 
+use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\AbstractNetwork;
 use SocialIntegrations\Networks\NetworkException;
@@ -369,7 +370,7 @@ final class OAuth {
 			}
 			Accounts::save( $key, $profile, $credentials );
 		} catch ( NetworkException $e ) {
-			$this->finish( 'error', $e->getMessage() );
+			$this->finish( 'error', Errors::text( $e ) );
 		}
 
 		$this->finish( 'connected', $key );

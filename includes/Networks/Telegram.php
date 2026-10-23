@@ -110,17 +110,17 @@ class Telegram extends AbstractNetwork {
 		$token = trim( (string) ( $input['bot_token'] ?? '' ) );
 		$chat  = $this->normalize_chat( (string) ( $input['chat_id'] ?? '' ) );
 		if ( '' === $token || '' === $chat ) {
-			throw new NetworkException( 'invalid', __( 'Enter the bot token and the channel or group.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'Enter the bot token and the channel or group.', 'social-integrations' ) );
 		}
 		if ( ! preg_match( '/^\d+:[A-Za-z0-9_-]+$/', $token ) ) {
-			throw new NetworkException( 'invalid', __( 'This does not look like a bot token. Copy it again from @BotFather.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'This does not look like a bot token. Copy it again from @BotFather.', 'social-integrations' ) );
 		}
 
 		try {
 			$me = $this->call( $token, 'getMe' );
 		} catch ( NetworkException $e ) {
 			if ( $e->is_expired() || 404 === $e->getCode() ) {
-				throw new NetworkException( 'invalid', __( 'Telegram did not accept this bot token. Copy it again from @BotFather.', 'social-integrations' ) );
+				throw new NetworkException( 'invalid', esc_html__( 'Telegram did not accept this bot token. Copy it again from @BotFather.', 'social-integrations' ) );
 			}
 			throw $e;
 		}
@@ -131,7 +131,7 @@ class Telegram extends AbstractNetwork {
 			if ( $e->is_expired() ) {
 				throw $e;
 			}
-			throw new NetworkException( 'invalid', __( 'The bot cannot find this channel or group. Add the bot to it as an admin and check the @username or chat ID.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'The bot cannot find this channel or group. Add the bot to it as an admin and check the @username or chat ID.', 'social-integrations' ) );
 		}
 
 		if ( 'channel' === ( $info['type'] ?? '' ) && ! empty( $me['id'] ) ) {
@@ -149,7 +149,7 @@ class Telegram extends AbstractNetwork {
 			}
 			$status = (string) ( $member['status'] ?? '' );
 			if ( 'creator' !== $status && ( 'administrator' !== $status || empty( $member['can_post_messages'] ) ) ) {
-				throw new NetworkException( 'invalid', __( 'The bot is not allowed to post in this channel. Make it an admin with permission to post messages.', 'social-integrations' ) );
+				throw new NetworkException( 'invalid', esc_html__( 'The bot is not allowed to post in this channel. Make it an admin with permission to post messages.', 'social-integrations' ) );
 			}
 		}
 
@@ -191,7 +191,7 @@ class Telegram extends AbstractNetwork {
 		$token = (string) ( $credentials['bot_token'] ?? '' );
 		$chat  = (string) ( $credentials['chat_id'] ?? '' );
 		if ( '' === $token || '' === $chat ) {
-			throw new NetworkException( 'expired', __( 'The Telegram bot is not connected. Reconnect the account.', 'social-integrations' ) );
+			throw new NetworkException( 'expired', esc_html__( 'The Telegram bot is not connected. Reconnect the account.', 'social-integrations' ) );
 		}
 
 		$text = (string) ( $payload['message'] ?? '' );
@@ -272,7 +272,7 @@ class Telegram extends AbstractNetwork {
 
 		$message_id = (string) ( $message['message_id'] ?? '' );
 		if ( '' === $message_id ) {
-			throw new NetworkException( 'unknown', __( 'Telegram did not confirm the message. Check the chat before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Telegram did not confirm the message. Check the chat before trying again.', 'social-integrations' ) );
 		}
 
 		return array(
@@ -355,7 +355,7 @@ class Telegram extends AbstractNetwork {
 			array( 'body' => $fields )
 		);
 		if ( empty( $data['ok'] ) ) {
-			throw new NetworkException( 'unknown', $this->error_message( 400, $data ) );
+			throw new NetworkException( 'unknown', esc_html( $this->error_message( 400, $data ) ) );
 		}
 		return is_array( $data['result'] ?? null ) ? $data['result'] : array();
 	}

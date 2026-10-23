@@ -6,10 +6,10 @@ export function pickMedia(onPick: (items: MediaItem[]) => void): boolean {
   const media = window.wp?.media
   if (!media) return false
   const frame = media({
-    title: __('Add media'),
+    title: __('Add media', 'social-integrations'),
     multiple: 'add',
     library: { type: ['image', 'video'] },
-    button: { text: __('Add to post') },
+    button: { text: __('Add to post', 'social-integrations') },
   })
   frame.on('select', () => {
     const picked = frame.state().get('selection').toJSON()

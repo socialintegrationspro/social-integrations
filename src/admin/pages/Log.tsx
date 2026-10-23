@@ -11,12 +11,12 @@ import type { LogEntry, LogPage as LogData, LogRequest, LogShare, LogTry } from 
 type Range = '' | 'today' | '7' | '30' | 'month' | 'custom'
 
 const RANGES: { value: Range; label: () => string }[] = [
-  { value: '', label: () => __('Any time') },
-  { value: 'today', label: () => __('Today') },
-  { value: '7', label: () => __('Last 7 days') },
-  { value: '30', label: () => __('Last 30 days') },
-  { value: 'month', label: () => __('This month') },
-  { value: 'custom', label: () => __('Custom range') },
+  { value: '', label: () => __('Any time', 'social-integrations') },
+  { value: 'today', label: () => __('Today', 'social-integrations') },
+  { value: '7', label: () => __('Last 7 days', 'social-integrations') },
+  { value: '30', label: () => __('Last 30 days', 'social-integrations') },
+  { value: 'month', label: () => __('This month', 'social-integrations') },
+  { value: 'custom', label: () => __('Custom range', 'social-integrations') },
 ]
 
 /** From and to dates ('Y-m-d', site time) for a preset range. */
@@ -68,8 +68,8 @@ export function LogPage({ params, go }: PageProps) {
 
   // Filter `sint.campaigns.actions` also names the campaign types of other plugins.
   const types = applyFilters<Record<string, { label: string }>>('sint.campaigns.actions', {
-    single: { label: __('Single post') },
-    auto: { label: __('Auto-post') },
+    single: { label: __('Single post', 'social-integrations') },
+    auto: { label: __('Auto-post', 'social-integrations') },
   })
 
   // Search after the user stops typing.
@@ -147,8 +147,8 @@ export function LogPage({ params, go }: PageProps) {
         last = (e as Error).message
       }
     }
-    if (shares.length === 1) toast(sent ? __('Shared.') : last, !sent)
-    else toast(sprintf(__('%1$d of %2$d shares sent.'), sent, shares.length), sent < shares.length)
+    if (shares.length === 1) toast(sent ? __('Shared.', 'social-integrations') : last, !sent)
+    else toast(sprintf(__('%1$d of %2$d shares sent.', 'social-integrations'), sent, shares.length), sent < shares.length)
     setBusy('')
     load()
   }
@@ -158,7 +158,7 @@ export function LogPage({ params, go }: PageProps) {
     setBusy('delete')
     try {
       await api.post('logs/delete', { keys })
-      toast(keys.length === 1 ? __('Entry deleted.') : sprintf(__('%d entries deleted.'), keys.length))
+      toast(keys.length === 1 ? __('Entry deleted.', 'social-integrations') : sprintf(__('%d entries deleted.', 'social-integrations'), keys.length))
       setSelected([])
       setArmed('')
       // When the page is now empty, show the page before it.
@@ -180,11 +180,11 @@ export function LogPage({ params, go }: PageProps) {
 
   const campaignCell = (e: LogEntry) => {
     const c = names.get(e.campaign_key)
-    const post = e.post_title || e.excerpt || __('Written in the composer')
+    const post = e.post_title || e.excerpt || __('Written in the composer', 'social-integrations')
     // Shares without a campaign show their post alone; the Type column says "—".
     const postLine = (className: string) =>
       e.edit_url ? (
-        <a className={className} href={e.edit_url} title={__('Edit the post')}>{post}</a>
+        <a className={className} href={e.edit_url} title={__('Edit the post', 'social-integrations')}>{post}</a>
       ) : (
         <div className={className}>{post}</div>
       )
@@ -192,9 +192,9 @@ export function LogPage({ params, go }: PageProps) {
     return (
       <>
         {c ? (
-          <button type="button" className="sint-log-camp-link" title={__('Show the shares of this campaign')} onClick={() => setCampaign(e.campaign_key)}>{c.name}</button>
+          <button type="button" className="sint-log-camp-link" title={__('Show the shares of this campaign', 'social-integrations')} onClick={() => setCampaign(e.campaign_key)}>{c.name}</button>
         ) : (
-          <span className="sint-log-none">{__('Deleted campaign')}</span>
+          <span className="sint-log-none">{__('Deleted campaign', 'social-integrations')}</span>
         )}
         {post !== c?.name && postLine('sint-log-post')}
       </>
@@ -218,8 +218,8 @@ export function LogPage({ params, go }: PageProps) {
           })}
           {e.shares.length > 4 && <span className="sint-log-av sint-log-more">+{e.shares.length - 4}</span>}
         </span>
-        <span className="sint-sr">{sprintf(e.shares.length === 1 ? __('%d account') : __('%d accounts'), e.shares.length)}</span>
-        {bad > 0 && <span className="sint-log-bad">{sprintf(__('%d failed'), bad)}</span>}
+        <span className="sint-sr">{sprintf(e.shares.length === 1 ? __('%d account', 'social-integrations') : __('%d accounts', 'social-integrations'), e.shares.length)}</span>
+        {bad > 0 && <span className="sint-log-bad">{sprintf(__('%d failed', 'social-integrations'), bad)}</span>}
       </span>
     )
   }
@@ -235,24 +235,24 @@ export function LogPage({ params, go }: PageProps) {
             <div className="n">{acct?.name || acct?.username || net?.label || s.network}</div>
             <div className="m">
               {net?.label ?? s.network} · {fmtStamp(s.created_at)}
-              {s.tries > 1 && ` · ${sprintf(__('%d tries'), s.tries)}`}
+              {s.tries > 1 && ` · ${sprintf(__('%d tries', 'social-integrations'), s.tries)}`}
             </div>
             {s.message && <div className="sint-log-msg">{s.message}</div>}
           </div>
-          <span className={`sint-log-result ${s.status === 'published' ? 'ok' : 'bad'}`}>{s.status === 'published' ? __('Published') : __('Failed')}</span>
+          <span className={`sint-log-result ${s.status === 'published' ? 'ok' : 'bad'}`}>{s.status === 'published' ? __('Published', 'social-integrations') : __('Failed', 'social-integrations')}</span>
           <span className="sint-log-share-act">
             {s.status === 'failed' && s.queue_id > 0 && (
               <button type="button" className="sint-log-retry" disabled={!!busy} onClick={() => retry([s], `s${s.id}`)}>
                 <Icon name="retry" size={14} stroke={2} />
-                {busy === `s${s.id}` ? __('Working…') : __('Retry')}
+                {busy === `s${s.id}` ? __('Working…', 'social-integrations') : __('Retry', 'social-integrations')}
               </button>
             )}
             {s.remote_url && (
-              <a href={s.remote_url} target="_blank" rel="noreferrer" className="sint-pc-tool" aria-label={__('View the live post')} title={__('View the live post')}>
+              <a href={s.remote_url} target="_blank" rel="noreferrer" className="sint-pc-tool" aria-label={__('View the live post', 'social-integrations')} title={__('View the live post', 'social-integrations')}>
                 <Icon name="external" size={14} stroke={2} />
               </a>
             )}
-            <button type="button" className="sint-pc-tool" aria-haspopup="dialog" aria-label={__('Details')} title={__('Details: each try and what the network answered')} onClick={() => setDetail({ share: s, entry: e })}>
+            <button type="button" className="sint-pc-tool" aria-haspopup="dialog" aria-label={__('Details', 'social-integrations')} title={__('Details: each try and what the network answered', 'social-integrations')} onClick={() => setDetail({ share: s, entry: e })}>
               <Icon name="code" size={14} stroke={2} />
             </button>
           </span>
@@ -265,52 +265,52 @@ export function LogPage({ params, go }: PageProps) {
 
   return (
     <>
-      <Header title={__('Share log')}>
-        <button type="button" className="sint-btn ghost sm" onClick={() => load()} disabled={loading} aria-label={__('Refresh the log')}>
+      <Header title={__('Share log', 'social-integrations')}>
+        <button type="button" className="sint-btn ghost sm" onClick={() => load()} disabled={loading} aria-label={__('Refresh the log', 'social-integrations')}>
           <Icon name="retry" size={14} stroke={2} />
-          {__('Refresh')}
+          {__('Refresh', 'social-integrations')}
         </button>
       </Header>
       <div className="sint-body">
         <div className="sint-log-filters">
           <label className="sint-search">
             <Icon name="search" size={16} />
-            <span className="sint-sr">{__('Search')}</span>
-            <input type="search" value={typed} placeholder={__('Search post or caption')} onChange={(e) => setTyped(e.target.value)} />
+            <span className="sint-sr">{__('Search', 'social-integrations')}</span>
+            <input type="search" value={typed} placeholder={__('Search post or caption', 'social-integrations')} onChange={(e) => setTyped(e.target.value)} />
           </label>
           <div className="sint-log-filter-set">
             {(data?.campaigns.length ?? 0) > 0 && (
               <label className={`sint-filter${campaign ? ' on' : ''}`}>
                 <Icon name="content" size={16} />
-                <span className="sint-sr">{__('Campaign')}</span>
+                <span className="sint-sr">{__('Campaign', 'social-integrations')}</span>
                 <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-                  <option value="">{__('All campaigns')}</option>
+                  <option value="">{__('All campaigns', 'social-integrations')}</option>
                   {data!.campaigns.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
                 </select>
               </label>
             )}
             <label className={`sint-filter${range ? ' on' : ''}`}>
               <Icon name="calendar" size={16} />
-              <span className="sint-sr">{__('Date')}</span>
+              <span className="sint-sr">{__('Date', 'social-integrations')}</span>
               <select value={range} onChange={(e) => pickRange(e.target.value as Range)}>
                 {RANGES.map((r) => <option key={r.value} value={r.value}>{r.label()}</option>)}
               </select>
             </label>
             {range === 'custom' && (
               <span className="sint-log-custom">
-                <input type="date" className="sint-input" aria-label={__('From')} value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+                <input type="date" className="sint-input" aria-label={__('From', 'social-integrations')} value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
                 <span aria-hidden="true">–</span>
-                <input type="date" className="sint-input" aria-label={__('To')} value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+                <input type="date" className="sint-input" aria-label={__('To', 'social-integrations')} value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
               </span>
             )}
-            <div className="sint-seg" role="group" aria-label={__('Result')}>
-              <button type="button" className={status === '' ? 'on' : ''} aria-pressed={status === ''} onClick={() => setStatus('')}>{__('All')}</button>
+            <div className="sint-seg" role="group" aria-label={__('Result', 'social-integrations')}>
+              <button type="button" className={status === '' ? 'on' : ''} aria-pressed={status === ''} onClick={() => setStatus('')}>{__('All', 'social-integrations')}</button>
               <button type="button" className={status === 'failed' ? 'on' : ''} aria-pressed={status === 'failed'} onClick={() => setStatus('failed')}>
-                {__('Failed')}
+                {__('Failed', 'social-integrations')}
                 {!!data?.failed && <span className="sint-seg-count bad">{data.failed}</span>}
               </button>
             </div>
-            {filtered && <button type="button" className="sint-bulk-link" onClick={clear}>{__('Clear')}</button>}
+            {filtered && <button type="button" className="sint-bulk-link" onClick={clear}>{__('Clear', 'social-integrations')}</button>}
           </div>
         </div>
 
@@ -320,17 +320,17 @@ export function LogPage({ params, go }: PageProps) {
           <div className="sint-card">
             {status === 'failed' && !campaign && !search && !from && !to ? (
               // Nothing failed is good news, not an empty search.
-              <Empty title={__('No failed shares')}>
+              <Empty title={__('No failed shares', 'social-integrations')}>
                 <span className="sint-empty-ok" aria-hidden="true"><Icon name="check" size={22} stroke={2.4} /></span>
-                <p className="sint-sub">{__('Every share in the log went out.')}</p>
-                <button type="button" className="sint-btn sm" onClick={() => setStatus('')}>{__('Show all shares')}</button>
+                <p className="sint-sub">{__('Every share in the log went out.', 'social-integrations')}</p>
+                <button type="button" className="sint-btn sm" onClick={() => setStatus('')}>{__('Show all shares', 'social-integrations')}</button>
               </Empty>
             ) : filtered ? (
-              <Empty title={__('No shares match the filters')}>
-                <button type="button" className="sint-btn sm" onClick={clear}>{__('Clear filters')}</button>
+              <Empty title={__('No shares match the filters', 'social-integrations')}>
+                <button type="button" className="sint-btn sm" onClick={clear}>{__('Clear filters', 'social-integrations')}</button>
               </Empty>
             ) : (
-              <Empty title={__('No shares yet')}>{__('Each share to a network appears here with its result.')}</Empty>
+              <Empty title={__('No shares yet', 'social-integrations')}>{__('Each share to a network appears here with its result.', 'social-integrations')}</Empty>
             )}
           </div>
         ) : (
@@ -341,7 +341,7 @@ export function LogPage({ params, go }: PageProps) {
                   <th className="sint-check-cell">
                     <input
                       type="checkbox"
-                      aria-label={__('Select all entries on this page')}
+                      aria-label={__('Select all entries on this page', 'social-integrations')}
                       checked={data.items.length > 0 && selected.length === data.items.length}
                       ref={(el) => {
                         if (el) el.indeterminate = selected.length > 0 && selected.length < data.items.length
@@ -352,29 +352,29 @@ export function LogPage({ params, go }: PageProps) {
                   {selected.length ? (
                     // While entries are selected, the header row holds the bulk actions.
                     <th colSpan={5}>
-                      <span className="sint-bulk-bar" role="group" aria-label={__('Selected entries')}>
-                        <span className="sint-bulk-count">{sprintf(__('%d selected'), selected.length)}</span>
-                        <button type="button" className="sint-bulk-link" onClick={() => { setSelected([]); setArmed('') }}>{__('Clear')}</button>
+                      <span className="sint-bulk-bar" role="group" aria-label={__('Selected entries', 'social-integrations')}>
+                        <span className="sint-bulk-count">{sprintf(__('%d selected', 'social-integrations'), selected.length)}</span>
+                        <button type="button" className="sint-bulk-link" onClick={() => { setSelected([]); setArmed('') }}>{__('Clear', 'social-integrations')}</button>
                         <button
                           type="button"
                           className={`sint-bulk-delete${armed === 'bulk' ? ' armed' : ''}`}
                           disabled={busy === 'delete'}
-                          title={__('The shares stay in the calendar. Only their log rows go.')}
+                          title={__('The shares stay in the calendar. Only their log rows go.', 'social-integrations')}
                           onClick={() => (armed === 'bulk' ? remove(selected) : setArmed('bulk'))}
                           onBlur={() => armed === 'bulk' && setArmed('')}
                         >
                           <Icon name="trash" size={14} stroke={2} />
-                          {busy === 'delete' ? __('Deleting…') : armed === 'bulk' ? __('Click again to delete') : __('Delete')}
+                          {busy === 'delete' ? __('Deleting…', 'social-integrations') : armed === 'bulk' ? __('Click again to delete', 'social-integrations') : __('Delete', 'social-integrations')}
                         </button>
                       </span>
                     </th>
                   ) : (
                     <>
-                      <th>{__('Date')}</th>
-                      <th>{__('Campaign')}</th>
-                      <th>{__('Type')}</th>
-                      <th>{__('Accounts')}</th>
-                      <th><span className="sint-sr">{__('Actions')}</span></th>
+                      <th>{__('Date', 'social-integrations')}</th>
+                      <th>{__('Campaign', 'social-integrations')}</th>
+                      <th>{__('Type', 'social-integrations')}</th>
+                      <th>{__('Accounts', 'social-integrations')}</th>
+                      <th><span className="sint-sr">{__('Actions', 'social-integrations')}</span></th>
                     </>
                   )}
                 </tr>
@@ -388,7 +388,7 @@ export function LogPage({ params, go }: PageProps) {
                     <Fragment key={e.key}>
                       <tr className={`sint-log-row${isOpen ? ' open' : ''}${selected.includes(e.key) ? ' selected' : ''}`} onClick={(ev) => rowClick(ev, e.key)}>
                         <td className="sint-check-cell">
-                          <input type="checkbox" aria-label={sprintf(__('Select the entry of %s'), fmtStamp(e.at))} checked={selected.includes(e.key)} onChange={(ev) => pick(e.key, ev.target.checked)} />
+                          <input type="checkbox" aria-label={sprintf(__('Select the entry of %s', 'social-integrations'), fmtStamp(e.at))} checked={selected.includes(e.key)} onChange={(ev) => pick(e.key, ev.target.checked)} />
                         </td>
                         <td style={{ whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{fmtStamp(e.at)}</td>
                         <td>{campaignCell(e)}</td>
@@ -398,22 +398,22 @@ export function LogPage({ params, go }: PageProps) {
                           <span className="sint-log-actions">
                             {failed.length > 0 && (
                               <button type="button" className="sint-btn danger sm" disabled={!!busy} onClick={() => retry(failed, e.key)}>
-                                {busy === e.key ? __('Working…') : failed.length > 1 ? sprintf(__('Retry %d failed'), failed.length) : __('Retry')}
+                                {busy === e.key ? __('Working…', 'social-integrations') : failed.length > 1 ? sprintf(__('Retry %d failed', 'social-integrations'), failed.length) : __('Retry', 'social-integrations')}
                               </button>
                             )}
                             <button
                               type="button"
                               className={`sint-log-del${armed === e.key ? ' armed' : ''}`}
                               disabled={busy === 'delete'}
-                              aria-label={armed === e.key ? __('Click again to delete') : __('Delete the entry')}
-                              title={armed === e.key ? __('Click again to delete') : __('Delete the entry')}
+                              aria-label={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
+                              title={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
                               onClick={() => (armed === e.key ? remove([e.key]) : setArmed(e.key))}
                               onBlur={() => armed === e.key && setArmed('')}
                             >
                               <Icon name="trash" size={15} stroke={2} />
-                              {armed === e.key && <span>{__('Click again to delete')}</span>}
+                              {armed === e.key && <span>{__('Click again to delete', 'social-integrations')}</span>}
                             </button>
-                            <button type="button" className="sint-log-chev" aria-expanded={isOpen} aria-label={isOpen ? __('Hide accounts') : __('Show accounts')} title={isOpen ? __('Hide accounts') : __('Show accounts')} onClick={() => toggle(e.key)}>
+                            <button type="button" className="sint-log-chev" aria-expanded={isOpen} aria-label={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} title={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} onClick={() => toggle(e.key)}>
                               <Icon name="down" size={16} stroke={2.2} />
                             </button>
                           </span>
@@ -473,7 +473,7 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } else {
-      toast(__('The browser did not allow the copy.'), true)
+      toast(__('The browser did not allow the copy.', 'social-integrations'), true)
     }
   }
 
@@ -481,14 +481,14 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
     <>
       <button type="button" className="sint-btn ghost" onClick={copy} disabled={!tries} aria-live="polite">
         <Icon name={copied ? 'check' : 'copy'} size={15} stroke={2} />
-        {copied ? __('Copied') : __('Copy details')}
+        {copied ? __('Copied', 'social-integrations') : __('Copy details', 'social-integrations')}
       </button>
-      <button type="button" className="sint-btn" style={{ marginLeft: 'auto' }} onClick={onClose}>{__('Close')}</button>
+      <button type="button" className="sint-btn" style={{ marginLeft: 'auto' }} onClick={onClose}>{__('Close', 'social-integrations')}</button>
     </>
   )
 
   return (
-    <Modal title={__('Share details')} onClose={onClose} drawer footer={footer}>
+    <Modal title={__('Share details', 'social-integrations')} onClose={onClose} drawer footer={footer}>
       <div className="sint-sd">
         <section className="sint-sd-summary">
           <div className="sint-sd-who">
@@ -497,18 +497,18 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
               <div className="n">{acct?.name || acct?.username || net?.label || share.network}</div>
               <div className="m">{net?.label ?? share.network}</div>
             </div>
-            <span className={`sint-log-result ${share.status === 'published' ? 'ok' : 'bad'}`}>{share.status === 'published' ? __('Published') : __('Failed')}</span>
+            <span className={`sint-log-result ${share.status === 'published' ? 'ok' : 'bad'}`}>{share.status === 'published' ? __('Published', 'social-integrations') : __('Failed', 'social-integrations')}</span>
           </div>
           <dl className="sint-sd-facts">
-            {campaign && <><dt>{__('Campaign')}</dt><dd>{campaign}</dd></>}
-            <dt>{__('Post')}</dt>
-            <dd>{entry.edit_url ? <a href={entry.edit_url}>{entry.post_title || entry.excerpt}</a> : entry.post_title || entry.excerpt || __('Written in the composer')}</dd>
-            <dt>{__('Last try')}</dt>
+            {campaign && <><dt>{__('Campaign', 'social-integrations')}</dt><dd>{campaign}</dd></>}
+            <dt>{__('Post', 'social-integrations')}</dt>
+            <dd>{entry.edit_url ? <a href={entry.edit_url}>{entry.post_title || entry.excerpt}</a> : entry.post_title || entry.excerpt || __('Written in the composer', 'social-integrations')}</dd>
+            <dt>{__('Last try', 'social-integrations')}</dt>
             <dd>{fmtStamp(share.created_at)}</dd>
             {share.remote_url && (
               <>
-                <dt>{__('Live post')}</dt>
-                <dd><a href={share.remote_url} target="_blank" rel="noreferrer">{__('Open on the network')} <Icon name="external" size={12} stroke={2} /></a></dd>
+                <dt>{__('Live post', 'social-integrations')}</dt>
+                <dd><a href={share.remote_url} target="_blank" rel="noreferrer">{__('Open on the network', 'social-integrations')} <Icon name="external" size={12} stroke={2} /></a></dd>
               </>
             )}
           </dl>
@@ -516,7 +516,7 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
         </section>
 
         <section>
-          <h3 className="sint-label" style={{ marginBottom: 12 }}>{tries ? (tries.length === 1 ? __('1 try') : sprintf(__('%d tries'), tries.length)) : __('Tries')}</h3>
+          <h3 className="sint-label" style={{ marginBottom: 12 }}>{tries ? (tries.length === 1 ? __('1 try', 'social-integrations') : sprintf(__('%d tries', 'social-integrations'), tries.length)) : __('Tries', 'social-integrations')}</h3>
           {error && <div className="sint-log-msg">{error}</div>}
           {!tries && !error && <div className="sint-skeleton" style={{ height: 120 }} />}
           {tries && (
@@ -524,20 +524,20 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
               {tries.map((t, i) => (
                 <li key={t.id} className={t.status === 'published' ? 'ok' : 'bad'}>
                   <div className="sint-log-try-head">
-                    <b>{sprintf(__('Try %d'), i + 1)}</b>
+                    <b>{sprintf(__('Try %d', 'social-integrations'), i + 1)}</b>
                     <span>{fmtStamp(t.created_at)}</span>
-                    <span className={`sint-log-result ${t.status === 'published' ? 'ok' : 'bad'}`}>{t.status === 'published' ? __('Published') : __('Failed')}</span>
+                    <span className={`sint-log-result ${t.status === 'published' ? 'ok' : 'bad'}`}>{t.status === 'published' ? __('Published', 'social-integrations') : __('Failed', 'social-integrations')}</span>
                     {t.details?.code && <code>{t.details.code}</code>}
                     {!!t.details?.status && <code>HTTP {t.details.status}</code>}
                   </div>
                   {t.message && <div className="sint-log-msg">{t.message}</div>}
-                  {!t.details && <p className="sint-log-tech-none">{__('No details were saved for this try. The plugin saves them for shares sent after this update.')}</p>}
+                  {!t.details && <p className="sint-log-tech-none">{__('No details were saved for this try. The plugin saves them for shares sent after this update.', 'social-integrations')}</p>}
                   {t.details?.exception && (
                     <pre className="sint-log-pre">{`${t.details.exception.class}: ${t.details.exception.message}\n${t.details.exception.file}`}</pre>
                   )}
                   {t.details?.requests?.map((r, n) => <RequestRow key={n} r={r} />)}
                   {t.details && !t.details.requests?.length && !t.details.exception && (
-                    <p className="sint-log-tech-none">{__('The share stopped before it sent a request to the network.')}</p>
+                    <p className="sint-log-tech-none">{__('The share stopped before it sent a request to the network.', 'social-integrations')}</p>
                   )}
                 </li>
               ))}
@@ -557,8 +557,8 @@ function RequestRow({ r }: { r: LogRequest }) {
       <div className="sint-log-req-line">
         <code className="m">{r.method}</code>
         <code className="u" title={r.url}>{r.url}</code>
-        <code className={`s ${tone}`}>{r.status || __('No answer')}</code>
-        <span className="t">{sprintf(__('%d ms'), r.ms)}</span>
+        <code className={`s ${tone}`}>{r.status || __('No answer', 'social-integrations')}</code>
+        <span className="t">{sprintf(__('%d ms', 'social-integrations'), r.ms)}</span>
       </div>
       {body && body !== '[]' && <pre className="sint-log-pre">{body}</pre>}
     </div>

@@ -104,7 +104,7 @@ export function Modal({ title, onClose, children, footer, narrow, drawer, header
         <div className="sint-modal-head">
           <h2>{title}</h2>
           {headerExtra}
-          <button type="button" className="sint-icon-btn sm" style={{ marginLeft: 'auto' }} aria-label={__('Close')} onClick={onClose}>
+          <button type="button" className="sint-icon-btn sm" style={{ marginLeft: 'auto' }} aria-label={__('Close', 'social-integrations')} onClick={onClose}>
             <Icon name="close" size={16} stroke={2} />
           </button>
         </div>
@@ -143,7 +143,7 @@ export function CopyField({ value, labelledBy }: { value: string; labelledBy?: s
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } else {
-      toast(__('Select the URL and copy it.'), true)
+      toast(__('Select the URL and copy it.', 'social-integrations'), true)
     }
   }
   return (
@@ -151,7 +151,7 @@ export function CopyField({ value, labelledBy }: { value: string; labelledBy?: s
       <input className="sint-input" readOnly value={value} aria-labelledby={labelledBy} onFocus={(e) => e.target.select()} />
       <button type="button" className={`sint-btn sm${copied ? ' copied' : ''}`} onClick={copy} aria-live="polite">
         <Icon name={copied ? 'check' : 'copy'} size={15} stroke={2} />
-        {copied ? __('Copied') : __('Copy')}
+        {copied ? __('Copied', 'social-integrations') : __('Copy', 'social-integrations')}
       </button>
     </div>
   )
@@ -241,20 +241,20 @@ export function Pagination({ page, pages, size, total, setPage, setSize }: Pager
   const from = (page - 1) * size + 1
   const to = Math.min(total, page * size)
   return (
-    <nav className="sint-pager" aria-label={__('Pages')}>
+    <nav className="sint-pager" aria-label={__('Pages', 'social-integrations')}>
       <label className="sint-pager-size">
-        {__('Rows per page')}
+        {__('Rows per page', 'social-integrations')}
         <select className="sint-select" value={size} onChange={(e) => setSize(Number(e.target.value))}>
           {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
       </label>
-      <span className="sint-pager-range">{sprintf(__('%1$d–%2$d of %3$d'), from, to, total)}</span>
+      <span className="sint-pager-range">{sprintf(__('%1$d–%2$d of %3$d', 'social-integrations'), from, to, total)}</span>
       <span className="sint-pager-btns">
-        <button type="button" className="sint-icon-btn sm" aria-label={__('Previous page')} disabled={page <= 1} onClick={() => setPage(page - 1)}>
+        <button type="button" className="sint-icon-btn sm" aria-label={__('Previous page', 'social-integrations')} disabled={page <= 1} onClick={() => setPage(page - 1)}>
           <Icon name="left" size={16} stroke={2} />
         </button>
-        <span className="sint-pager-page">{sprintf(__('Page %1$d of %2$d'), page, pages)}</span>
-        <button type="button" className="sint-icon-btn sm" aria-label={__('Next page')} disabled={page >= pages} onClick={() => setPage(page + 1)}>
+        <span className="sint-pager-page">{sprintf(__('Page %1$d of %2$d', 'social-integrations'), page, pages)}</span>
+        <button type="button" className="sint-icon-btn sm" aria-label={__('Next page', 'social-integrations')} disabled={page >= pages} onClick={() => setPage(page + 1)}>
           <Icon name="right" size={16} stroke={2} />
         </button>
       </span>

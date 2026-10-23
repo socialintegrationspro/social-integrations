@@ -1,0 +1,45 @@
+# Checks that the plugin is one complete plugin, follows the WordPress coding standards,
+# runs on PHP 7.4, and builds.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+
+      - name: Install
+        run: |
+          pnpm install --frozen-lockfile
+          composer install --no-interaction
+
+      - name: Self-contained
+        run: pnpm check:self-contained
+
+      - name: PHP syntax
+        run: find includes social-integrations.php uninstall.php -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Coding standards
+        run: composer lint
+
+      - name: PHP compatibility
+        run: composer compat
+
+      - name: Type check and build
+        run: pnpm build

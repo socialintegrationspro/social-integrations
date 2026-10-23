@@ -154,6 +154,10 @@ abstract class AbstractNetwork {
 		return '';
 	}
 
+	// Defaults that networks override. Each keeps the full signature, so the parameters
+	// are not used here.
+	// phpcs:disable Generic.CodeAnalysis.UnusedFunctionParameter,Squiz.Commenting.FunctionComment.InvalidNoReturn
+
 	/**
 	 * Checks the fields from connect_fields() and returns the account.
 	 *
@@ -162,7 +166,7 @@ abstract class AbstractNetwork {
 	 * @throws NetworkException When the values do not work.
 	 */
 	public function authenticate( array $input ): array {
-		throw new NetworkException( 'unsupported', __( 'This network connects with sign-in.', 'social-integrations' ) );
+		throw new NetworkException( 'unsupported', esc_html__( 'This network connects with sign-in.', 'social-integrations' ) );
 	}
 
 	/**
@@ -186,7 +190,7 @@ abstract class AbstractNetwork {
 	 * @throws NetworkException When the network refuses the code.
 	 */
 	public function exchange_code( array $app, string $code, string $redirect_uri ): array {
-		throw new NetworkException( 'unsupported', __( 'This network does not use sign-in.', 'social-integrations' ) );
+		throw new NetworkException( 'unsupported', esc_html__( 'This network does not use sign-in.', 'social-integrations' ) );
 	}
 
 	/**
@@ -220,6 +224,8 @@ abstract class AbstractNetwork {
 	public function connectable_entities( array $credentials ): ?array {
 		return null;
 	}
+
+	// phpcs:enable
 
 	/**
 	 * Shape sent to the admin app. Holds no secrets.
@@ -261,18 +267,29 @@ abstract class AbstractNetwork {
 			'ms'     => (int) round( ( microtime( true ) - $start ) * 1000 ),
 		);
 		if ( is_wp_error( $response ) ) {
-			$this->trace( $step + array( 'status' => 0, 'error' => $response->get_error_code() . ': ' . $response->get_error_message() ) );
-			throw new NetworkException( 'http', $response->get_error_message() );
+			$this->trace(
+				$step + array(
+					'status' => 0,
+					'error'  => $response->get_error_code() . ': ' . $response->get_error_message(),
+				)
+			);
+			throw new NetworkException( 'http', esc_html( $response->get_error_message() ) );
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		$raw  = (string) wp_remote_retrieve_body( $response );
-		$this->trace( $step + array( 'status' => $code, 'response' => Redact::body( $raw ) ) );
+		$this->trace(
+			$step + array(
+				'status'   => $code,
+				'response' => Redact::body( $raw ),
+			)
+		);
 		$body = json_decode( $raw, true );
 		$body = is_array( $body ) ? $body : array();
 
 		if ( $code >= 400 ) {
-			throw new NetworkException( $this->error_code( $code, $body ), $this->error_message( $code, $body ), $code, $body );
+			// Only the message is shown. The error code, the status and the body are data for the log.
+			throw new NetworkException( $this->error_code( $code, $body ), esc_html( $this->error_message( $code, $body ) ), $code, $body ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 		return $body;
 	}
@@ -294,7 +311,7 @@ abstract class AbstractNetwork {
 	 * @param int   $status HTTP status.
 	 * @param array $body   Decoded body.
 	 */
-	protected function error_code( int $status, array $body ): string {
+	protected function error_code( int $status, array $body ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Networks read $body.
 		return 401 === $status ? 'expired' : 'http_' . $status;
 	}
 

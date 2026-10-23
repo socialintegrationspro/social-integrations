@@ -35,11 +35,11 @@ function Shell() {
 
   // Filter `sint.routes`: other plugins add or replace screens.
   const routes = applyFilters<RouteDef[]>('sint.routes', [
-    { path: 'calendar', label: __('Calendar'), icon: 'calendar', component: CalendarPage },
-    { path: 'campaigns', label: __('Campaigns'), icon: 'content', component: CampaignsPage },
-    { path: 'accounts', label: __('Accounts'), icon: 'accounts', component: AccountsPage },
-    { path: 'log', label: __('Share log'), icon: 'log', component: LogPage },
-    { path: 'settings', label: __('Settings'), icon: 'settings', component: SettingsPage, bottom: true },
+    { path: 'calendar', label: __('Calendar', 'social-integrations'), icon: 'calendar', component: CalendarPage },
+    { path: 'campaigns', label: __('Campaigns', 'social-integrations'), icon: 'content', component: CampaignsPage },
+    { path: 'accounts', label: __('Accounts', 'social-integrations'), icon: 'accounts', component: AccountsPage },
+    { path: 'log', label: __('Share log', 'social-integrations'), icon: 'log', component: LogPage },
+    { path: 'settings', label: __('Settings', 'social-integrations'), icon: 'settings', component: SettingsPage, bottom: true },
   ])
   const current = routes.find((r) => r.path === path) ?? routes[0]!
   const Page = current.component
@@ -48,7 +48,7 @@ function Shell() {
 
   return (
     <div className="sint-shell">
-      <nav className="sint-rail" aria-label={__('Social Integrations')}>
+      <nav className="sint-rail" aria-label={__('Social Integrations', 'social-integrations')}>
         <div className="logo" aria-hidden="true" style={{ color: '#fff' }}>
           <Icon name="share" size={22} stroke={2.2} />
         </div>
@@ -58,7 +58,7 @@ function Shell() {
             {r.label}
           </a>
         ))}
-        <button type="button" className="sint-theme" onClick={toggleTheme} aria-label={theme === 'dark' ? __('Switch to day mode') : __('Switch to night mode')} title={theme === 'dark' ? __('Day mode') : __('Night mode')}>
+        <button type="button" className="sint-theme" onClick={toggleTheme} aria-label={theme === 'dark' ? __('Switch to day mode', 'social-integrations') : __('Switch to night mode', 'social-integrations')} title={theme === 'dark' ? __('Day mode', 'social-integrations') : __('Night mode', 'social-integrations')}>
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
         </button>
       </nav>

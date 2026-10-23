@@ -139,7 +139,7 @@ class Threads extends AbstractNetwork {
 			)
 		);
 		if ( empty( $short['access_token'] ) ) {
-			throw new NetworkException( 'oauth', __( 'Threads did not return an access token. Try connecting again.', 'social-integrations' ) );
+			throw new NetworkException( 'oauth', esc_html__( 'Threads did not return an access token. Try connecting again.', 'social-integrations' ) );
 		}
 
 		$long = $this->get(
@@ -230,7 +230,7 @@ class Threads extends AbstractNetwork {
 	public function publish( array $credentials, array $payload ): array {
 		$token = (string) ( $credentials['access_token'] ?? '' );
 		if ( '' === $token ) {
-			throw new NetworkException( 'expired', __( 'The Threads account is not connected. Reconnect the account.', 'social-integrations' ) );
+			throw new NetworkException( 'expired', esc_html__( 'The Threads account is not connected. Reconnect the account.', 'social-integrations' ) );
 		}
 		$user = '' !== (string) ( $credentials['user_id'] ?? '' ) ? (string) $credentials['user_id'] : 'me';
 
@@ -314,7 +314,7 @@ class Threads extends AbstractNetwork {
 		);
 		$post_id   = (string) ( $published['id'] ?? '' );
 		if ( '' === $post_id ) {
-			throw new NetworkException( 'unknown', __( 'Threads did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Threads did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
 		}
 
 		$url = '';
@@ -371,7 +371,7 @@ class Threads extends AbstractNetwork {
 		);
 		$id   = (string) ( $node['id'] ?? '' );
 		if ( '' === $id ) {
-			throw new NetworkException( 'unknown', __( 'Threads did not accept the post content.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Threads did not accept the post content.', 'social-integrations' ) );
 		}
 		return $id;
 	}
@@ -400,12 +400,12 @@ class Threads extends AbstractNetwork {
 			}
 			if ( 'ERROR' === $status || 'EXPIRED' === $status ) {
 				/* translators: %s: reason from Threads */
-				throw new NetworkException( 'media', trim( sprintf( __( 'Threads could not process the media. %s', 'social-integrations' ), (string) ( $node['error_message'] ?? '' ) ) ) );
+				throw new NetworkException( 'media', esc_html( trim( sprintf( __( 'Threads could not process the media. %s', 'social-integrations' ), (string) ( $node['error_message'] ?? '' ) ) ) ) );
 			}
 			sleep( 3 );
 		} while ( time() < $deadline );
 
-		throw new NetworkException( 'timeout', __( 'Threads is taking too long to process the media. Try again in a few minutes.', 'social-integrations' ) );
+		throw new NetworkException( 'timeout', esc_html__( 'Threads is taking too long to process the media. Try again in a few minutes.', 'social-integrations' ) );
 	}
 
 	/**

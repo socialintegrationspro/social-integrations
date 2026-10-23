@@ -76,7 +76,7 @@ final class Claude extends AbstractProvider {
 
 		$data = $this->post( 'https://api.anthropic.com/v1/messages', $headers, $body );
 		if ( 'refusal' === ( $data['stop_reason'] ?? '' ) ) {
-			throw new AIException( __( 'Claude declined to write a caption for this content.', 'social-integrations' ) );
+			throw new AIException( esc_html__( 'Claude declined to write a caption for this content.', 'social-integrations' ) );
 		}
 		$text = '';
 		foreach ( (array) ( $data['content'] ?? array() ) as $block ) {

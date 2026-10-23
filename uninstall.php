@@ -1,26 +1,44 @@
 <?php
 /**
- * Removes the plugin's options and tables when the plugin is deleted.
+ * Removes the plugin's options and tables when the plugin is deleted. On a multisite
+ * network, it removes them from every site.
  *
  * @package SocialIntegrations
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-global $wpdb;
+$sint_uninstall = static function () {
+	global $wpdb;
 
-foreach ( array( 'sint_settings', 'sint_accounts', 'sint_network_apps', 'sint_db_version' ) as $sint_option ) {
-	delete_option( $sint_option );
+	foreach ( array( 'sint_settings', 'sint_accounts', 'sint_network_apps', 'sint_ai_keys', 'sint_db_version' ) as $option ) {
+		delete_option( $option );
+	}
+
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_queue" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_logs" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_campaigns" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+	delete_post_meta_by_key( '_sint_auto_shared' );
+	delete_post_meta_by_key( '_sint_disabled' );
+	delete_post_meta_by_key( '_sint_caption' );
+	delete_post_meta_by_key( '_sint_accounts' );
+
+	wp_clear_scheduled_hook( 'sint_run_queue' );
+	wp_clear_scheduled_hook( 'sint_prune_logs' );
+};
+
+if ( is_multisite() ) {
+	foreach ( get_sites(
+		array(
+			'fields' => 'ids',
+			'number' => 0,
+		)
+	) as $sint_site ) {
+		switch_to_blog( $sint_site );
+		$sint_uninstall();
+		restore_current_blog();
+	}
+} else {
+	$sint_uninstall();
 }
-
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_queue" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_logs" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sint_campaigns" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-delete_post_meta_by_key( '_sint_auto_shared' );
-delete_post_meta_by_key( '_sint_disabled' );
-delete_post_meta_by_key( '_sint_caption' );
-delete_post_meta_by_key( '_sint_accounts' );
-
-wp_clear_scheduled_hook( 'sint_run_queue' );
-wp_clear_scheduled_hook( 'sint_prune_logs' );

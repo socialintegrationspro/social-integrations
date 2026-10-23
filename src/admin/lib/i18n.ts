@@ -1,5 +1,7 @@
 // Strings go through wp.i18n so translations load with wp_set_script_translations().
-export const __ = (text: string): string => window.wp?.i18n?.__(text, 'social-integrations') ?? text
+// Each call names the text domain, and the build keeps the name __, so
+// `wp i18n make-pot` finds the strings in build/ as well as in src/.
+export const __ = (text: string, domain: string): string => window.wp?.i18n?.__(text, domain) ?? text
 
 export const sprintf = (format: string, ...args: (string | number)[]): string => {
   let i = 0

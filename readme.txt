@@ -2,7 +2,7 @@
 Contributors: socialintegrations
 Tags: auto post, social media, scheduler, facebook, bluesky
 Requires at least: 6.3
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 0.1.0
 License: GPLv2 or later
@@ -14,11 +14,12 @@ Share your posts, pages, products and any custom post type to social networks wh
 
 Social Integrations shares your WordPress content to your social accounts.
 
-* Auto-share on first publish, for each post type you select. This includes custom post types from other plugins and your theme.
+* Auto-post campaigns share a post on first publish. Each campaign selects the post types, the accounts, a delay and the caption. Custom post types from other plugins and your theme are included.
 * Networks: Facebook Page, LinkedIn profile, Bluesky, Threads and Telegram.
 * Caption templates with {title}, {excerpt}, {url}, {tags}, {author}, {site} and {field:your_meta_key}.
-* Block rules: select how each block becomes caption text, an image, a link, or is not used. Editors can change it for one block from the block toolbar.
-* A week calendar and a list of every share, with a share log and Retry.
+* Block rules: select how each block type becomes caption text, an image, a link, or is not used.
+* A week calendar and a list of every share.
+* A share log that shows the result for each account, with Retry.
 * AI captions with your own API key (OpenAI, Google Gemini or Anthropic Claude).
 
 The uncompiled source of the admin app is in the `src/` folder of the public repository: https://github.com/SocialIntegrations/social-integrations
@@ -55,7 +56,7 @@ Only when you enter your own API key and select "Write with AI", the plugin send
 1. Install and activate the plugin.
 2. Open Social Integrations in the admin menu.
 3. Connect an account on the Accounts screen.
-4. On the Settings screen, select the post types to share on publish.
+4. On the Campaigns screen, select "New campaign" and make an auto-post campaign.
 
 == Changelog ==
 

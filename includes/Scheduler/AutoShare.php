@@ -95,8 +95,8 @@ final class AutoShare {
 				if ( $wanted && ! in_array( $account['id'], $wanted, true ) ) {
 					continue;
 				}
-				$share     = $builder->build( $post, $account, 'auto', Auto::template( $campaign ) );
-				$created[] = Queue::add(
+				$share                  = $builder->build( $post, $account, 'auto', Auto::template( $campaign ) );
+				$created[]              = Queue::add(
 					array(
 						'post_id'      => $post_id,
 						'campaign_id'  => (int) $campaign['id'],

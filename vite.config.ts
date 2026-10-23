@@ -6,6 +6,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
+  // Keep names such as __ in build/, so `wp i18n make-pot` and translate.wordpress.org
+  // find the translatable strings in the shipped files.
+  esbuild: { minifyIdentifiers: false },
   build: {
     outDir: 'build',
     emptyOutDir: true,

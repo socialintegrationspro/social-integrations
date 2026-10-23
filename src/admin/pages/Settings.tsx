@@ -24,7 +24,7 @@ export function SettingsPage(_props: PageProps) {
   // Filter `sint.settings.sections`: other plugins add cards below free's own. Each card saves its own data.
   const sections = applyFilters<{ key: string; component: ComponentType }[]>('sint.settings.sections', [])
 
-  if (!settings) return <><Header title={__('Settings')} /><div className="sint-body"><div className="sint-skeleton" style={{ height: 400 }} /></div></>
+  if (!settings) return <><Header title={__('Settings', 'social-integrations')} /><div className="sint-body"><div className="sint-skeleton" style={{ height: 400 }} /></div></>
 
   const setBlock = (name: string, use: BlockUse | '') => {
     const next = { ...settings.blocks }
@@ -41,7 +41,7 @@ export function SettingsPage(_props: PageProps) {
       setKeys({})
       const chosen = r.data.ai_providers.find((p) => p.key === r.data.ai.provider)
       config.ai.ready = !!chosen && (!chosen.needs_key || chosen.has_key)
-      toast(__('Settings saved.'))
+      toast(__('Settings saved.', 'social-integrations'))
     } catch (e) {
       toast((e as Error).message, true)
     }
@@ -49,53 +49,53 @@ export function SettingsPage(_props: PageProps) {
   }
 
   const uses: { value: BlockUse; label: string }[] = [
-    { value: 'text', label: __('Caption text') },
-    { value: 'excerpt', label: __('Excerpt text') },
-    { value: 'media', label: __('Media') },
-    { value: 'link', label: __('Link') },
-    { value: 'skip', label: __('Skip') },
-    { value: 'remove', label: __('Remove') },
+    { value: 'text', label: __('Caption text', 'social-integrations') },
+    { value: 'excerpt', label: __('Excerpt text', 'social-integrations') },
+    { value: 'media', label: __('Media', 'social-integrations') },
+    { value: 'link', label: __('Link', 'social-integrations') },
+    { value: 'skip', label: __('Skip', 'social-integrations') },
+    { value: 'remove', label: __('Remove', 'social-integrations') },
   ]
   const fallbackLabel = uses.find((u) => u.value === settings.block_fallback)?.label ?? ''
   const shownBlocks = showAll ? blocks : blocks.filter((b) => settings.blocks[b.name] || !b.core)
 
   return (
     <>
-      <Header title={__('Settings')}>
-        <button type="button" className="sint-btn primary" onClick={save} disabled={saving}>{saving ? __('Saving…') : __('Save changes')}</button>
+      <Header title={__('Settings', 'social-integrations')}>
+        <button type="button" className="sint-btn primary" onClick={save} disabled={saving}>{saving ? __('Saving…', 'social-integrations') : __('Save changes', 'social-integrations')}</button>
       </Header>
       <div className="sint-body">
         <AICard settings={settings} setSettings={setSettings} keys={keys} setKeys={setKeys} />
         <div className="sint-card">
           <div className="sint-card-head">
             <div style={{ minWidth: 0, flex: 1 }}>
-              <h2>{__('Blocks')}</h2>
-              <p className="sint-sub" style={{ fontSize: 13 }}>{__('How each block in a post becomes caption text, media or a link. Editors can change it for one block from the block toolbar.')}</p>
+              <h2>{__('Blocks', 'social-integrations')}</h2>
+              <p className="sint-sub" style={{ fontSize: 13 }}>{__('How each block in a post becomes caption text, media or a link. Editors can change it for one block from the block toolbar.', 'social-integrations')}</p>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600 }}>
-              <Toggle checked={settings.allow_block_override} onChange={(v) => setSettings({ ...settings, allow_block_override: v })} label={__('Allow change for one block in the editor')} />
-              {__('Allow change for one block in the editor')}
+              <Toggle checked={settings.allow_block_override} onChange={(v) => setSettings({ ...settings, allow_block_override: v })} label={__('Allow change for one block in the editor', 'social-integrations')} />
+              {__('Allow change for one block in the editor', 'social-integrations')}
             </label>
           </div>
           <div className="sint-table-wrap">
             <table className="sint-table">
-              <thead><tr><th>{__('Block')}</th><th>{__('Use as')}</th></tr></thead>
+              <thead><tr><th>{__('Block', 'social-integrations')}</th><th>{__('Use as', 'social-integrations')}</th></tr></thead>
               <tbody>
                 {shownBlocks.map((b) => (
                   <tr key={b.name}>
                     <td><div style={{ fontWeight: 700 }}>{b.title}</div><div className="sint-code">{b.name}</div></td>
                     <td>
-                      <select className="sint-select" value={settings.blocks[b.name] ?? ''} onChange={(e) => setBlock(b.name, e.target.value as BlockUse | '')} aria-label={sprintf(__('Use of %s'), b.title)}>
-                        <option value="">{sprintf(__('Default (%s)'), fallbackLabel)}</option>
+                      <select className="sint-select" value={settings.blocks[b.name] ?? ''} onChange={(e) => setBlock(b.name, e.target.value as BlockUse | '')} aria-label={sprintf(__('Use of %s', 'social-integrations'), b.title)}>
+                        <option value="">{sprintf(__('Default (%s)', 'social-integrations'), fallbackLabel)}</option>
                         {uses.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                       </select>
                     </td>
                   </tr>
                 ))}
                 <tr>
-                  <td><div style={{ fontWeight: 700 }}>{__('Any other block')}</div><div className="sint-code">{__('default')}</div></td>
+                  <td><div style={{ fontWeight: 700 }}>{__('Any other block', 'social-integrations')}</div><div className="sint-code">{__('default', 'social-integrations')}</div></td>
                   <td>
-                    <select className="sint-select" value={settings.block_fallback} onChange={(e) => setSettings({ ...settings, block_fallback: e.target.value as BlockUse })} aria-label={__('Default use')}>
+                    <select className="sint-select" value={settings.block_fallback} onChange={(e) => setSettings({ ...settings, block_fallback: e.target.value as BlockUse })} aria-label={__('Default use', 'social-integrations')}>
                       {uses.filter((u) => ['text', 'excerpt', 'skip'].includes(u.value)).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                     </select>
                   </td>
@@ -105,20 +105,20 @@ export function SettingsPage(_props: PageProps) {
           </div>
           <div style={{ padding: '12px 20px', borderTop: '1px solid var(--line)' }}>
             <button type="button" className="sint-btn ghost sm" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? __('Show only blocks with a rule') : sprintf(__('Show all %d blocks'), blocks.length)}
+              {showAll ? __('Show only blocks with a rule', 'social-integrations') : sprintf(__('Show all %d blocks', 'social-integrations'), blocks.length)}
             </button>
           </div>
         </div>
         <div className="sint-card">
           <div className="sint-card-head">
             <div style={{ flex: 1, minWidth: 240 }}>
-              <h2>{__('Share log')}</h2>
-              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Choose how long the share log keeps its rows. The plugin deletes older rows once a day. Campaigns and the calendar do not change.')}</p>
+              <h2>{__('Share log', 'social-integrations')}</h2>
+              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Choose how long the share log keeps its rows. The plugin deletes older rows once a day. Campaigns and the calendar do not change.', 'social-integrations')}</p>
             </div>
             <label className="sint-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <span>{__('Keep the share log')}</span>
+              <span>{__('Keep the share log', 'social-integrations')}</span>
               <select className="sint-select" value={settings.log_days} onChange={(e) => setSettings({ ...settings, log_days: Number(e.target.value) })}>
-                {LOG_DAYS.map((d) => <option key={d} value={d}>{d ? sprintf(__('%d days'), d) : __('Always')}</option>)}
+                {LOG_DAYS.map((d) => <option key={d} value={d}>{d ? sprintf(__('%d days', 'social-integrations'), d) : __('Always', 'social-integrations')}</option>)}
               </select>
             </label>
           </div>
@@ -132,11 +132,11 @@ export function SettingsPage(_props: PageProps) {
 const LOG_DAYS = [0, 30, 90, 180, 365]
 
 const TONES = [
-  { value: 'friendly', label: () => __('Friendly') },
-  { value: 'professional', label: () => __('Professional') },
-  { value: 'playful', label: () => __('Playful') },
-  { value: 'informative', label: () => __('Informative') },
-  { value: 'bold', label: () => __('Bold') },
+  { value: 'friendly', label: () => __('Friendly', 'social-integrations') },
+  { value: 'professional', label: () => __('Professional', 'social-integrations') },
+  { value: 'playful', label: () => __('Playful', 'social-integrations') },
+  { value: 'informative', label: () => __('Informative', 'social-integrations') },
+  { value: 'bold', label: () => __('Bold', 'social-integrations') },
 ]
 
 /** Provider, API key, model and tone for "Write with AI". Saved with the page. */
@@ -151,38 +151,38 @@ function AICard({ settings, setSettings, keys, setKeys }: { settings: Settings; 
     <div className="sint-card">
       <div className="sint-card-head">
         <div>
-          <h2>{__('AI captions')}</h2>
-          <p className="sint-sub" style={{ fontSize: 13 }}>{__('“Write with AI” in New campaign drafts a caption from your post. It uses your own API key; the post text goes only to the provider you choose.')}</p>
+          <h2>{__('AI captions', 'social-integrations')}</h2>
+          <p className="sint-sub" style={{ fontSize: 13 }}>{__('“Write with AI” in New campaign drafts a caption from your post. It uses your own API key; the post text goes only to the provider you choose.', 'social-integrations')}</p>
         </div>
       </div>
       <div className="sint-ai-grid">
         <label className="sint-field">
-          <span>{__('Provider')}</span>
+          <span>{__('Provider', 'social-integrations')}</span>
           <select className="sint-select" style={{ width: '100%' }} value={ai.provider} onChange={(e) => setAI({ provider: e.target.value, model: '' })}>
-            <option value="">{__('Off')}</option>
+            <option value="">{__('Off', 'social-integrations')}</option>
             {settings.ai_providers.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
         </label>
         {provider?.needs_key && (
           <label className="sint-field">
-            <span>{sprintf(__('%s API key'), provider.label)}</span>
+            <span>{sprintf(__('%s API key', 'social-integrations'), provider.label)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type to replace.') : __('Paste your API key')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
-              {saved && <button type="button" className="sint-btn ghost sm" style={{ height: 42 }} onClick={() => setKeys({ ...keys, [provider.key]: null })}>{__('Remove')}</button>}
+              <input className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type to replace.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
+              {saved && <button type="button" className="sint-btn ghost sm" style={{ height: 42 }} onClick={() => setKeys({ ...keys, [provider.key]: null })}>{__('Remove', 'social-integrations')}</button>}
             </div>
-            <small>{typed === null ? __('The key is removed when you save.') : __('Stored encrypted on your site. It is never shown again.')}</small>
+            <small>{typed === null ? __('The key is removed when you save.', 'social-integrations') : __('Stored encrypted on your site. It is never shown again.', 'social-integrations')}</small>
           </label>
         )}
         {provider && provider.default_model && (
           <label className="sint-field">
-            <span>{__('Model')}</span>
+            <span>{__('Model', 'social-integrations')}</span>
             <input className="sint-input" value={ai.model} placeholder={provider.default_model} onChange={(e) => setAI({ model: e.target.value.trim() })} />
-            <small>{sprintf(__('Leave empty to use %s.'), provider.default_model)}</small>
+            <small>{sprintf(__('Leave empty to use %s.', 'social-integrations'), provider.default_model)}</small>
           </label>
         )}
         {provider && (
           <label className="sint-field">
-            <span>{__('Tone')}</span>
+            <span>{__('Tone', 'social-integrations')}</span>
             <select className="sint-select" style={{ width: '100%' }} value={ai.tone} onChange={(e) => setAI({ tone: e.target.value })}>
               {TONES.map((t) => <option key={t.value} value={t.value}>{t.label()}</option>)}
             </select>

@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\AbstractNetwork;
 use SocialIntegrations\Networks\Accounts;
@@ -93,13 +94,15 @@ final class Publisher {
 		}
 	}
 
+	// phpcs:disable Squiz.Commenting.FunctionCommentThrowTag.Missing -- send() catches its own exceptions.
 	/**
-	 * Sends one share now and records the result.
+	 * Sends one share now and records the result. Errors go into the result, not to the caller.
 	 *
 	 * @param array $job Queue row.
 	 * @return array ['status', 'message', 'remote_id', 'remote_url'].
 	 */
 	public function send( array $job ): array {
+		// phpcs:enable Squiz.Commenting.FunctionCommentThrowTag.Missing
 		$account = Accounts::get( (string) $job['account_id'] );
 		$network = $this->networks->get( (string) $job['network'] );
 		// What the network answered, without secrets, so a developer can read it in the share log.
@@ -110,11 +113,11 @@ final class Publisher {
 
 		try {
 			if ( ! $account || ! $network ) {
-				throw new NetworkException( 'missing', __( 'The account is no longer connected.', 'social-integrations' ) );
+				throw new NetworkException( 'missing', esc_html__( 'The account is no longer connected.', 'social-integrations' ) );
 			}
 			if ( 'expired' === ( $account['status'] ?? '' ) ) {
 				/* translators: %s: network name */
-				throw new NetworkException( 'expired', sprintf( __( '%s sign-in expired. Reconnect the account.', 'social-integrations' ), $network->label() ) );
+				throw new NetworkException( 'expired', esc_html( sprintf( __( '%s sign-in expired. Reconnect the account.', 'social-integrations' ), $network->label() ) ) );
 			}
 
 			$credentials = $this->fresh_credentials( $network, (string) $job['account_id'], (array) $account['credentials'] );
@@ -134,7 +137,7 @@ final class Publisher {
 			}
 			$result  = array(
 				'status'  => 'failed',
-				'message' => $e->getMessage(),
+				'message' => Errors::text( $e ),
 			);
 			$details = array(
 				'code'   => $e->error_code(),
@@ -149,7 +152,7 @@ final class Publisher {
 				'code'      => 'exception',
 				'exception' => array(
 					'class'   => get_class( $e ),
-					'message' => $e->getMessage(),
+					'message' => Errors::text( $e ),
 					'file'    => str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( $e->getFile() ) ) . ':' . $e->getLine(),
 				),
 			);

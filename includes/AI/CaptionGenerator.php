@@ -31,7 +31,7 @@ final class CaptionGenerator {
 	public function write( array $args ): string {
 		$provider = Providers::current();
 		if ( ! $provider ) {
-			throw new AIException( __( 'Choose an AI provider and enter its API key in Settings first.', 'social-integrations' ) );
+			throw new AIException( esc_html__( 'Choose an AI provider and enter its API key in Settings first.', 'social-integrations' ) );
 		}
 
 		$ai    = (array) Settings::get( 'ai', array() );
@@ -45,7 +45,7 @@ final class CaptionGenerator {
 		$room = max( 60, min( $room, 1200 ) );
 
 		if ( ! $post && '' === $text ) {
-			throw new AIException( __( 'Select an item from your site, or write a caption to improve.', 'social-integrations' ) );
+			throw new AIException( esc_html__( 'Select an item from your site, or write a caption to improve.', 'social-integrations' ) );
 		}
 
 		$system = 'You write social media captions for posts on a website. Write in the language of the content. '

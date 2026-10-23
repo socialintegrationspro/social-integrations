@@ -109,14 +109,14 @@ class Bluesky extends AbstractNetwork {
 		$handle   = ltrim( trim( sanitize_text_field( (string) ( $input['handle'] ?? '' ) ) ), '@' );
 		$password = trim( (string) ( $input['app_password'] ?? '' ) );
 		if ( '' === $handle || '' === $password ) {
-			throw new NetworkException( 'invalid', __( 'Enter your Bluesky handle and an app password.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'Enter your Bluesky handle and an app password.', 'social-integrations' ) );
 		}
 
 		try {
 			$credentials = $this->create_session( $handle, $password );
 		} catch ( NetworkException $e ) {
 			if ( $e->is_expired() ) {
-				throw new NetworkException( 'invalid', __( 'Bluesky did not accept this handle and app password. Check both and try again.', 'social-integrations' ) );
+				throw new NetworkException( 'invalid', esc_html__( 'Bluesky did not accept this handle and app password. Check both and try again.', 'social-integrations' ) );
 			}
 			throw $e;
 		}
@@ -194,7 +194,7 @@ class Bluesky extends AbstractNetwork {
 	 */
 	public function publish( array $credentials, array $payload ): array {
 		if ( empty( $credentials['did'] ) || empty( $credentials['access_jwt'] ) ) {
-			throw new NetworkException( 'expired', __( 'The Bluesky account is not connected. Reconnect the account.', 'social-integrations' ) );
+			throw new NetworkException( 'expired', esc_html__( 'The Bluesky account is not connected. Reconnect the account.', 'social-integrations' ) );
 		}
 
 		$renewed = false;
@@ -290,7 +290,7 @@ class Bluesky extends AbstractNetwork {
 
 		$uri = (string) ( $data['uri'] ?? '' );
 		if ( '' === $uri ) {
-			throw new NetworkException( 'unknown', __( 'Bluesky did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Bluesky did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
 		}
 
 		$actor = '' !== (string) ( $credentials['handle'] ?? '' ) ? (string) $credentials['handle'] : (string) $credentials['did'];
@@ -462,7 +462,7 @@ class Bluesky extends AbstractNetwork {
 			)
 		);
 		if ( empty( $data['blob'] ) || ! is_array( $data['blob'] ) ) {
-			throw new NetworkException( 'media', __( 'Bluesky did not accept an image of the post.', 'social-integrations' ) );
+			throw new NetworkException( 'media', esc_html__( 'Bluesky did not accept an image of the post.', 'social-integrations' ) );
 		}
 		return $data['blob'];
 	}
@@ -471,6 +471,7 @@ class Bluesky extends AbstractNetwork {
 	 * Scales an image down to a JPEG when it is larger than Bluesky accepts.
 	 *
 	 * @param array $file ['bytes', 'mime'].
+	 * @throws NetworkException When the image cannot be made small enough.
 	 */
 	private function shrink( array $file ): array {
 		if ( strlen( $file['bytes'] ) <= self::MAX_BLOB ) {
@@ -508,7 +509,7 @@ class Bluesky extends AbstractNetwork {
 		wp_delete_file( $source );
 
 		if ( strlen( $file['bytes'] ) > self::MAX_BLOB ) {
-			throw new NetworkException( 'media', __( 'An image is larger than Bluesky accepts (1 MB) and could not be made smaller.', 'social-integrations' ) );
+			throw new NetworkException( 'media', esc_html__( 'An image is larger than Bluesky accepts (1 MB) and could not be made smaller.', 'social-integrations' ) );
 		}
 		return $file;
 	}
@@ -548,7 +549,7 @@ class Bluesky extends AbstractNetwork {
 			}
 		}
 
-		throw new NetworkException( 'media', __( 'An image of the post could not be read, so it was not sent to Bluesky.', 'social-integrations' ) );
+		throw new NetworkException( 'media', esc_html__( 'An image of the post could not be read, so it was not sent to Bluesky.', 'social-integrations' ) );
 	}
 
 	/**
@@ -580,7 +581,7 @@ class Bluesky extends AbstractNetwork {
 			return $this->create_session( $identifier, (string) $credentials['app_password'] );
 		}
 
-		throw new NetworkException( 'expired', parent::error_message( 401, array() ) );
+		throw new NetworkException( 'expired', esc_html( parent::error_message( 401, array() ) ) );
 	}
 
 	/**
@@ -605,7 +606,7 @@ class Bluesky extends AbstractNetwork {
 			)
 		);
 		if ( empty( $data['accessJwt'] ) || empty( $data['did'] ) ) {
-			throw new NetworkException( 'expired', parent::error_message( 401, array() ) );
+			throw new NetworkException( 'expired', esc_html( parent::error_message( 401, array() ) ) );
 		}
 		return $this->session_credentials( $data, array( 'app_password' => $password ) );
 	}

@@ -40,13 +40,13 @@ abstract class AbstractProvider implements ProviderInterface {
 		);
 		if ( is_wp_error( $response ) ) {
 			/* translators: 1: provider name, 2: transport error */
-			throw new AIException( sprintf( __( 'Could not reach %1$s: %2$s', 'social-integrations' ), $this->label(), $response->get_error_message() ) );
+			throw new AIException( esc_html( sprintf( __( 'Could not reach %1$s: %2$s', 'social-integrations' ), $this->label(), $response->get_error_message() ) ) );
 		}
 		$status = (int) wp_remote_retrieve_response_code( $response );
 		$data   = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		$data   = is_array( $data ) ? $data : array();
 		if ( $status >= 400 ) {
-			throw new AIException( $this->error_message( $status, $data ) );
+			throw new AIException( esc_html( $this->error_message( $status, $data ) ) );
 		}
 		return $data;
 	}
@@ -81,7 +81,7 @@ abstract class AbstractProvider implements ProviderInterface {
 		$text = trim( $text );
 		if ( '' === $text ) {
 			/* translators: %s: provider name */
-			throw new AIException( sprintf( __( '%s returned no caption. Try again.', 'social-integrations' ), $this->label() ) );
+			throw new AIException( esc_html( sprintf( __( '%s returned no caption. Try again.', 'social-integrations' ), $this->label() ) ) );
 		}
 		return $text;
 	}

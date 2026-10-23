@@ -24,7 +24,7 @@ export function AccountsPage({ params, go }: PageProps) {
   useEffect(() => {
     const done = params.get('connected')
     if (done) {
-      toast(sprintf(__('%s is connected.'), network(done)?.label ?? done))
+      toast(sprintf(__('%s is connected.', 'social-integrations'), network(done)?.label ?? done))
       reload()
       go('accounts')
     }
@@ -33,9 +33,9 @@ export function AccountsPage({ params, go }: PageProps) {
   }, [])
 
   const disconnect = async (account: Account) => {
-    if (!window.confirm(sprintf(__('Disconnect %s? Scheduled shares to it will fail.'), account.name || account.username))) return
+    if (!window.confirm(sprintf(__('Disconnect %s? Scheduled shares to it will fail.', 'social-integrations'), account.name || account.username))) return
     await api.del(`accounts/${account.id}`)
-    toast(__('Account disconnected.'))
+    toast(__('Account disconnected.', 'social-integrations'))
     reload()
   }
 
@@ -43,15 +43,15 @@ export function AccountsPage({ params, go }: PageProps) {
 
   return (
     <>
-      <Header title={__('Accounts')} />
+      <Header title={__('Accounts', 'social-integrations')} />
       <div className="sint-body">
-        <p className="sint-sub">{__('Sign-in tokens are stored encrypted on your site and never leave it except to the network.')}</p>
+        <p className="sint-sub">{__('Sign-in tokens are stored encrypted on your site and never leave it except to the network.', 'social-integrations')}</p>
 
         {error && (
           <div className="sint-banner bad">
             <Icon name="alert" size={20} />
             <div style={{ flex: 1 }}>{error}</div>
-            <button type="button" className="sint-btn ghost sm" onClick={() => { setError(''); go('accounts') }}>{__('Dismiss')}</button>
+            <button type="button" className="sint-btn ghost sm" onClick={() => { setError(''); go('accounts') }}>{__('Dismiss', 'social-integrations')}</button>
           </div>
         )}
 
@@ -59,10 +59,10 @@ export function AccountsPage({ params, go }: PageProps) {
           <div key={a.id} className="sint-banner warn">
             <Icon name="alert" size={20} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
-              <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.')}</div>
+              <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
+              <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.', 'social-integrations')}</div>
             </div>
-            <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null)}>{__('Reconnect')}</button>
+            <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null)}>{__('Reconnect', 'social-integrations')}</button>
           </div>
         ))}
 
@@ -76,12 +76,12 @@ export function AccountsPage({ params, go }: PageProps) {
                     <NetBadge network={n.key} color={n.color} size={52} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15 }}>{n.label}</div>
-                      <div style={{ fontSize: 13, color: 'var(--muted)' }}>{__('Not connected')}</div>
+                      <div style={{ fontSize: 13, color: 'var(--muted)' }}>{__('Not connected', 'social-integrations')}</div>
                     </div>
                   </div>
                   <button type="button" className="sint-btn" onClick={() => setConnecting(n)}>
                     <Icon name="plus" size={16} stroke={2.4} />
-                    {sprintf(__('Connect %s'), n.label)}
+                    {sprintf(__('Connect %s', 'social-integrations'), n.label)}
                   </button>
                 </div>
               )
@@ -99,24 +99,24 @@ export function AccountsPage({ params, go }: PageProps) {
                         <div style={{ fontSize: 13, color: 'var(--muted)' }}>{n.label}</div>
                       </div>
                       {account.status === 'expired' ? (
-                        <span className="sint-pill warn" style={{ marginLeft: 'auto' }}>{__('Sign-in expired')}</span>
+                        <span className="sint-pill warn" style={{ marginLeft: 'auto' }}>{__('Sign-in expired', 'social-integrations')}</span>
                       ) : (
-                        <span className="sint-pill ok" style={{ marginLeft: 'auto' }}>{__('Connected')}</span>
+                        <span className="sint-pill ok" style={{ marginLeft: 'auto' }}>{__('Connected', 'social-integrations')}</span>
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {account.username && <div className="sint-kv"><span>{__('Handle')}</span><span>{account.username}</span></div>}
-                      <div className="sint-kv"><span>{__('Connected')}</span><span>{fmtDate(account.connected_at)}</span></div>
-                      <div className="sint-kv"><span>{__('Caption limit')}</span><span>{sprintf(__('%s characters'), n.char_limit.toLocaleString())}</span></div>
+                      {account.username && <div className="sint-kv"><span>{__('Handle', 'social-integrations')}</span><span>{account.username}</span></div>}
+                      <div className="sint-kv"><span>{__('Connected', 'social-integrations')}</span><span>{fmtDate(account.connected_at)}</span></div>
+                      <div className="sint-kv"><span>{__('Caption limit', 'social-integrations')}</span><span>{sprintf(__('%s characters', 'social-integrations'), n.char_limit.toLocaleString())}</span></div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n)}>{__('Reconnect')}</button>}
+                      {account.status === 'expired' && <button type="button" className="sint-btn warn sm" onClick={() => setConnecting(n)}>{__('Reconnect', 'social-integrations')}</button>}
                       {account.profile_url && (
                         <a className="sint-btn sm" href={account.profile_url} target="_blank" rel="noreferrer">
-                          {__('Open')} <Icon name="external" size={14} />
+                          {__('Open', 'social-integrations')} <Icon name="external" size={14} />
                         </a>
                       )}
-                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} onClick={() => disconnect(account)}>{__('Disconnect')}</button>
+                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} onClick={() => disconnect(account)}>{__('Disconnect', 'social-integrations')}</button>
                     </div>
                   </div>
                 ))}
@@ -157,7 +157,7 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
         return
       } else {
         await api.post(`accounts/${network.key}`, values)
-        toast(sprintf(__('%s is connected.'), network.label))
+        toast(sprintf(__('%s is connected.', 'social-integrations'), network.label))
         onDone()
       }
     } catch (err) {
@@ -167,24 +167,24 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
   }
 
   return (
-    <Modal title={sprintf(__('Connect %s'), network.label)} onClose={onClose} narrow>
+    <Modal title={sprintf(__('Connect %s', 'social-integrations'), network.label)} onClose={onClose} narrow>
       <form onSubmit={submit} style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {oauth && !appReady && (
           <>
-            <p className="sint-sub">{sprintf(__('%s connects through an app you create on its developer site. Enter the app details, then sign in.'), network.label)}</p>
+            <p className="sint-sub">{sprintf(__('%s connects through an app you create on its developer site. Enter the app details, then sign in.', 'social-integrations'), network.label)}</p>
             <div className="sint-field">
-              <span id="sint-redirect-label">{__('Redirect URL for the app')}</span>
+              <span id="sint-redirect-label">{__('Redirect URL for the app', 'social-integrations')}</span>
               <CopyField value={redirectUri} labelledBy="sint-redirect-label" />
-              <small>{__('Add this URL to the app as an allowed redirect URL.')}</small>
+              <small>{__('Add this URL to the app as an allowed redirect URL.', 'social-integrations')}</small>
             </div>
             {network.app_setup_url && (
               <a href={network.app_setup_url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
-                {sprintf(__('Create an app on %s'), network.label)} <Icon name="external" size={14} />
+                {sprintf(__('Create an app on %s', 'social-integrations'), network.label)} <Icon name="external" size={14} />
               </a>
             )}
           </>
         )}
-        {oauth && appReady && <p className="sint-sub">{sprintf(__('Sign in to %s to give this site permission to post.'), network.label)}</p>}
+        {oauth && appReady && <p className="sint-sub">{sprintf(__('Sign in to %s to give this site permission to post.', 'social-integrations'), network.label)}</p>}
         {fields.map((f) => (
           <label key={f.name} className="sint-field">
             <span>{f.label}</span>
@@ -195,11 +195,11 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
         {error && <div className="sint-banner bad" style={{ padding: '10px 14px' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           {oauth && appReady && (
-            <button type="button" className="sint-btn ghost" onClick={() => setAppReady(false)}>{__('Change app')}</button>
+            <button type="button" className="sint-btn ghost" onClick={() => setAppReady(false)}>{__('Change app', 'social-integrations')}</button>
           )}
-          <button type="button" className="sint-btn ghost" onClick={onClose}>{__('Cancel')}</button>
+          <button type="button" className="sint-btn ghost" onClick={onClose}>{__('Cancel', 'social-integrations')}</button>
           <button type="submit" className="sint-btn primary" disabled={busy}>
-            {busy ? __('Working…') : oauth && !appReady ? __('Save app') : oauth ? sprintf(__('Sign in to %s'), network.label) : __('Connect')}
+            {busy ? __('Working…', 'social-integrations') : oauth && !appReady ? __('Save app', 'social-integrations') : oauth ? sprintf(__('Sign in to %s', 'social-integrations'), network.label) : __('Connect', 'social-integrations')}
           </button>
         </div>
       </form>
@@ -217,14 +217,14 @@ function PickEntity({ network, onClose, onDone }: { network: Network; onClose: (
   const choose = async (e: Entity) => {
     try {
       await api.post(`oauth/${network.key}/entities`, { remote_id: e.remote_id })
-      toast(sprintf(__('%s is connected.'), e.name))
+      toast(sprintf(__('%s is connected.', 'social-integrations'), e.name))
       onDone()
     } catch (err) {
       setError((err as Error).message)
     }
   }
   return (
-    <Modal title={sprintf(__('Select where to post on %s'), network.label)} onClose={onClose} narrow>
+    <Modal title={sprintf(__('Select where to post on %s', 'social-integrations'), network.label)} onClose={onClose} narrow>
       <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {error && <div className="sint-banner bad">{error}</div>}
         {!entities && !error && <div className="sint-skeleton" style={{ height: 120 }} />}

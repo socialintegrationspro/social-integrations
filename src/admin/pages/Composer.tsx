@@ -72,11 +72,11 @@ interface ComposerMode {
 }
 
 const MEDIA_FROM: { value: MediaSource | ''; label: () => string }[] = [
-  { value: '', label: () => __('Post type setting') },
-  { value: 'auto', label: () => __('Featured + post images') },
-  { value: 'featured', label: () => __('Featured image') },
-  { value: 'content', label: () => __('Images in the post') },
-  { value: 'none', label: () => __('No media') },
+  { value: '', label: () => __('Post type setting', 'social-integrations') },
+  { value: 'auto', label: () => __('Featured + post images', 'social-integrations') },
+  { value: 'featured', label: () => __('Featured image', 'social-integrations') },
+  { value: 'content', label: () => __('Images in the post', 'social-integrations') },
+  { value: 'none', label: () => __('No media', 'social-integrations') },
 ]
 const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}']
 
@@ -159,7 +159,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const keepSaved = useRef(!!from)
 
   // Filter `sint.composer.modes`: other ways to share from this modal, such as many posts at once.
-  const modes = item ? [] : [...applyFilters<ComposerMode[]>('sint.composer.modes', []), { value: 'auto', label: __('Auto-post'), component: AutoPost }]
+  const modes = item ? [] : [...applyFilters<ComposerMode[]>('sint.composer.modes', []), { value: 'auto', label: __('Auto-post', 'social-integrations'), component: AutoPost }]
   const Mode = modes.find((m) => m.value === mode)?.component
   // Filter `sint.composer.options`: controls next to the timing of a new share, such as repeating it.
   const optionControls = item ? [] : applyFilters<{ key: string; component: (props: ComposerOptionProps) => JSX.Element }[]>('sint.composer.options', [])
@@ -251,14 +251,14 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       setMedia((m) => [...m, ...items.filter((x) => !m.some((y) => y.url === x.url))])
       setMediaOn((on) => [...on, ...items.map((x) => x.url).filter((u) => !on.includes(u))])
     })
-    if (!opened) toast(__('The media library did not load. Reload the page and try again.'), true)
+    if (!opened) toast(__('The media library did not load. Reload the page and try again.', 'social-integrations'), true)
   }
 
   const presets = [
-    { label: __('In an hour'), value: defaultLocal() },
-    { label: __('Tomorrow 9:00'), value: atLocal(1, 9) },
-    { label: __('Next week'), value: atLocal(toNextWeek(), 9) },
-    ...(live ? [{ label: __('When the post goes live'), value: utcToLocal(live) }] : []),
+    { label: __('In an hour', 'social-integrations'), value: defaultLocal() },
+    { label: __('Tomorrow 9:00', 'social-integrations'), value: atLocal(1, 9) },
+    { label: __('Next week', 'social-integrations'), value: atLocal(toNextWeek(), 9) },
+    ...(live ? [{ label: __('When the post goes live', 'social-integrations'), value: utcToLocal(live) }] : []),
   ]
 
   const insert = (token: string) => {
@@ -282,11 +282,11 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         })
         const result = r.data.result
         if (result && result.status !== 'published') {
-          toast(result.message || sprintf(__('%s did not accept the post.'), network(item.network)?.label ?? item.network), true)
+          toast(result.message || sprintf(__('%s did not accept the post.', 'social-integrations'), network(item.network)?.label ?? item.network), true)
           setBusy(false)
           return
         }
-        toast(draft ? __('Draft saved.') : result ? __('Shared.') : __('Saved to the calendar.'))
+        toast(draft ? __('Draft saved.', 'social-integrations') : result ? __('Shared.', 'social-integrations') : __('Saved to the calendar.', 'social-integrations'))
         onSaved()
         return
       }
@@ -306,11 +306,11 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       const failed = (r.data.results ?? []).filter((x) => x.status !== 'published')
       if (failed.length) {
         // Keep the composer open so the person can fix the caption or reconnect and try again.
-        toast(failed.map((f) => f.message || sprintf(__('%s did not accept the post.'), network(f.network)?.label ?? f.network)).join(' '), true)
+        toast(failed.map((f) => f.message || sprintf(__('%s did not accept the post.', 'social-integrations'), network(f.network)?.label ?? f.network)).join(' '), true)
         setBusy(false)
         return
       }
-      toast(draft ? __('Draft saved.') : r.data.results ? sprintf(__('Shared to %d accounts.'), r.data.results.length) : __('Added to the calendar.'))
+      toast(draft ? __('Draft saved.', 'social-integrations') : r.data.results ? sprintf(__('Shared to %d accounts.', 'social-integrations'), r.data.results.length) : __('Added to the calendar.', 'social-integrations'))
       onSaved()
     } catch (e) {
       toast((e as Error).message, true)
@@ -325,15 +325,15 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
   return (
     <Modal
-      title={item ? __('Edit post') : editing ? __('Edit campaign') : __('New campaign')}
+      title={item ? __('Edit post', 'social-integrations') : editing ? __('Edit campaign', 'social-integrations') : __('New campaign', 'social-integrations')}
       onClose={onClose}
       footer={Mode ? undefined :
         <>
-          <Segmented<When> label={__('Timing')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now') }, { value: 'pick', label: __('Pick a time') }]} />
+          <Segmented<When> label={__('Timing', 'social-integrations')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now', 'social-integrations') }, { value: 'pick', label: __('Pick a time', 'social-integrations') }]} />
           {when === 'pick' && (
             <>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="sint-sr">{__('Date and time')}</span>
+                <span className="sint-sr">{__('Date and time', 'social-integrations')}</span>
                 <input type="datetime-local" className="sint-input" style={{ width: 'auto', colorScheme: 'dark' }} value={local} onChange={(e) => setLocal(e.target.value)} />
               </label>
               {presets.map((p) => (
@@ -344,9 +344,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           <span style={{ fontSize: 12, color: 'var(--faint)' }}>{config.timezone}</span>
           {optionControls.map(({ key, component: Control }) => <Control key={key} options={options} setOption={setOption} when={when} local={local} />)}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft')}</button>
-            <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
-              {when === 'now' ? __('Share now') : upcoming ? __('Save') : __('Add to calendar')}
+            <button type="button" className="sint-btn ghost" disabled={busy || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
+            <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
+              {when === 'now' ? __('Share now', 'social-integrations') : upcoming ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
             </button>
           </div>
         </>
@@ -354,15 +354,15 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       headerExtra={
         <>
           {modes.length > 0 && !editing && (
-            <Segmented<string> label={__('What to share')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
+            <Segmented<string> label={__('What to share', 'social-integrations')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post', 'social-integrations') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
           )}
           {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)' }}>{title}</span>}
         </>
       }
     >
       {mode !== 'auto' && <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
-        <span className="sint-label">{__('Share to')}</span>
-        {accounts.length === 0 && <a href="#/accounts" onClick={onClose}>{__('Connect an account first')}</a>}
+        <span className="sint-label">{__('Share to', 'social-integrations')}</span>
+        {accounts.length === 0 && <a href="#/accounts" onClick={onClose}>{__('Connect an account first', 'social-integrations')}</a>}
         {accounts.filter((a) => !item || a.id === item.account_id).map((a) => {
           const on = selected.includes(a.id)
           const expired = a.status === 'expired'
@@ -375,30 +375,30 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         })}
         {!item && connected.length > 1 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
-            {sprintf(__('%1$d of %2$d'), selected.length, connected.length)}
+            {sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
             <button type="button" className="sint-btn ghost sm" onClick={() => setSelected(selected.length === connected.length ? [] : connected.map((a) => a.id))}>
-              {selected.length === connected.length ? __('Clear') : __('Select all')}
+              {selected.length === connected.length ? __('Clear', 'social-integrations') : __('Select all', 'social-integrations')}
             </button>
           </span>
         )}
         {accounts.filter((a) => a.status === 'expired' && (!item || a.id === item.account_id)).map((a) => (
           <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="alert" size={14} stroke={2.2} />
-            {sprintf(__('%1$s on %2$s: sign-in expired'), a.name || a.username, network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect')}</a>
+            {sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
           </span>
         ))}
       </div>}
 
       {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
         {!item && <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-          <div className="sint-label">{__('From your site')}</div>
+          <div className="sint-label">{__('From your site', 'social-integrations')}</div>
           <label className="sint-search" style={{ minWidth: 0 }}>
             <Icon name="search" size={16} stroke={2} />
-            <span className="sint-sr">{__('Search content')}</span>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={__('Search any post type')} />
+            <span className="sint-sr">{__('Search content', 'social-integrations')}</span>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={__('Search any post type', 'social-integrations')} />
           </label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button type="button" className={`sint-chip${type === 'any' ? ' on' : ''}`} onClick={() => setType('any')}>{__('All')}</button>
+            <button type="button" className={`sint-chip${type === 'any' ? ' on' : ''}`} onClick={() => setType('any')}>{__('All', 'social-integrations')}</button>
             {postTypes.map((t) => (
               <button key={t.name} type="button" className={`sint-chip${type === t.name ? ' on' : ''}`} onClick={() => setType(t.name)}>{t.label}</button>
             ))}
@@ -408,12 +408,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               <button key={r.id} type="button" className={`sint-item${r.id === postId ? ' on' : ''}`} onClick={() => { setPostId(r.id); setPicked(r) }}>
                 {r.thumbnail ? <img className="sint-thumb" src={r.thumbnail} alt="" style={{ width: 48, height: 48 }} /> : <span className="sint-thumb" style={{ width: 48, height: 48 }} />}
                 <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{r.title || __('(no title)')}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{r.title || __('(no title)', 'social-integrations')}</span>
                   <span style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span className="sint-type-dot" style={{ background: typeColor(types, r.type) }} />
                     {postTypes.find((t) => t.name === r.type)?.singular ?? r.type}
                     <span aria-hidden="true">·</span>
-                    {r.status === 'future' ? sprintf(__('Live %s'), fmtDate(r.date)) : r.status === 'draft' ? __('Draft') : fmtDate(r.date)}
+                    {r.status === 'future' ? sprintf(__('Live %s', 'social-integrations'), fmtDate(r.date)) : r.status === 'draft' ? __('Draft', 'social-integrations') : fmtDate(r.date)}
                   </span>
                   <ShareState item={r} />
                 </span>
@@ -422,54 +422,54 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           </div>
           {postId && (
             <button type="button" className="sint-btn ghost sm" onClick={() => { setPostId(undefined); setPicked(null); setBuilt(null); setMedia([]); setMediaOn([]) }}>
-              {__('Write without a post')}
+              {__('Write without a post', 'social-integrations')}
             </button>
           )}
         </aside>}
 
         <section style={{ flex: '999 1 440px', minWidth: 0, padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="sint-seg" role="tablist" aria-label={__('Caption for')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-            <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels')}</button>
+          <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+            <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels', 'social-integrations')}</button>
             {nets.map((n) => (
               <button key={n} type="button" role="tab" aria-selected={tab === n} className={tab === n ? 'on' : ''} onClick={() => setTab(n)}>
                 <NetBadge network={n} color={network(n)?.color} size={18} />
                 {network(n)?.label}
-                {overrides[n] !== undefined && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited')} />}
+                {overrides[n] !== undefined && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited', 'social-integrations')} />}
               </button>
             ))}
           </div>
 
           <div className="sint-editor">
-            <label className="sint-sr" htmlFor="sint-caption">{__('Caption')}</label>
-            <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSend) save(false) }} placeholder={__('Write a caption, or select an item from your site.')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
+            <label className="sint-sr" htmlFor="sint-caption">{__('Caption', 'social-integrations')}</label>
+            <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSend) save(false) }} placeholder={__('Write a caption, or select an item from your site.', 'social-integrations')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', borderTop: '1px solid var(--line)', flexWrap: 'wrap' }}>
               {built && (
                 <>
-                  <span style={{ fontSize: 12, color: 'var(--faint)', marginRight: 2 }}>{__('Insert')}</span>
+                  <span style={{ fontSize: 12, color: 'var(--faint)', marginRight: 2 }}>{__('Insert', 'social-integrations')}</span>
                   {TOKENS.map((t) => <button key={t} type="button" className="sint-tok" onClick={() => insert(t)}>{t}</button>)}
                 </>
               )}
               {config.ai.ready && (postId || text.trim()) && (
                 <button type="button" className="sint-btn ai sm" disabled={writing} onClick={writeWithAI}>
                   <Icon name="sparkle" size={15} stroke={2} />
-                  {writing ? __('Writing…') : postId && text === (built?.caption ?? '') ? __('Write with AI') : __('Improve with AI')}
+                  {writing ? __('Writing…', 'social-integrations') : postId && text === (built?.caption ?? '') ? __('Write with AI', 'social-integrations') : __('Improve with AI', 'social-integrations')}
                 </button>
               )}
               {beforeAI !== null && !writing && (
-                <button type="button" className="sint-btn ghost sm" onClick={() => { setText(beforeAI); setBeforeAI(null) }}>{__('Undo')}</button>
+                <button type="button" className="sint-btn ghost sm" onClick={() => { setText(beforeAI); setBeforeAI(null) }}>{__('Undo', 'social-integrations')}</button>
               )}
               <button type="button" className="sint-btn ghost sm" onClick={addMedia}>
                 <Icon name="image" size={15} stroke={2} />
-                {__('Add media')}
+                {__('Add media', 'social-integrations')}
               </button>
               {built && tab === 'all' && caption !== built.caption && (
                 <button type="button" className="sint-btn ghost sm" onClick={() => setCaption(built.caption)}>
                   <Icon name="retry" size={15} stroke={2} />
-                  {__('Rebuild from post')}
+                  {__('Rebuild from post', 'social-integrations')}
                 </button>
               )}
               {tab !== 'all' && overrides[tab] !== undefined && (
-                <button type="button" className="sint-btn ghost sm" onClick={() => setOverrides((o) => { const n = { ...o }; delete n[tab]; return n })}>{__('Use the shared caption')}</button>
+                <button type="button" className="sint-btn ghost sm" onClick={() => setOverrides((o) => { const n = { ...o }; delete n[tab]; return n })}>{__('Use the shared caption', 'social-integrations')}</button>
               )}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {nets.map((n) => {
@@ -488,11 +488,11 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           {(media.length > 0 || !!postId) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span className="sint-label">{__('Media')}</span>
-                <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected · tap to turn on or off'), chosenMedia.length)}</span>
+                <span className="sint-label">{__('Media', 'social-integrations')}</span>
+                <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected · tap to turn on or off', 'social-integrations'), chosenMedia.length)}</span>
                 {postId && (
                   <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
-                    {__('From')}
+                    {__('From', 'social-integrations')}
                     <select className="sint-select" style={{ height: 36, minWidth: 0 }} value={mediaFrom} onChange={(e) => changeMediaFrom(e.target.value as MediaSource | '')}>
                       {MEDIA_FROM.map((m) => <option key={m.value} value={m.value}>{m.label()}</option>)}
                     </select>
@@ -504,15 +504,15 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                   const on = mediaOn.includes(m.url)
                   const order = chosenMedia.indexOf(m) + 1
                   return (
-                    <button key={m.url} type="button" className="sint-media" aria-pressed={on} aria-label={m.alt || sprintf(__('Image %d'), i + 1)} onClick={() => setMediaOn((s) => (on ? s.filter((x) => x !== m.url) : [...s, m.url]))}>
+                    <button key={m.url} type="button" className="sint-media" aria-pressed={on} aria-label={m.alt || sprintf(__('Image %d', 'social-integrations'), i + 1)} onClick={() => setMediaOn((s) => (on ? s.filter((x) => x !== m.url) : [...s, m.url]))}>
                       {m.type === 'image' ? <img src={m.url} alt="" /> : <Icon name="image" size={24} />}
-                      <span>{on ? `${order} · ` : ''}{m.featured ? __('Featured') : m.type === 'video' ? __('Video') : __('Block')}</span>
+                      <span>{on ? `${order} · ` : ''}{m.featured ? __('Featured', 'social-integrations') : m.type === 'video' ? __('Video', 'social-integrations') : __('Block', 'social-integrations')}</span>
                     </button>
                   )
                 })}
                 <button type="button" className="sint-media add" onClick={addMedia}>
                   <Icon name="plus" size={22} stroke={2} />
-                  <span>{__('Add')}</span>
+                  <span>{__('Add', 'social-integrations')}</span>
                 </button>
               </div>
             </div>
@@ -521,9 +521,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
         <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="sint-label">{__('Preview')}</span>
+            <span className="sint-label">{__('Preview', 'social-integrations')}</span>
             {tab === 'all' && nets.length > 1 && (
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="group" aria-label={__('Preview network')}>
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="group" aria-label={__('Preview network', 'social-integrations')}>
                 {nets.map((n) => (
                   <button key={n} type="button" className="sint-prev-net" aria-pressed={n === preview} aria-label={network(n)?.label} onClick={() => setPreviewPick(n)}>
                     <NetBadge network={n} color={network(n)?.color} size={22} />
@@ -542,7 +542,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                 </div>
               </div>
               <div style={{ padding: '0 12px 12px', fontSize: 14, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {[...(overrides[previewNet.key] ?? caption)].slice(0, previewNet.char_limit).join('') || <span style={{ color: '#8a8d91' }}>{__('Your caption appears here.')}</span>}
+                {[...(overrides[previewNet.key] ?? caption)].slice(0, previewNet.char_limit).join('') || <span style={{ color: '#8a8d91' }}>{__('Your caption appears here.', 'social-integrations')}</span>}
               </div>
               {chosenMedia.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: chosenMedia.length > 1 ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
@@ -562,7 +562,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               )}
             </div>
           ) : (
-            <p className="sint-sub">{__('Select an account to see a preview.')}</p>
+            <p className="sint-sub">{__('Select an account to see a preview.', 'social-integrations')}</p>
           )}
           {previewNet && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: 'var(--text-2)' }}>
@@ -573,14 +573,14 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                 return (
                   <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: ok ? 'var(--ok)' : 'var(--bad)' }}><Icon name={ok ? 'check' : 'alert'} size={14} stroke={2.6} /></span>
-                    {ok ? sprintf(__('%s caption fits'), net?.label ?? n) : sprintf(__('%1$s caption is %2$d characters too long'), net?.label ?? n, len - (net?.char_limit ?? 0))}
+                    {ok ? sprintf(__('%s caption fits', 'social-integrations'), net?.label ?? n) : sprintf(__('%1$s caption is %2$d characters too long', 'social-integrations'), net?.label ?? n, len - (net?.char_limit ?? 0))}
                   </div>
                 )
               })}
               {chosenMedia.length > 0 && nets.some((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ color: 'var(--warn-text)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
-                  {__('Some networks take fewer images. They get the first ones.')}
+                  {__('Some networks take fewer images. They get the first ones.', 'social-integrations')}
                 </div>
               )}
             </div>
@@ -603,8 +603,8 @@ const hostOf = (url: string) => {
 function ShareState({ item }: { item: ContentItem }) {
   const sent = item.shares.filter((x) => x.status === 'published').length
   const failed = item.shares.length - sent
-  if (failed) return <span className="sint-pill bad" style={{ alignSelf: 'flex-start' }}>{sprintf(__('%d failed'), failed)}</span>
-  if (sent) return <span className="sint-pill ok" style={{ alignSelf: 'flex-start' }}>{sprintf(__('Shared to %d'), sent)}</span>
-  if (item.status === 'publish') return <span className="sint-pill muted" style={{ alignSelf: 'flex-start' }}>{__('Not shared yet')}</span>
+  if (failed) return <span className="sint-pill bad" style={{ alignSelf: 'flex-start' }}>{sprintf(__('%d failed', 'social-integrations'), failed)}</span>
+  if (sent) return <span className="sint-pill ok" style={{ alignSelf: 'flex-start' }}>{sprintf(__('Shared to %d', 'social-integrations'), sent)}</span>
+  if (item.status === 'publish') return <span className="sint-pill muted" style={{ alignSelf: 'flex-start' }}>{__('Not shared yet', 'social-integrations')}</span>
   return null
 }

@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Rest;
 
+use SocialIntegrations\Support\Errors;
 use SocialIntegrations\AI\AIException;
 use SocialIntegrations\AI\CaptionGenerator;
 
@@ -44,7 +45,7 @@ final class AIController extends RestController {
 				)
 			);
 		} catch ( AIException $e ) {
-			return $this->error( 'ai_failed', $e->getMessage() );
+			return $this->error( 'ai_failed', Errors::text( $e ) );
 		}
 		return rest_ensure_response( array( 'caption' => $caption ) );
 	}

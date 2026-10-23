@@ -58,10 +58,10 @@ final class PostTypes {
 	/**
 	 * Who registered the post type, as a short label.
 	 *
-	 * @param \WP_Post_Type $object Post type.
+	 * @param \WP_Post_Type $post_type Post type.
 	 */
-	private static function source( \WP_Post_Type $object ): string {
-		if ( $object->_builtin ) {
+	private static function source( \WP_Post_Type $post_type ): string {
+		if ( $post_type->_builtin ) {
 			return 'WordPress';
 		}
 		$known = array(
@@ -73,8 +73,8 @@ final class PostTypes {
 			'sfwd-courses' => 'LearnDash',
 			'job_listing'  => 'WP Job Manager',
 		);
-		if ( isset( $known[ $object->name ] ) ) {
-			return $known[ $object->name ];
+		if ( isset( $known[ $post_type->name ] ) ) {
+			return $known[ $post_type->name ];
 		}
 		return __( 'Custom', 'social-integrations' );
 	}

@@ -45,11 +45,11 @@ const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}', '{site}']
 const DEFAULT_CAPTION = '{title}\n\n{excerpt}\n\n{url}'
 
 const SOURCES = (): { value: MediaSource; label: string }[] => [
-  { value: 'auto', label: __('Featured + post images') },
-  { value: 'featured', label: __('Featured image') },
-  { value: 'content', label: __('Images in the post') },
-  { value: 'custom', label: __('Chosen images') },
-  { value: 'none', label: __('No media') },
+  { value: 'auto', label: __('Featured + post images', 'social-integrations') },
+  { value: 'featured', label: __('Featured image', 'social-integrations') },
+  { value: 'content', label: __('Images in the post', 'social-integrations') },
+  { value: 'custom', label: __('Chosen images', 'social-integrations') },
+  { value: 'none', label: __('No media', 'social-integrations') },
 ]
 
 const BLANK: AutoCampaign = { id: 0, name: '', active: true, post_types: ['post'], accounts: [], delay: { value: 0, unit: 'minutes' }, caption: '', captions: {}, media: 'auto', custom_media: [] }
@@ -74,7 +74,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     api.get<AutoCampaign>(`campaigns/${campaign.id}`).then(
       (r) => {
         const d = r.data
-        setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, name: campaign.copy ? sprintf(__('%s (copy)'), d.name) : d.name })
+        setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, name: campaign.copy ? sprintf(__('%s (copy)', 'social-integrations'), d.name) : d.name })
       },
       (e) => toast((e as Error).message, true),
     )
@@ -127,11 +127,11 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   }
   const addMedia = () => {
     const opened = pickMedia((items) => set({ custom_media: [...c.custom_media, ...items.filter((x) => !c.custom_media.some((y) => y.id === x.id))] }))
-    if (!opened) toast(__('The media library did not load. Reload the page and try again.'), true)
+    if (!opened) toast(__('The media library did not load. Reload the page and try again.', 'social-integrations'), true)
   }
 
   const shownCaption = preview ? (current !== 'all' && !Array.isArray(preview.captions) && preview.captions[current]) || preview.caption : ''
-  const delayText = c.delay.value === 0 ? __('Right after publishing') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after publishing') : c.delay.unit === 'hours' ? __('%d hours after publishing') : __('%d days after publishing'), c.delay.value)
+  const delayText = c.delay.value === 0 ? __('Right after publishing', 'social-integrations') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after publishing', 'social-integrations') : c.delay.unit === 'hours' ? __('%d hours after publishing', 'social-integrations') : __('%d days after publishing', 'social-integrations'), c.delay.value)
 
   const save = async () => {
     if (!c?.name.trim()) {
@@ -143,7 +143,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     try {
       const r = await api.post<AutoCampaign>(editing ? `campaigns/auto/${editing}` : 'campaigns/auto', c)
       await Promise.all(Object.values(savers.current).map((fn) => fn(r.data.id)))
-      toast(editing ? __('Campaign saved.') : __('Campaign created. New posts that match will be shared.'))
+      toast(editing ? __('Campaign saved.', 'social-integrations') : __('Campaign created. New posts that match will be shared.', 'social-integrations'))
       onSaved()
     } catch (e) {
       toast((e as Error).message, true)
@@ -154,8 +154,8 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   return (
     <>
       <div className="sint-autopost-to">
-        <span className="sint-label">{__('Share to')}</span>
-        {accounts.length === 0 && <a href="#/accounts">{__('Connect an account first')}</a>}
+        <span className="sint-label">{__('Share to', 'social-integrations')}</span>
+        {accounts.length === 0 && <a href="#/accounts">{__('Connect an account first', 'social-integrations')}</a>}
         {accounts.map((a) => {
           const on = chosen(a.id)
           return (
@@ -170,14 +170,14 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
             </button>
           )
         })}
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{c.accounts.length === 0 ? __('All accounts, and new ones you connect') : sprintf(__('%1$d of %2$d'), c.accounts.length, accounts.length)}</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{c.accounts.length === 0 ? __('All accounts, and new ones you connect', 'social-integrations') : sprintf(__('%1$d of %2$d', 'social-integrations'), c.accounts.length, accounts.length)}</span>
       </div>
 
       <div className="sint-autopost">
         <aside className="col">
-          <div className="sint-label">{__('Which posts')}</div>
+          <div className="sint-label">{__('Which posts', 'social-integrations')}</div>
           <label className="sint-field">
-            <span>{__('Post type')}</span>
+            <span>{__('Post type', 'social-integrations')}</span>
             <select className="sint-select" value={c.post_types[0] ?? 'post'} onChange={(e) => set({ post_types: [e.target.value] })}>
               {postTypes.map((t) => <option key={t.name} value={t.name}>{t.label}</option>)}
             </select>
@@ -186,29 +186,29 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
         </aside>
 
         <section className="col mid" style={{ opacity: c.active ? 1 : 0.55 }}>
-          <div className="sint-label">{__('What to post')}</div>
+          <div className="sint-label">{__('What to post', 'social-integrations')}</div>
           {nets.length > 0 && (
-            <div className="sint-seg" role="tablist" aria-label={__('Caption for')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-              <button type="button" role="tab" aria-selected={current === 'all'} className={current === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels')}</button>
+            <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+              <button type="button" role="tab" aria-selected={current === 'all'} className={current === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels', 'social-integrations')}</button>
               {nets.map((n) => (
                 <button key={n} type="button" role="tab" aria-selected={current === n} className={current === n ? 'on' : ''} onClick={() => setTab(n)}>
                   <NetBadge network={n} color={network(n)?.color} size={18} />
                   {network(n)?.label}
-                  {c.captions[n] !== undefined && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited')} />}
+                  {c.captions[n] !== undefined && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited', 'social-integrations')} />}
                 </button>
               ))}
             </div>
           )}
           <label className="sint-field">
-            <span>{current === 'all' ? __('Caption') : sprintf(__('Caption for %s'), network(current)?.label ?? current)}</span>
+            <span>{current === 'all' ? __('Caption', 'social-integrations') : sprintf(__('Caption for %s', 'social-integrations'), network(current)?.label ?? current)}</span>
             <textarea className="sint-textarea" rows={5} value={text} placeholder={current === 'all' ? DEFAULT_CAPTION : c.caption || DEFAULT_CAPTION} onChange={(e) => setText(e.target.value)} />
             <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {TOKENS.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText((text || (current === 'all' ? '' : c.caption)) + t)}>{t}</button>)}
             </span>
-            <small>{current === 'all' ? __('Leave empty to use the default. {field:meta_key} adds any custom field.') : __('Leave empty to use the caption for all channels.')}</small>
+            <small>{current === 'all' ? __('Leave empty to use the default. {field:meta_key} adds any custom field.', 'social-integrations') : __('Leave empty to use the caption for all channels.', 'social-integrations')}</small>
           </label>
           <label className="sint-field" style={{ maxWidth: 320 }}>
-            <span>{__('Media')}</span>
+            <span>{__('Media', 'social-integrations')}</span>
             <select className="sint-select" value={c.media} onChange={(e) => set({ media: e.target.value as MediaSource })}>
               {SOURCES().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
@@ -216,27 +216,27 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           {c.media === 'custom' && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {c.custom_media.map((m, i) => (
-                <button key={m.id} type="button" className="sint-media" aria-pressed="true" aria-label={sprintf(__('Remove image %d'), i + 1)} onClick={() => set({ custom_media: c.custom_media.filter((x) => x.id !== m.id) })}>
+                <button key={m.id} type="button" className="sint-media" aria-pressed="true" aria-label={sprintf(__('Remove image %d', 'social-integrations'), i + 1)} onClick={() => set({ custom_media: c.custom_media.filter((x) => x.id !== m.id) })}>
                   {m.type === 'image' ? <img src={m.url} alt="" /> : <Icon name="image" size={24} />}
-                  <span>{__('Remove')}</span>
+                  <span>{__('Remove', 'social-integrations')}</span>
                 </button>
               ))}
               <button type="button" className="sint-media add" onClick={addMedia}>
                 <Icon name="plus" size={22} stroke={2} />
-                <span>{__('Add')}</span>
+                <span>{__('Add', 'social-integrations')}</span>
               </button>
             </div>
           )}
           <div className="sint-autopost-share">
-            <span className="sint-label">{sample ? sprintf(__('Preview: %s'), sample.title || __('(no title)')) : __('Preview')}</span>
+            <span className="sint-label">{sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : __('Preview', 'social-integrations')}</span>
             {sample === null ? (
-              <p className="sint-sub">{__('Nothing published yet to preview with.')}</p>
+              <p className="sint-sub">{__('Nothing published yet to preview with.', 'social-integrations')}</p>
             ) : preview ? (
               <>
                 <p>{shownCaption}</p>
                 {preview.media.length > 0 && (
                   <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {preview.media.map((m) => (m.type === 'image' ? <img key={m.url} className="sint-thumb" src={m.url} alt={m.alt} /> : <span key={m.url} className="sint-pill muted">{__('Video')}</span>))}
+                    {preview.media.map((m) => (m.type === 'image' ? <img key={m.url} className="sint-thumb" src={m.url} alt={m.alt} /> : <span key={m.url} className="sint-pill muted">{__('Video', 'social-integrations')}</span>))}
                   </span>
                 )}
               </>
@@ -247,23 +247,23 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
         </section>
 
         <aside className="col side">
-          <div className="sint-label">{__('When')}</div>
+          <div className="sint-label">{__('When', 'social-integrations')}</div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 700, fontSize: 14 }}>
-            <Toggle checked={c.active} onChange={(v) => set({ active: v })} label={__('Campaign is on')} />
-            {c.active ? __('On: shares new posts') : __('Paused')}
+            <Toggle checked={c.active} onChange={(v) => set({ active: v })} label={__('Campaign is on', 'social-integrations')} />
+            {c.active ? __('On: shares new posts', 'social-integrations') : __('Paused', 'social-integrations')}
           </label>
           <div className="sint-field">
-            <span>{__('Share')}</span>
+            <span>{__('Share', 'social-integrations')}</span>
             <span style={{ display: 'flex', gap: 8 }}>
-              <input type="number" min={0} max={365} className="sint-input" style={{ width: 90 }} aria-label={__('Delay')} value={c.delay.value} onChange={(e) => set({ delay: { ...c.delay, value: Math.max(0, Math.min(365, Number(e.target.value) || 0)) } })} />
-              <select className="sint-select" style={{ flex: 1, minWidth: 0 }} aria-label={__('Delay unit')} value={c.delay.unit} onChange={(e) => set({ delay: { ...c.delay, unit: e.target.value as Unit } })}>
-                <option value="minutes">{__('minutes')}</option>
-                <option value="hours">{__('hours')}</option>
-                <option value="days">{__('days')}</option>
+              <input type="number" min={0} max={365} className="sint-input" style={{ width: 90 }} aria-label={__('Delay', 'social-integrations')} value={c.delay.value} onChange={(e) => set({ delay: { ...c.delay, value: Math.max(0, Math.min(365, Number(e.target.value) || 0)) } })} />
+              <select className="sint-select" style={{ flex: 1, minWidth: 0 }} aria-label={__('Delay unit', 'social-integrations')} value={c.delay.unit} onChange={(e) => set({ delay: { ...c.delay, unit: e.target.value as Unit } })}>
+                <option value="minutes">{__('minutes', 'social-integrations')}</option>
+                <option value="hours">{__('hours', 'social-integrations')}</option>
+                <option value="days">{__('days', 'social-integrations')}</option>
               </select>
             </span>
             <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {[{ value: 0, unit: 'minutes' as Unit, label: __('Right away') }, { value: 10, unit: 'minutes' as Unit, label: __('10 min') }, { value: 1, unit: 'hours' as Unit, label: __('1 hour') }, { value: 1, unit: 'days' as Unit, label: __('1 day') }].map((p) => (
+              {[{ value: 0, unit: 'minutes' as Unit, label: __('Right away', 'social-integrations') }, { value: 10, unit: 'minutes' as Unit, label: __('10 min', 'social-integrations') }, { value: 1, unit: 'hours' as Unit, label: __('1 hour', 'social-integrations') }, { value: 1, unit: 'days' as Unit, label: __('1 day', 'social-integrations') }].map((p) => (
                 <button key={p.label} type="button" className={`sint-chip${c.delay.value === p.value && (p.value === 0 || c.delay.unit === p.unit) ? ' on' : ''}`} onClick={() => set({ delay: { value: p.value, unit: p.unit } })}>{p.label}</button>
               ))}
             </span>
@@ -271,12 +271,12 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           </div>
           {renderExtras('when')}
           <label className="sint-field">
-            <span>{__('Name')}</span>
-            <input ref={nameRef} className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
-            {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.')}</small>}
+            <span>{__('Name', 'social-integrations')}</span>
+            <input ref={nameRef} className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn', 'social-integrations')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
+            {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.', 'social-integrations')}</small>}
           </label>
-          <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('A post shares on its first publish, not on updates. If it matches several campaigns, each account gets it once. Editors can change the caption or accounts for one post in the editor sidebar.')}</small>
-          <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Saving…') : editing ? __('Save campaign') : __('Create campaign')}</button>
+          <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('A post shares on its first publish, not on updates. If it matches several campaigns, each account gets it once. Editors can change the caption or accounts for one post in the editor sidebar.', 'social-integrations')}</small>
+          <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Saving…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
         </aside>
       </div>
     </>

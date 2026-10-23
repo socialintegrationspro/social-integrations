@@ -317,11 +317,10 @@ final class Queue {
 		$deleted = 0;
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( $batches ) {
-			$in       = implode( ',', array_map( static fn( $b ) => "'" . $b . "'", $batches ) );
-			$deleted += (int) $wpdb->query( "DELETE l FROM {$logs} l JOIN {$queue} q ON q.id = l.queue_id WHERE q.batch_id IN ({$in})" );
+			$deleted += (int) $wpdb->query( $wpdb->prepare( "DELETE l FROM {$logs} l JOIN {$queue} q ON q.id = l.queue_id WHERE q.batch_id IN (" . implode( ',', array_fill( 0, count( $batches ), '%s' ) ) . ')', $batches ) );
 		}
 		if ( $ids ) {
-			$deleted += (int) $wpdb->query( "DELETE FROM {$logs} WHERE id IN (" . implode( ',', $ids ) . ')' );
+			$deleted += (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$logs} WHERE id IN (" . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')', $ids ) );
 		}
 		// phpcs:enable
 		return $deleted;
@@ -368,12 +367,12 @@ final class Queue {
 	 * @param array $row Raw row.
 	 */
 	private static function hydrate( array $row ): array {
-		$row['id']       = (int) $row['id'];
-		$row['post_id']  = (int) $row['post_id'];
+		$row['id']          = (int) $row['id'];
+		$row['post_id']     = (int) $row['post_id'];
 		$row['campaign_id'] = (int) ( $row['campaign_id'] ?? 0 );
-		$row['attempts'] = (int) $row['attempts'];
-		$media           = json_decode( (string) $row['media'], true );
-		$row['media']    = is_array( $media ) ? $media : array();
+		$row['attempts']    = (int) $row['attempts'];
+		$media              = json_decode( (string) $row['media'], true );
+		$row['media']       = is_array( $media ) ? $media : array();
 		return $row;
 	}
 }

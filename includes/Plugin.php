@@ -79,6 +79,14 @@ final class Plugin {
 
 		Migrations::maybe_upgrade();
 
+		// Multisite: a deleted site's tables go with it.
+		add_filter(
+			'wpmu_drop_tables',
+			static function ( $tables ) {
+				return array_merge( (array) $tables, array( Migrations::queue_table(), Migrations::logs_table(), Migrations::campaigns_table() ) );
+			}
+		);
+
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
