@@ -17,7 +17,8 @@ Social Integrations shares your WordPress content to your social accounts.
 * Auto-post campaigns share a post on first publish. Each campaign selects the post types, the accounts, a delay and the caption. Custom post types from other plugins and your theme are included.
 * Networks: Facebook Page, LinkedIn profile, Bluesky, Threads and Telegram.
 * Caption templates with {title}, {excerpt}, {url}, {tags}, {author}, {site} and {field:your_meta_key}.
-* Block rules: select how each block type becomes caption text, an image, a link, or is not used.
+* Block rules: select how each block type becomes caption text, an image, a link, or is not used. Editors can change it for one block from the block toolbar.
+* A panel in the block editor: turn sharing on or off for a post, see the shares of the post, and (for administrators) select the accounts, write the caption with AI and see a preview.
 * A week calendar and a list of every share.
 * A share log that shows the result for each account, with Retry.
 * AI captions with your own API key (OpenAI, Google Gemini or Anthropic Claude).

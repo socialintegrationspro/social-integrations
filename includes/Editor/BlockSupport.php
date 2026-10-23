@@ -40,6 +40,10 @@ final class BlockSupport {
 		$own_post = static function ( $allowed, $meta_key, $post_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- WordPress passes these first.
 			return current_user_can( 'edit_post', (int) $post_id );
 		};
+		// The editor sends every meta key it got back when it saves, also keys it did not
+		// change. The REST API checks the permission for a key that has no stored value, so
+		// a user who cannot set the caption and the accounts must not get them at all.
+		$admin_rest = current_user_can( 'manage_options' );
 		foreach ( PostTypes::names() as $type ) {
 			register_post_meta(
 				$type,
@@ -59,7 +63,7 @@ final class BlockSupport {
 					'type'              => 'string',
 					'single'            => true,
 					'default'           => '',
-					'show_in_rest'      => true,
+					'show_in_rest'      => $admin_rest,
 					'sanitize_callback' => 'sanitize_textarea_field',
 					'auth_callback'     => $manage,
 				)
@@ -71,12 +75,12 @@ final class BlockSupport {
 					'type'              => 'array',
 					'single'            => true,
 					'default'           => array(),
-					'show_in_rest'      => array(
+					'show_in_rest'      => $admin_rest ? array(
 						'schema' => array(
 							'type'  => 'array',
 							'items' => array( 'type' => 'string' ),
 						),
-					),
+					) : false,
 					'sanitize_callback' => array( self::class, 'sanitize_accounts' ),
 					'auth_callback'     => $manage,
 				)

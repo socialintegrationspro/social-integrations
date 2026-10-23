@@ -11,7 +11,9 @@ export default defineConfig({
   esbuild: { minifyIdentifiers: false },
   build: {
     outDir: 'build',
-    emptyOutDir: true,
+    // A full build starts from an empty build/. A watch build keeps it, so the editor
+    // bundle in build/editor/ (vite.editor.config.ts) stays while both watch.
+    emptyOutDir: !process.argv.includes('--watch'),
     manifest: true,
     rollupOptions: { input: 'src/admin/main.tsx' },
   },

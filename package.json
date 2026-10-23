@@ -7,9 +7,10 @@
   "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check:self-contained": "node scripts/assert-self-contained.mjs"
+    "build": "tsc -p tsconfig.json --noEmit && tsc -p src/editor/tsconfig.json --noEmit && vite build && vite build -c vite.editor.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p src/editor/tsconfig.json --noEmit",
+    "check:self-contained": "node scripts/assert-self-contained.mjs",
+    "dev:editor": "vite build -c vite.editor.config.ts --watch"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.2.6",

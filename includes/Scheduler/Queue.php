@@ -89,6 +89,22 @@ final class Queue {
 	}
 
 	/**
+	 * The newest shares of one post, newest first.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param int $limit   Maximum rows.
+	 */
+	public static function for_post( int $post_id, int $limit = 20 ): array {
+		global $wpdb;
+		$table = Migrations::queue_table();
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d ORDER BY scheduled_at DESC, id DESC LIMIT %d", $post_id, $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		return array_map( array( self::class, 'hydrate' ), (array) $rows );
+	}
+
+	/**
 	 * Due rows, oldest first.
 	 *
 	 * @param int $limit Maximum rows.

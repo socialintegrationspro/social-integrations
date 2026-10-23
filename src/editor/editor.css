@@ -1,0 +1,22 @@
+/* Social Integrations in the block editor. The panel uses the WordPress components and
+   their look; these rules only lay out the parts the components do not cover. */
+.sint-ed-loading { padding: 16px; }
+.sint-ed-help { margin: 8px 0 0; color: #50575e; font-size: 12px; line-height: 1.5; }
+.sint-ed-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.sint-ed-sub { margin: 16px 0 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #1e1e1e; }
+.sint-ed-preview { white-space: pre-wrap; word-break: break-word; font-size: 13px; line-height: 1.5; padding: 12px; background: #f6f7f7; border-radius: 4px; }
+.sint-ed-media { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; }
+.sint-ed-media img, .sint-ed-video { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 2px; background: #dcdcde; }
+.sint-ed-video { display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.sint-ed-blocks, .sint-ed-shares { list-style: none; margin: 0; padding: 0; }
+.sint-ed-blocks li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f1; font-size: 13px; }
+.sint-ed-use { font-size: 12px; color: #50575e; }
+.sint-ed-use.is-media, .sint-ed-use.is-text, .sint-ed-use.is-excerpt, .sint-ed-use.is-link { color: #4a1fa8; font-weight: 600; }
+.sint-ed-shares li { padding: 10px 0; border-bottom: 1px solid #f0f0f1; }
+.sint-ed-shares li:last-child { border-bottom: 0; margin-bottom: 8px; }
+.sint-ed-share-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.sint-ed-status { font-size: 12px; font-weight: 600; color: #50575e; }
+.sint-ed-status.is-published { color: #007017; }
+.sint-ed-status.is-failed { color: #b32d2e; }
+.sint-ed-error { margin-top: 4px; color: #b32d2e; font-size: 12px; }
+.sint-ed-block { width: 260px; padding: 12px; }

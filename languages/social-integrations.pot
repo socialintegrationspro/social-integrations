@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-23T06:00:18+00:00\n"
+"POT-Creation-Date: 2026-10-23T06:33:52+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: social-integrations\n"
@@ -35,6 +35,7 @@ msgstr ""
 #: includes/Admin/Menu.php:36
 #: includes/Admin/Menu.php:37
 #: build/assets/main-C5duhZoc.js:45
+#: build/editor/editor.js:3
 msgid "Social Integrations"
 msgstr ""
 
@@ -161,6 +162,8 @@ msgstr ""
 #: includes/Campaigns/Campaigns.php:46
 #: includes/Rest/ContentController.php:147
 #: includes/Rest/ContentController.php:174
+#: includes/Rest/EditorController.php:77
+#: includes/Rest/EditorController.php:144
 msgid "This item does not exist."
 msgstr ""
 
@@ -200,7 +203,8 @@ msgstr ""
 #. translators: %s: network name
 #: includes/Networks/AbstractNetwork.php:365
 #: includes/Scheduler/Publisher.php:120
-#, php-format
+#: build/editor/editor.js:1
+#, php-format,js-format
 msgid "%s sign-in expired. Reconnect the account."
 msgstr ""
 
@@ -606,6 +610,7 @@ msgid "Edited"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:3
 msgid "Caption"
 msgstr ""
 
@@ -615,6 +620,7 @@ msgid "Caption for %s"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Media"
 msgstr ""
 
@@ -624,6 +630,7 @@ msgid "Remove image %d"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Remove"
 msgstr ""
 
@@ -641,6 +648,7 @@ msgid "(no title)"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:3
 msgid "Preview"
 msgstr ""
 
@@ -649,6 +657,7 @@ msgid "Nothing published yet to preview with."
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:3
 msgid "Video"
 msgstr ""
 
@@ -834,6 +843,7 @@ msgid "Live %s"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Draft"
 msgstr ""
 
@@ -854,6 +864,7 @@ msgid "Writing…"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:3
 msgid "Write with AI"
 msgstr ""
 
@@ -1030,14 +1041,17 @@ msgid "%d more"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Published"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Failed"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Sending"
 msgstr ""
 
@@ -1046,6 +1060,7 @@ msgid "Active"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Scheduled"
 msgstr ""
 
@@ -1084,6 +1099,7 @@ msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
 #: build/assets/main-C5duhZoc.js:45
+#: build/editor/editor.js:1
 msgid "Accounts"
 msgstr ""
 
@@ -1280,18 +1296,22 @@ msgid "Settings saved."
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Caption text"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Excerpt text"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Link"
 msgstr ""
 
 #: build/assets/main-C5duhZoc.js:44
+#: build/editor/editor.js:1
 msgid "Skip"
 msgstr ""
 
@@ -1629,4 +1649,147 @@ msgstr ""
 #: build/assets/main-C5duhZoc.js:45
 #, js-format
 msgid "%d ms"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "15 seconds"
+msgstr ""
+
+#: build/editor/editor.js:1
+#, js-format
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/editor/editor.js:1
+#, js-format
+msgid "%d hour"
+msgid_plural "%d hours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/editor/editor.js:1
+#, js-format
+msgid "%d minute"
+msgid_plural "%d minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/editor/editor.js:1
+msgid "the blocks inside use their own rules"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Use in social posts"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Social"
+msgstr ""
+
+#: build/editor/editor.js:1
+#, js-format
+msgid "Rule from Settings: %s"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Show this media first"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "This choice is for this block only. Settings have the rules for all blocks."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "The share state could not be loaded. Reload the page."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "The plugin shared this post when it was published. An update does not share it again."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "This post is published. The plugin shares a post only when it is published for the first time."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "No auto-post campaign shares this post type."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "This post does not share when you publish it."
+msgstr ""
+
+#: build/editor/editor.js:1
+#, js-format
+msgid "The post shares %1$s after you publish it. Campaigns: %2$s."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Share when I publish"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Make an auto-post campaign"
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "This post shares only to the accounts you select."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Each campaign shares to its own accounts. Select accounts to use other accounts for this post."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "No account is connected."
+msgstr ""
+
+#: build/editor/editor.js:1
+msgid "Use the campaign accounts"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "The AI did not write a caption. Try again."
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Caption for this post"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Leave it empty to use the caption of the campaign. You can use {title}, {excerpt}, {url}, {tags} and {author}."
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Use the campaign caption"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "The AI reads the last saved version of the post."
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "The caption is empty."
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Blocks in the post"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Shares"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "This post has no shares yet."
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Open the post"
+msgstr ""
+
+#: build/editor/editor.js:3
+msgid "Open the share log"
 msgstr ""

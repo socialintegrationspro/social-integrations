@@ -12,11 +12,13 @@ use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Admin\Menu;
 use SocialIntegrations\Database\Migrations;
 use SocialIntegrations\Editor\BlockSupport;
+use SocialIntegrations\Editor\SidebarPanel;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Rest\AccountsController;
 use SocialIntegrations\Rest\AIController;
 use SocialIntegrations\Rest\CampaignsController;
 use SocialIntegrations\Rest\ContentController;
+use SocialIntegrations\Rest\EditorController;
 use SocialIntegrations\Rest\QueueController;
 use SocialIntegrations\Rest\SettingsController;
 use SocialIntegrations\Scheduler\AutoShare;
@@ -91,6 +93,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
 		( new BlockSupport() )->register();
+		( new SidebarPanel() )->register();
 		( new AutoShare() )->register();
 		( new Publisher( $this->networks ) )->register();
 
@@ -135,5 +138,6 @@ final class Plugin {
 		( new QueueController() )->register_routes();
 		( new AIController() )->register_routes();
 		( new CampaignsController() )->register_routes();
+		( new EditorController() )->register_routes();
 	}
 }
