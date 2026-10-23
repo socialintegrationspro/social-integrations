@@ -15,7 +15,7 @@ use SocialIntegrations\Support\Settings;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Loads the editor bundle (build/editor/editor.js) in the block editor of every shareable
+ * Loads the editor bundle (build/editor/) in the block editor of every shareable
  * post type. The bundle adds the Social Integrations sidebar and the "Social" control in
  * the block toolbar. It uses the React and the components that WordPress loads.
  */
@@ -54,18 +54,44 @@ final class SidebarPanel {
 		if ( ! $screen || 'post' !== $screen->base || ! in_array( $screen->post_type, PostTypes::names(), true ) ) {
 			return;
 		}
-		$script = SINT_PATH . 'build/editor/editor.js';
-		if ( ! is_readable( $script ) ) {
+		$files = self::bundle();
+		if ( '' === $files['js'] ) {
 			return;
 		}
 
+		// The file time changes the URL between watch builds, which keep the same file names.
+		$path = SINT_PATH . 'build/editor/';
+		$url  = SINT_URL . 'build/editor/';
 		$deps = array( 'wp-api-fetch', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-data', 'wp-edit-post', 'wp-editor', 'wp-element', 'wp-hooks', 'wp-i18n', 'wp-plugins' );
-		wp_enqueue_script( self::HANDLE, SINT_URL . 'build/editor/editor.js', $deps, SINT_VERSION . '.' . filemtime( $script ), true );
-		if ( is_readable( SINT_PATH . 'build/editor/editor.css' ) ) {
-			wp_enqueue_style( self::HANDLE, SINT_URL . 'build/editor/editor.css', array( 'wp-components' ), SINT_VERSION . '.' . filemtime( SINT_PATH . 'build/editor/editor.css' ) );
+		wp_enqueue_script( self::HANDLE, $url . $files['js'], $deps, SINT_VERSION . '.' . filemtime( $path . $files['js'] ), true );
+		if ( '' !== $files['css'] ) {
+			wp_enqueue_style( self::HANDLE, $url . $files['css'], array( 'wp-components' ), SINT_VERSION . '.' . filemtime( $path . $files['css'] ) );
 		}
 		wp_set_script_translations( self::HANDLE, 'social-integrations', SINT_PATH . 'languages' );
 		wp_add_inline_script( self::HANDLE, 'window.sintEditor = ' . wp_json_encode( $this->config() ) . ';', 'before' );
+	}
+
+	/**
+	 * The script and the stylesheet of the bundle, as paths in build/editor/. A release build
+	 * names them by their content; the names come from the Vite manifest.
+	 *
+	 * @return array{js: string, css: string} Empty for a file that is not there.
+	 */
+	private static function bundle(): array {
+		$dir      = SINT_PATH . 'build/editor/';
+		$files    = array(
+			'js'  => '',
+			'css' => '',
+		);
+		$manifest = is_readable( $dir . '.vite/manifest.json' ) ? json_decode( (string) file_get_contents( $dir . '.vite/manifest.json' ), true ) : null; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		foreach ( is_array( $manifest ) ? $manifest : array() as $chunk ) {
+			$file = (string) ( $chunk['file'] ?? '' );
+			$type = pathinfo( $file, PATHINFO_EXTENSION );
+			if ( isset( $files[ $type ] ) && '' === $files[ $type ] && is_readable( $dir . $file ) ) {
+				$files[ $type ] = $file;
+			}
+		}
+		return $files;
 	}
 
 	/**
