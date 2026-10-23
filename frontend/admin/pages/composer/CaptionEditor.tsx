@@ -43,8 +43,10 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
     if (next === null) return
     e.preventDefault()
     const key = keys[(next + keys.length) % keys.length]!
+    // React clears currentTarget after the handler, so keep the list for the next frame.
+    const list = e.currentTarget
     setTab(key)
-    requestAnimationFrame(() => (e.currentTarget.querySelector<HTMLButtonElement>(`[data-tab="${key}"]`) ?? null)?.focus())
+    requestAnimationFrame(() => list.querySelector<HTMLButtonElement>(`[data-tab="${key}"]`)?.focus())
   }
 
   const insert = (token: string) => {
