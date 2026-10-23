@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { Empty, Icon, NetBadge, Pagination, usePaged, useToast } from '../components/ui'
+import { Empty, Icon, Menu, NetBadge, Pagination, usePaged, useToast, type MenuItem } from '../components/ui'
 import { api } from '../lib/api'
-import { fmtDateTime } from '../lib/format'
+import { fmtStamp } from '../lib/format'
 import { applyFilters } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -42,7 +42,7 @@ const STATUS: Record<string, { label: () => string; tone: string }> = {
 }
 
 /** Every campaign: single posts, auto-post rules and the types other plugins add. */
-export function CampaignsPage({ openComposer }: PageProps) {
+export function CampaignsPage({ openComposer, go }: PageProps) {
   const { accounts, network } = useStore()
   const toast = useToast()
   const [items, setItems] = useState<CampaignItem[] | null>(null)
@@ -104,7 +104,7 @@ export function CampaignsPage({ openComposer }: PageProps) {
           <div className="sint-skeleton" style={{ height: 320 }} />
         ) : items.length === 0 ? (
           <Empty title={__('No campaigns yet', 'social-integrations')}>
-            <p className="sint-sub">{__('Share one post now or later, schedule many posts, or share new posts when they are published.', 'social-integrations')}</p>
+            <p className="sint-sub">{__('Share one post now or later, schedule many posts, or share new posts when you publish them.', 'social-integrations')}</p>
             <button type="button" className="sint-btn primary" onClick={() => openComposer()}>{__('New campaign', 'social-integrations')}</button>
           </Empty>
         ) : (
@@ -117,8 +117,8 @@ export function CampaignsPage({ openComposer }: PageProps) {
                 ))}
               </div>
             )}
-            <div className="sint-table-wrap">
-              <table className="sint-table">
+            <div className="sint-table-wrap sint-camp-wrap">
+              <table className="sint-table sint-camp-table">
                 <thead>
                   <tr>
                     <th>{__('Campaign', 'social-integrations')}</th>
@@ -135,13 +135,36 @@ export function CampaignsPage({ openComposer }: PageProps) {
                     const on = c.accounts.length ? accounts.filter((a) => c.accounts.includes(a.id)) : []
                     const k = keyOf(c)
                     const can = (a: string) => c.actions.includes(a) && (a === 'edit' || a === 'duplicate' || !!handlers[c.type])
+                    const log = `#/log?campaign=${encodeURIComponent(k)}`
+                    // One list of actions: buttons in a wide table, a menu in a narrow one.
+                    const menu: MenuItem[] = [
+                      ...(can('pause') ? [{ key: 'pause', label: __('Pause', 'social-integrations'), icon: 'clock', disabled: busy === k, onSelect: () => void run(c, 'pause', __('Campaign paused.', 'social-integrations')) }] : []),
+                      ...(can('resume') ? [{ key: 'resume', label: __('Resume', 'social-integrations'), icon: 'retry', disabled: busy === k, onSelect: () => void run(c, 'resume', __('Campaign resumed.', 'social-integrations')) }] : []),
+                      ...(c.sent > 0 ? [{ key: 'log', label: __('Share log', 'social-integrations'), icon: 'log', onSelect: () => go(log.slice(2)) }] : []),
+                      ...(can('edit') ? [{ key: 'edit', label: __('Edit', 'social-integrations'), icon: 'edit', onSelect: () => open(c, false) }] : []),
+                      ...(can('duplicate') ? [{ key: 'duplicate', label: __('Duplicate', 'social-integrations'), icon: 'copy', onSelect: () => open(c, true) }] : []),
+                      ...(can('delete')
+                        ? [{
+                            key: 'delete',
+                            label: armed === k ? __('Click again to delete', 'social-integrations') : __('Delete', 'social-integrations'),
+                            icon: 'trash',
+                            danger: true,
+                            disabled: busy === k,
+                            onSelect: () => {
+                              const first = armed !== k
+                              remove(c)
+                              return first
+                            },
+                          }]
+                        : []),
+                    ]
                     return (
                       <tr key={k}>
-                        <td>
+                        <td className="name">
                           <button type="button" className="sint-camp-name" onClick={() => can('edit') && open(c, false)}>{c.name}</button>
                           <span className="sint-pill muted">{handlers[c.type]?.label ?? c.type}</span>
                         </td>
-                        <td>
+                        <td className="accts">
                           {c.accounts.length === 0 ? (
                             <span style={{ fontSize: 12, color: 'var(--muted)' }}>{__('All accounts', 'social-integrations')}</span>
                           ) : (
@@ -150,14 +173,19 @@ export function CampaignsPage({ openComposer }: PageProps) {
                             </span>
                           )}
                         </td>
-                        <td><span className={`sint-pill ${status.tone}`}>{status.label()}</span></td>
-                        <td>{c.next_at ? fmtDateTime(c.next_at) : c.type === 'auto' && c.status === 'active' ? <span style={{ color: 'var(--muted)' }}>{__('When a post is published', 'social-integrations')}</span> : '—'}</td>
-                        <td>{c.last_at ? fmtDateTime(c.last_at) : '—'}{c.sent > 0 && <span style={{ color: 'var(--muted)' }}> · {sprintf(__('%d sent', 'social-integrations'), c.sent)}</span>}</td>
-                        <td>
+                        <td className="status"><span className={`sint-pill ${status.tone}`}>{status.label()}</span></td>
+                        <td className="when" data-label={__('Next', 'social-integrations')}>
+                          {c.next_at ? <span className="d">{fmtStamp(c.next_at)}</span> : c.type === 'auto' && c.status === 'active' ? <span className="sint-camp-sub">{__('When you publish a post', 'social-integrations')}</span> : '—'}
+                        </td>
+                        <td className="when" data-label={__('Last shared', 'social-integrations')}>
+                          {c.last_at ? <span className="d">{fmtStamp(c.last_at)}</span> : '—'}
+                          {c.sent > 0 && <span className="sint-camp-sub">{sprintf(__('%d sent', 'social-integrations'), c.sent)}</span>}
+                        </td>
+                        <td className="acts">
                           <span className="sint-camp-actions">
                             {can('pause') && <button type="button" className="sint-btn ghost sm" disabled={busy === k} onClick={() => run(c, 'pause', __('Campaign paused.', 'social-integrations'))}>{__('Pause', 'social-integrations')}</button>}
                             {can('resume') && <button type="button" className="sint-btn ghost sm" disabled={busy === k} onClick={() => run(c, 'resume', __('Campaign resumed.', 'social-integrations'))}>{__('Resume', 'social-integrations')}</button>}
-                            {c.sent > 0 && <a className="sint-pc-tool" href={`#/log?campaign=${encodeURIComponent(k)}`} aria-label={sprintf(__('Share log of %s', 'social-integrations'), c.name)} title={__('Share log', 'social-integrations')}><Icon name="log" size={15} /></a>}
+                            {c.sent > 0 && <a className="sint-pc-tool" href={log} aria-label={sprintf(__('Share log of %s', 'social-integrations'), c.name)} title={__('Share log', 'social-integrations')}><Icon name="log" size={15} /></a>}
                             {can('edit') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Edit %s', 'social-integrations'), c.name)} title={__('Edit', 'social-integrations')} onClick={() => open(c, false)}><Icon name="edit" size={15} /></button>}
                             {can('duplicate') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Duplicate %s', 'social-integrations'), c.name)} title={__('Duplicate', 'social-integrations')} onClick={() => open(c, true)}><Icon name="copy" size={15} /></button>}
                             {can('delete') && (
@@ -166,6 +194,11 @@ export function CampaignsPage({ openComposer }: PageProps) {
                               </button>
                             )}
                           </span>
+                          {menu.length > 0 && (
+                            <span className="sint-camp-menu">
+                              <Menu label={sprintf(__('Actions for %s', 'social-integrations'), c.name)} items={menu} onClose={() => armed === k && setArmed('')} />
+                            </span>
+                          )}
                         </td>
                       </tr>
                     )

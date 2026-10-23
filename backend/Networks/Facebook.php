@@ -118,7 +118,7 @@ class Facebook extends AbstractNetwork {
 			)
 		);
 		if ( empty( $short['access_token'] ) ) {
-			throw new NetworkException( 'oauth', esc_html__( 'Facebook did not return an access token. Try connecting again.', 'social-integrations' ) );
+			throw new NetworkException( 'oauth', esc_html__( 'Facebook did not return an access token. Connect again.', 'social-integrations' ) );
 		}
 
 		$credentials = array( 'access_token' => (string) $short['access_token'] );
@@ -272,7 +272,7 @@ class Facebook extends AbstractNetwork {
 		}
 
 		if ( '' === $post_id ) {
-			throw new NetworkException( 'unknown', esc_html__( 'Facebook did not confirm the post. Check the Page before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Facebook did not confirm the post. Check the Page before you try again.', 'social-integrations' ) );
 		}
 
 		return array(

@@ -9,7 +9,7 @@ interface Props {
   nets: string[]
   /** The network to show; undefined when no account is selected. */
   preview?: string
-  /** Show the network switcher (the "All channels" tab with more than one network). */
+  /** Show the network switcher (the "All networks" tab with more than one network). */
   canSwitch: boolean
   setPreview: (network: string) => void
   captionFor: (network: string) => string
@@ -76,7 +76,7 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
           {chosenMedia.length > 0 && nets.some((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--warn-text)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
-              {__('Some networks take fewer images. They get the first ones.', 'social-integrations')}
+              {__('Some networks accept fewer images. These networks get the first images.', 'social-integrations')}
             </div>
           )}
         </div>

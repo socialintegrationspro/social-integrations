@@ -212,7 +212,7 @@ class LinkedIn extends AbstractNetwork {
 
 		$post_id = (string) ( $data['id'] ?? '' );
 		if ( '' === $post_id ) {
-			throw new NetworkException( 'unknown', esc_html__( 'LinkedIn did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'LinkedIn did not confirm the post. Check the account before you try again.', 'social-integrations' ) );
 		}
 
 		return array(
@@ -341,7 +341,7 @@ class LinkedIn extends AbstractNetwork {
 			)
 		);
 		if ( empty( $data['access_token'] ) ) {
-			throw new NetworkException( 'oauth', esc_html__( 'LinkedIn did not return an access token. Try connecting again.', 'social-integrations' ) );
+			throw new NetworkException( 'oauth', esc_html__( 'LinkedIn did not return an access token. Connect again.', 'social-integrations' ) );
 		}
 
 		$credentials = $this->with_expiry( array( 'access_token' => (string) $data['access_token'] ), $data );

@@ -49,7 +49,7 @@ abstract class AbstractProvider implements ProviderInterface {
 		);
 		if ( is_wp_error( $response ) ) {
 			/* translators: 1: provider name, 2: transport error */
-			throw new AIException( esc_html( sprintf( __( 'Could not reach %1$s: %2$s', 'social-integrations' ), $this->label(), $response->get_error_message() ) ) );
+			throw new AIException( esc_html( sprintf( __( 'Cannot connect to %1$s: %2$s', 'social-integrations' ), $this->label(), $response->get_error_message() ) ) );
 		}
 		$status = (int) wp_remote_retrieve_response_code( $response );
 		$data   = json_decode( (string) wp_remote_retrieve_body( $response ), true );
@@ -69,15 +69,15 @@ abstract class AbstractProvider implements ProviderInterface {
 	protected function error_message( int $status, array $data ): string {
 		if ( 401 === $status || 403 === $status ) {
 			/* translators: %s: provider name */
-			return sprintf( __( 'The %s API key was not accepted. Check it in Settings.', 'social-integrations' ), $this->label() );
+			return sprintf( __( '%s did not accept the API key. Check it in Settings.', 'social-integrations' ), $this->label() );
 		}
 		if ( 429 === $status || 529 === $status || 503 === $status ) {
 			/* translators: %s: provider name */
-			return sprintf( __( '%s is busy or the account has reached its limit. Try again in a minute.', 'social-integrations' ), $this->label() );
+			return sprintf( __( '%s is busy, or the account is at its limit. Try again in a minute.', 'social-integrations' ), $this->label() );
 		}
 		$detail = (string) ( $data['error']['message'] ?? '' );
 		/* translators: 1: provider name, 2: reason from the provider */
-		return trim( sprintf( __( '%1$s could not write the caption. %2$s', 'social-integrations' ), $this->label(), $detail ) );
+		return trim( sprintf( __( '%1$s did not write the caption. %2$s', 'social-integrations' ), $this->label(), $detail ) );
 	}
 
 	/**

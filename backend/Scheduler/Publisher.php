@@ -71,8 +71,8 @@ final class Publisher {
 	 * @param int $timestamp Unix time.
 	 */
 	public static function wake_at( int $timestamp ): void {
-		// Positional argument: WordPress passes cron args by position, and an
-		// associative key would reach run() as a named parameter on PHP 8.
+		// Positional argument: WordPress passes cron args by position. On PHP 8,
+		// PHP gives an associative key to run() as a named parameter.
 		wp_schedule_single_event( max( time(), $timestamp ), self::CRON_HOOK, array( $timestamp ) );
 	}
 

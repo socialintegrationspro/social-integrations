@@ -15,7 +15,7 @@ export interface ShareTemplate {
 const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}', '{site}']
 
 const SOURCES = (): { value: MediaSource; label: string }[] => [
-  { value: 'auto', label: __('Featured + post images', 'social-integrations') },
+  { value: 'auto', label: __('Featured image and post images', 'social-integrations') },
   { value: 'featured', label: __('Featured image', 'social-integrations') },
   { value: 'content', label: __('Images in the post', 'social-integrations') },
   { value: 'custom', label: __('Chosen images', 'social-integrations') },
@@ -61,7 +61,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
     <>
       {nets.length > 0 && (
         <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-          <button type="button" role="tab" aria-selected={all} className={all ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels', 'social-integrations')}</button>
+          <button type="button" role="tab" aria-selected={all} className={all ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
           {nets.map((n) => (
             <button key={n} type="button" role="tab" aria-selected={tab === n} className={tab === n ? 'on' : ''} onClick={() => setTab(n)}>
               <NetBadge network={n} color={network(n)?.color} size={18} />
@@ -77,7 +77,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {TOKENS.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText((text || (all ? '' : value.caption)) + t)}>{t}</button>)}
         </span>
-        {all ? hint && <small>{hint}</small> : <small>{__('Leave empty to use the caption for all channels.', 'social-integrations')}</small>}
+        {all ? hint && <small>{hint}</small> : <small>{__('Leave empty to use the caption for all networks.', 'social-integrations')}</small>}
       </label>
       <label className="sint-field" style={{ maxWidth: 320 }}>
         <span>{__('Media', 'social-integrations')}</span>

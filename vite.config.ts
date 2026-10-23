@@ -1,10 +1,21 @@
-import { defineConfig } from 'vite'
+import { defineConfig, transformWithEsbuild, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+
+// Library code has no translatable strings, so its chunk is minified in full.
+const minifyVendor = (): Plugin => ({
+  name: 'sint-minify-vendor',
+  apply: 'build',
+  async renderChunk(code, chunk) {
+    if (chunk.name !== 'vendor') return null
+    const out = await transformWithEsbuild(code, chunk.fileName, { minify: true, format: 'esm', legalComments: 'none' })
+    return { code: out.code, map: null }
+  },
+})
 
 // The admin app is loaded by backend/Admin/Assets.php from build/.vite/manifest.json,
 // or from this dev server when wp-config.php defines SINT_DEV_SERVER.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), minifyVendor()],
   base: './',
   // Keep names such as __ in build/, so `wp i18n make-pot` and translate.wordpress.org
   // find the translatable strings in the shipped files.
@@ -15,7 +26,12 @@ export default defineConfig({
     // bundle in build/editor/ (vite.editor.config.ts) stays while both watch.
     emptyOutDir: !process.argv.includes('--watch'),
     manifest: true,
-    rollupOptions: { input: 'frontend/admin/main.tsx' },
+    rollupOptions: {
+      input: 'frontend/admin/main.tsx',
+      // React and Motion go in their own chunk, which minifyVendor() shrinks. CSS (the bundled
+      // font) stays with the entry, because Assets.php enqueues the entry's CSS only.
+      output: { manualChunks: (id) => (id.includes('node_modules') && !id.endsWith('.css') ? 'vendor' : undefined) },
+    },
   },
   server: {
     host: '0.0.0.0',

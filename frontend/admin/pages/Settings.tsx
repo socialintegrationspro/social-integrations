@@ -53,8 +53,8 @@ export function SettingsPage(_props: PageProps) {
     { value: 'excerpt', label: __('Excerpt text', 'social-integrations') },
     { value: 'media', label: __('Media', 'social-integrations') },
     { value: 'link', label: __('Link', 'social-integrations') },
-    { value: 'skip', label: __('Skip', 'social-integrations') },
-    { value: 'remove', label: __('Remove', 'social-integrations') },
+    { value: 'skip', label: __('Do not use', 'social-integrations') },
+    { value: 'remove', label: __('Never send', 'social-integrations') },
   ]
   const fallbackLabel = uses.find((u) => u.value === settings.block_fallback)?.label ?? ''
   const shownBlocks = showAll ? blocks : blocks.filter((b) => settings.blocks[b.name] || !b.core)
@@ -69,12 +69,12 @@ export function SettingsPage(_props: PageProps) {
         <div className="sint-card">
           <div className="sint-card-head">
             <div style={{ minWidth: 0, flex: 1 }}>
-              <h2>{__('Blocks', 'social-integrations')}</h2>
-              <p className="sint-sub" style={{ fontSize: 13 }}>{__('How each block in a post becomes caption text, media or a link. Editors can change it for one block from the block toolbar.', 'social-integrations')}</p>
+              <h2>{__('Block rules', 'social-integrations')}</h2>
+              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Set how each block in a post becomes caption text, media or a link. Editors can change the rule for one block in the block toolbar.', 'social-integrations')}</p>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600 }}>
-              <Toggle checked={settings.allow_block_override} onChange={(v) => setSettings({ ...settings, allow_block_override: v })} label={__('Allow change for one block in the editor', 'social-integrations')} />
-              {__('Allow change for one block in the editor', 'social-integrations')}
+              <Toggle checked={settings.allow_block_override} onChange={(v) => setSettings({ ...settings, allow_block_override: v })} label={__('Let editors change the rule for one block', 'social-integrations')} />
+              {__('Let editors change the rule for one block', 'social-integrations')}
             </label>
           </div>
           <div className="sint-table-wrap">
@@ -113,7 +113,7 @@ export function SettingsPage(_props: PageProps) {
           <div className="sint-card-head">
             <div style={{ flex: 1, minWidth: 240 }}>
               <h2>{__('Share log', 'social-integrations')}</h2>
-              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Choose how long the share log keeps its rows. The plugin deletes older rows once a day. Campaigns and the calendar do not change.', 'social-integrations')}</p>
+              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Select how long the share log keeps its entries. The plugin deletes older entries one time each day. Campaigns and the calendar do not change.', 'social-integrations')}</p>
             </div>
             <label className="sint-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <span>{__('Keep the share log', 'social-integrations')}</span>
@@ -152,7 +152,7 @@ function AICard({ settings, setSettings, keys, setKeys }: { settings: Settings; 
       <div className="sint-card-head">
         <div>
           <h2>{__('AI captions', 'social-integrations')}</h2>
-          <p className="sint-sub" style={{ fontSize: 13 }}>{__('“Write with AI” in New campaign drafts a caption from your post. It uses your own API key; the post text goes only to the provider you choose.', 'social-integrations')}</p>
+          <p className="sint-sub" style={{ fontSize: 13 }}>{__('“Write with AI” in New campaign writes a caption from your post. It uses your API key. The plugin sends the post text only to the provider that you select.', 'social-integrations')}</p>
         </div>
       </div>
       <div className="sint-ai-grid">
@@ -167,10 +167,10 @@ function AICard({ settings, setSettings, keys, setKeys }: { settings: Settings; 
           <label className="sint-field">
             <span>{sprintf(__('%s API key', 'social-integrations'), provider.label)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type to replace.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
+              <input className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type a new key to replace it.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
               {saved && <button type="button" className="sint-btn ghost sm" style={{ height: 42 }} onClick={() => setKeys({ ...keys, [provider.key]: null })}>{__('Remove', 'social-integrations')}</button>}
             </div>
-            <small>{typed === null ? __('The key is removed when you save.', 'social-integrations') : __('Stored encrypted on your site. It is never shown again.', 'social-integrations')}</small>
+            <small>{typed === null ? __('The plugin removes the key when you save.', 'social-integrations') : __('The plugin keeps the key encrypted on your site. It does not show the key again.', 'social-integrations')}</small>
           </label>
         )}
         {provider && provider.default_model && (

@@ -39,7 +39,7 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
   return (
     <>
       <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-        <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All channels', 'social-integrations')}</button>
+        <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
         {nets.map((n) => (
           <button key={n} type="button" role="tab" aria-selected={tab === n} className={tab === n ? 'on' : ''} onClick={() => setTab(n)}>
             <NetBadge network={n} color={network(n)?.color} size={18} />

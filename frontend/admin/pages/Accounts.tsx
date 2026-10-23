@@ -47,7 +47,7 @@ export function AccountsPage({ params, go }: PageProps) {
     <>
       <Header title={__('Accounts', 'social-integrations')} />
       <div className="sint-body">
-        <p className="sint-sub">{__('Sign-in tokens are stored encrypted on your site and never leave it except to the network.', 'social-integrations')}</p>
+        <p className="sint-sub">{__('The plugin keeps sign-in tokens encrypted on your site. It sends each token only to its network.', 'social-integrations')}</p>
 
         {error && (
           <div className="sint-banner bad">
@@ -173,7 +173,7 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
       <form onSubmit={submit} style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {oauth && !appReady && (
           <>
-            <p className="sint-sub">{sprintf(__('%s connects through an app you create on its developer site. Enter the app details, then sign in.', 'social-integrations'), network.label)}</p>
+            <p className="sint-sub">{sprintf(__('%s connects through an app that you create on its developer site. Enter the app details. Then sign in.', 'social-integrations'), network.label)}</p>
             <div className="sint-field">
               <span id="sint-redirect-label">{__('Redirect URL for the app', 'social-integrations')}</span>
               <CopyField value={redirectUri} labelledBy="sint-redirect-label" />
@@ -201,7 +201,7 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
           )}
           <button type="button" className="sint-btn ghost" onClick={onClose}>{__('Cancel', 'social-integrations')}</button>
           <button type="submit" className="sint-btn primary" disabled={busy}>
-            {busy ? __('Working…', 'social-integrations') : oauth && !appReady ? __('Save app', 'social-integrations') : oauth ? sprintf(__('Sign in to %s', 'social-integrations'), network.label) : __('Connect', 'social-integrations')}
+            {busy ? __('Wait…', 'social-integrations') : oauth && !appReady ? __('Save app', 'social-integrations') : oauth ? sprintf(__('Sign in to %s', 'social-integrations'), network.label) : __('Connect', 'social-integrations')}
           </button>
         </div>
       </form>

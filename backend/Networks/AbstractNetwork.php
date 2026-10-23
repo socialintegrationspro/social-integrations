@@ -395,7 +395,7 @@ abstract class AbstractNetwork {
 		}
 
 		/* translators: %s: network name */
-		throw new NetworkException( 'media', esc_html( sprintf( __( 'An image of the post could not be read, so it was not sent to %s.', 'social-integrations' ), $this->label() ) ) );
+		throw new NetworkException( 'media', esc_html( sprintf( __( 'The plugin cannot read an image of the post. It did not send the image to %s.', 'social-integrations' ), $this->label() ) ) );
 	}
 
 	/**

@@ -12,8 +12,8 @@ export function ruleLabel(use: string): string {
     excerpt: __('Excerpt text', 'social-integrations'),
     media: __('Media', 'social-integrations'),
     link: __('Link', 'social-integrations'),
-    skip: __('Skip', 'social-integrations'),
-    remove: __('Remove', 'social-integrations'),
+    skip: __('Do not use', 'social-integrations'),
+    remove: __('Never send', 'social-integrations'),
   }
   return labels[use as BlockUse] ?? use
 }
@@ -22,7 +22,7 @@ export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     draft: __('Draft', 'social-integrations'),
     scheduled: __('Scheduled', 'social-integrations'),
-    sending: __('Sending', 'social-integrations'),
+    sending: __('In progress', 'social-integrations'),
     published: __('Published', 'social-integrations'),
     failed: __('Failed', 'social-integrations'),
   }

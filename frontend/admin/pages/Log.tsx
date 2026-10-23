@@ -244,11 +244,11 @@ export function LogPage({ params, go }: PageProps) {
             {s.status === 'failed' && s.queue_id > 0 && (
               <button type="button" className="sint-log-retry" disabled={!!busy} onClick={() => retry([s], `s${s.id}`)}>
                 <Icon name="retry" size={14} stroke={2} />
-                {busy === `s${s.id}` ? __('Working…', 'social-integrations') : __('Retry', 'social-integrations')}
+                {busy === `s${s.id}` ? __('Wait…', 'social-integrations') : __('Retry', 'social-integrations')}
               </button>
             )}
             {s.remote_url && (
-              <a href={s.remote_url} target="_blank" rel="noreferrer" className="sint-pc-tool" aria-label={__('View the live post', 'social-integrations')} title={__('View the live post', 'social-integrations')}>
+              <a href={s.remote_url} target="_blank" rel="noreferrer" className="sint-pc-tool" aria-label={__('Open the post on the network', 'social-integrations')} title={__('Open the post on the network', 'social-integrations')}>
                 <Icon name="external" size={14} stroke={2} />
               </a>
             )}
@@ -322,7 +322,7 @@ export function LogPage({ params, go }: PageProps) {
               // Nothing failed is good news, not an empty search.
               <Empty title={__('No failed shares', 'social-integrations')}>
                 <span className="sint-empty-ok" aria-hidden="true"><Icon name="check" size={22} stroke={2.4} /></span>
-                <p className="sint-sub">{__('Every share in the log went out.', 'social-integrations')}</p>
+                <p className="sint-sub">{__('The plugin sent every share in the log.', 'social-integrations')}</p>
                 <button type="button" className="sint-btn sm" onClick={() => setStatus('')}>{__('Show all shares', 'social-integrations')}</button>
               </Empty>
             ) : filtered ? (
@@ -359,12 +359,12 @@ export function LogPage({ params, go }: PageProps) {
                           type="button"
                           className={`sint-bulk-delete${armed === 'bulk' ? ' armed' : ''}`}
                           disabled={busy === 'delete'}
-                          title={__('The shares stay in the calendar. Only their log rows go.', 'social-integrations')}
+                          title={__('The shares stay in the calendar. The plugin deletes only their log entries.', 'social-integrations')}
                           onClick={() => (armed === 'bulk' ? remove(selected) : setArmed('bulk'))}
                           onBlur={() => armed === 'bulk' && setArmed('')}
                         >
                           <Icon name="trash" size={14} stroke={2} />
-                          {busy === 'delete' ? __('Deleting…', 'social-integrations') : armed === 'bulk' ? __('Click again to delete', 'social-integrations') : __('Delete', 'social-integrations')}
+                          {busy === 'delete' ? __('Wait…', 'social-integrations') : armed === 'bulk' ? __('Click again to delete', 'social-integrations') : __('Delete', 'social-integrations')}
                         </button>
                       </span>
                     </th>
@@ -398,7 +398,7 @@ export function LogPage({ params, go }: PageProps) {
                           <span className="sint-log-actions">
                             {failed.length > 0 && (
                               <button type="button" className="sint-btn danger sm" disabled={!!busy} onClick={() => retry(failed, e.key)}>
-                                {busy === e.key ? __('Working…', 'social-integrations') : failed.length > 1 ? sprintf(__('Retry %d failed', 'social-integrations'), failed.length) : __('Retry', 'social-integrations')}
+                                {busy === e.key ? __('Wait…', 'social-integrations') : failed.length > 1 ? sprintf(__('Retry %d failed', 'social-integrations'), failed.length) : __('Retry', 'social-integrations')}
                               </button>
                             )}
                             <button
@@ -507,7 +507,7 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
             <dd>{fmtStamp(share.created_at)}</dd>
             {share.remote_url && (
               <>
-                <dt>{__('Live post', 'social-integrations')}</dt>
+                <dt>{__('Post on the network', 'social-integrations')}</dt>
                 <dd><a href={share.remote_url} target="_blank" rel="noreferrer">{__('Open on the network', 'social-integrations')} <Icon name="external" size={12} stroke={2} /></a></dd>
               </>
             )}
@@ -531,7 +531,7 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
                     {!!t.details?.status && <code>HTTP {t.details.status}</code>}
                   </div>
                   {t.message && <div className="sint-log-msg">{t.message}</div>}
-                  {!t.details && <p className="sint-log-tech-none">{__('No details were saved for this try. The plugin saves them for shares sent after this update.', 'social-integrations')}</p>}
+                  {!t.details && <p className="sint-log-tech-none">{__('This try has no details. The plugin saves details only for shares that it sent after this update.', 'social-integrations')}</p>}
                   {t.details?.exception && (
                     <pre className="sint-log-pre">{`${t.details.exception.class}: ${t.details.exception.message}\n${t.details.exception.file}`}</pre>
                   )}

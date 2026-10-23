@@ -337,7 +337,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
                   {config.ai.ready && (postId || text.trim()) && (
                     <button type="button" className="sint-btn ai sm" disabled={writing} onClick={writeWithAI}>
                       <Icon name="sparkle" size={15} stroke={2} />
-                      {writing ? __('Writing…', 'social-integrations') : fresh ? __('Write with AI', 'social-integrations') : __('Improve with AI', 'social-integrations')}
+                      {writing ? __('Wait…', 'social-integrations') : fresh ? __('Write with AI', 'social-integrations') : __('Improve with AI', 'social-integrations')}
                     </button>
                   )}
                   {beforeAI !== null && !writing && (

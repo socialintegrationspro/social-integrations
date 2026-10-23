@@ -18,6 +18,7 @@ use SocialIntegrations\Rest\AccountsController;
 use SocialIntegrations\Rest\AIController;
 use SocialIntegrations\Rest\CampaignsController;
 use SocialIntegrations\Rest\ContentController;
+use SocialIntegrations\Rest\DashboardController;
 use SocialIntegrations\Rest\EditorController;
 use SocialIntegrations\Rest\QueueController;
 use SocialIntegrations\Rest\SettingsController;
@@ -133,5 +134,6 @@ final class Plugin {
 		( new AIController() )->register_routes();
 		( new CampaignsController() )->register_routes();
 		( new EditorController() )->register_routes();
+		( new DashboardController() )->register_routes();
 	}
 }

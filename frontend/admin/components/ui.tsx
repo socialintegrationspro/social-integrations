@@ -1,5 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { AnimatePresence, m } from 'motion/react'
+import { createPortal } from 'react-dom'
 import { initials } from '../lib/format'
+import { easeOut, pillSpring } from '../lib/motion'
 import { __, sprintf } from '../lib/i18n'
 import type { Account, Network } from '../lib/types'
 
@@ -29,6 +32,10 @@ const paths: Record<string, ReactNode> = {
   moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
   edit: <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16zM13.5 6.5l4 4" />,
   copy: <><rect x="8" y="8" width="12" height="12" rx="2.5" /><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" /></>,
+  dashboard: <><rect x="3.5" y="3.5" width="7" height="9" rx="2" /><rect x="13.5" y="3.5" width="7" height="5" rx="2" /><rect x="13.5" y="11.5" width="7" height="9" rx="2" /><rect x="3.5" y="15.5" width="7" height="5" rx="2" /></>,
+  arrow: <path d="M7 17L17 7M9 7h8v8" />,
+  clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
+  more: <><circle cx="5.5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="18.5" cy="12" r="1.3" /></>,
   retry: <><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></>,
 }
 
@@ -84,14 +91,135 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
 }
 
 export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label: string }) {
+  // Each group has its own pill, which slides to the chosen option.
+  const pill = useId()
   return (
-    <div className="sint-seg" role="group" aria-label={label}>
+    <div className="sint-seg sliding" role="group" aria-label={label}>
       {options.map((o) => (
         <button key={o.value} type="button" className={o.value === value ? 'on' : ''} aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
+          {o.value === value && <m.span className="sint-pill-bg" layoutId={pill} transition={pillSpring} aria-hidden="true" />}
           {o.label}
         </button>
       ))}
     </div>
+  )
+}
+
+export interface MenuItem {
+  key: string
+  label: string
+  icon?: string
+  danger?: boolean
+  disabled?: boolean
+  /** Return true to keep the menu open, such as for a second click that confirms. */
+  onSelect: () => boolean | void
+}
+
+/**
+ * A "more actions" button with a menu. The menu renders at the app root and is fixed to the window,
+ * so a table that scrolls does not cut it off and a blurred panel does not move it. It opens above
+ * the button when there is no room below. Arrow keys move between items; Escape closes it.
+ */
+export function Menu({ label, items, onClose }: { label: string; items: MenuItem[]; onClose?: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 })
+  const button = useRef<HTMLButtonElement>(null)
+  const list = useRef<HTMLDivElement>(null)
+
+  const closed = useRef(onClose)
+  closed.current = onClose
+  const close = useCallback((refocus = false) => {
+    setOpen(false)
+    closed.current?.()
+    if (refocus) button.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    list.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus()
+    const outside = (e: MouseEvent) => {
+      if (!list.current?.contains(e.target as Node) && !button.current?.contains(e.target as Node)) close()
+    }
+    const away = () => close()
+    // A scroll closes the menu only when it moves the button, so the menu never floats away from it.
+    const start = button.current?.getBoundingClientRect().top ?? 0
+    const moved = () => Math.abs((button.current?.getBoundingClientRect().top ?? 0) - start) > 2 && close()
+    document.addEventListener('mousedown', outside)
+    window.addEventListener('resize', away)
+    window.addEventListener('scroll', moved, true)
+    return () => {
+      document.removeEventListener('mousedown', outside)
+      window.removeEventListener('resize', away)
+      window.removeEventListener('scroll', moved, true)
+    }
+  }, [open, close])
+
+  const toggle = () => {
+    const r = button.current?.getBoundingClientRect()
+    if (r) {
+      const height = items.length * 42 + 14
+      const right = window.innerWidth - r.right
+      setPos(r.bottom + 6 + height > window.innerHeight && r.top > height ? { bottom: window.innerHeight - r.top + 6, right } : { top: r.bottom + 6, right })
+    }
+    setOpen((o) => !o)
+  }
+
+  const onKey = (e: ReactKeyboardEvent) => {
+    const all = Array.from(list.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [])
+    const i = all.indexOf(document.activeElement as HTMLElement)
+    if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault()
+      close(true)
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      all[(i + (e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length]?.focus()
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault()
+      all[e.key === 'Home' ? 0 : all.length - 1]?.focus()
+    }
+  }
+
+  return (
+    <>
+      <button ref={button} type="button" className="sint-pc-tool" aria-label={label} title={label} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
+        <Icon name="more" size={16} stroke={2.4} />
+      </button>
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+        <m.div
+          ref={list}
+          className="sint-menu"
+          role="menu"
+          aria-label={label}
+          style={{ ...pos, transformOrigin: pos.bottom !== undefined ? 'bottom right' : 'top right' }}
+          onKeyDown={onKey}
+          initial={{ opacity: 0, scale: 0.94, y: pos.bottom !== undefined ? 6 : -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.12 } }}
+          transition={{ duration: 0.18, ease: easeOut }}
+        >
+          {items.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              role="menuitem"
+              className={item.danger ? 'danger' : undefined}
+              disabled={item.disabled}
+              onClick={() => {
+                if (!item.onSelect()) close(true)
+              }}
+            >
+              {item.icon && <Icon name={item.icon} size={16} />}
+              {item.label}
+            </button>
+          ))}
+        </m.div>
+          )}
+        </AnimatePresence>,
+        document.getElementById('sint-app') ?? document.body,
+      )}
+    </>
   )
 }
 
@@ -110,8 +238,25 @@ export function Modal({ title, onClose, children, footer, narrow, drawer, header
     }
   }, [onClose])
   return (
-    <div className={`sint-overlay${drawer ? ' drawer' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} className={`sint-modal${narrow ? ' narrow' : ''}${drawer ? ' drawer' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+    <m.div
+      className={`sint-overlay${drawer ? ' drawer' : ''}`}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.18 } }}
+      transition={{ duration: 0.2 }}
+    >
+      <m.div
+        ref={ref}
+        className={`sint-modal${narrow ? ' narrow' : ''}${drawer ? ' drawer' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        initial={drawer ? { x: 48, opacity: 0 } : { y: 18, scale: 0.97, opacity: 0 }}
+        animate={drawer ? { x: 0, opacity: 1 } : { y: 0, scale: 1, opacity: 1 }}
+        exit={drawer ? { x: 48, opacity: 0 } : { y: 10, scale: 0.98, opacity: 0 }}
+        transition={{ duration: 0.3, ease: easeOut }}
+      >
         <div className="sint-modal-head">
           <h2>{title}</h2>
           {headerExtra}
@@ -121,8 +266,8 @@ export function Modal({ title, onClose, children, footer, narrow, drawer, header
         </div>
         <div className="sint-modal-body">{children}</div>
         {footer && <div className="sint-modal-foot">{footer}</div>}
-      </div>
-    </div>
+      </m.div>
+    </m.div>
   )
 }
 
@@ -183,12 +328,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div aria-live="polite">
-        {toasts.map((t, i) => (
-          <div key={t.id} className={`sint-toast${t.bad ? ' bad' : ''}`} style={{ bottom: 24 + i * 56 }}>
-            {t.text}
-          </div>
-        ))}
+      <div className="sint-toasts" aria-live="polite">
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => (
+            <m.div
+              key={t.id}
+              layout
+              className={`sint-toast${t.bad ? ' bad' : ''}`}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 40, transition: { duration: 0.2 } }}
+              transition={{ duration: 0.28, ease: easeOut }}
+            >
+              {t.text}
+            </m.div>
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   )
@@ -273,5 +428,5 @@ export function Pagination({ page, pages, size, total, setPage, setSize }: Pager
   )
 }
 
-export const typeColors = ['#b69cff', '#5eead4', '#fdba74', '#f9a8d4', '#93c5fd', '#fde047', '#86efac', '#fca5a5']
+export const typeColors = ['#f6cd3f', '#5eead4', '#fdba74', '#f9a8d4', '#93c5fd', '#fde047', '#86efac', '#fca5a5']
 export const typeColor = (types: string[], type: string) => typeColors[Math.max(0, types.indexOf(type)) % typeColors.length]

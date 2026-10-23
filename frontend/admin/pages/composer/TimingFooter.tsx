@@ -25,7 +25,7 @@ interface Props {
 export function TimingFooter({ when, setWhen, local, setLocal, live, optionControls, options, setOption, children }: Props) {
   return (
     <>
-      <Segmented<When> label={__('Timing', 'social-integrations')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now', 'social-integrations') }, { value: 'pick', label: __('Pick a time', 'social-integrations') }]} />
+      <Segmented<When> label={__('When', 'social-integrations')} value={when} onChange={setWhen} options={[{ value: 'now', label: __('Now', 'social-integrations') }, { value: 'pick', label: __('Select a time', 'social-integrations') }]} />
       {when === 'pick' && (
         <>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

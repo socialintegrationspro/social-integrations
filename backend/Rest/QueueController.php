@@ -111,7 +111,7 @@ final class QueueController extends RestController {
 			return $job;
 		}
 		if ( ! in_array( $job['status'], array( 'draft', 'scheduled', 'failed' ), true ) ) {
-			return $this->error( 'sent', __( 'This share has already been sent.', 'social-integrations' ), 409 );
+			return $this->error( 'sent', __( 'The plugin sent this share already.', 'social-integrations' ), 409 );
 		}
 
 		$body = (array) $request->get_json_params();
@@ -133,7 +133,7 @@ final class QueueController extends RestController {
 		}
 		// The scheduler may have claimed the row since it was read.
 		if ( ! Queue::update( $job['id'], $fields, $job['status'] ) ) {
-			return $this->error( 'sending', __( 'This share is being sent now.', 'social-integrations' ), 409 );
+			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
 
 		if ( $draft ) {
@@ -142,7 +142,7 @@ final class QueueController extends RestController {
 		if ( empty( $body['scheduled_at'] ) ) {
 			$result = Publisher::send_now( $job['id'] );
 			if ( null === $result ) {
-				return $this->error( 'sending', __( 'This share is being sent now.', 'social-integrations' ), 409 );
+				return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 			}
 			return rest_ensure_response( array( 'result' => $result ) );
 		}
@@ -163,7 +163,7 @@ final class QueueController extends RestController {
 			return $job;
 		}
 		if ( 'sending' === $job['status'] ) {
-			return $this->error( 'sending', __( 'This share is being sent now.', 'social-integrations' ), 409 );
+			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
 		Queue::delete( $job['id'] );
 		return rest_ensure_response( array( 'deleted' => true ) );
@@ -202,11 +202,11 @@ final class QueueController extends RestController {
 			'failed'
 		);
 		if ( ! $reset ) {
-			return $this->error( 'not_failed', __( 'Only a failed share can be sent again.', 'social-integrations' ), 409 );
+			return $this->error( 'not_failed', __( 'You can send only a failed share again.', 'social-integrations' ), 409 );
 		}
 		$result = Publisher::send_now( $job['id'] );
 		if ( null === $result ) {
-			return $this->error( 'sending', __( 'This share is being sent now.', 'social-integrations' ), 409 );
+			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
 		return rest_ensure_response( $result );
 	}
@@ -336,7 +336,7 @@ final class QueueController extends RestController {
 	public function log_tries( \WP_REST_Request $request ) {
 		$tries = Queue::log_tries( (int) $request['id'] );
 		if ( null === $tries ) {
-			return $this->not_found( __( 'This log row does not exist.', 'social-integrations' ) );
+			return $this->not_found( __( 'This log entry does not exist.', 'social-integrations' ) );
 		}
 		foreach ( $tries as &$try ) {
 			$try['created_at'] = \SocialIntegrations\Support\Dates::iso( $try['created_at'] );

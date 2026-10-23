@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { m } from 'motion/react'
+import { easeOut } from '../lib/motion'
 import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, Empty, Icon, NetBadge, Segmented, typeColor, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
@@ -50,6 +52,12 @@ export function CalendarPage({ openComposer }: PageProps) {
   const toast = useToast()
   const [view, setView] = useState('week')
   const [offset, setOffset] = useState(0)
+  // -1 or 1: the period slides in from that side. 0: it fades in.
+  const [dir, setDir] = useState(0)
+  const move = (to: number) => {
+    setDir(Math.sign(to - offset))
+    setOffset(to)
+  }
   const [items, setItems] = useState<QueueItem[] | null>(null)
   const [hidden, setHidden] = useState<string[]>([])
 
@@ -72,6 +80,17 @@ export function CalendarPage({ openComposer }: PageProps) {
     api.get<QueueItem[]>(`queue?${query({ from, to })}`).then((r) => setItems(r.data), () => setItems([]))
   }, [start, period.days])
   useEffect(load, [load])
+
+  // The week grid scrolls in its own box. When it shows today, it opens at the current time.
+  const body = useRef<HTMLDivElement>(null)
+  const loaded = items !== null
+  useEffect(() => {
+    const box = body.current
+    if (!loaded || !box) return
+    const row = box.querySelector<HTMLElement>('.sint-week .cell.today:has(.now)')
+    const head = box.querySelector<HTMLElement>('.sint-week.head')
+    box.scrollTop = row ? Math.max(0, row.offsetTop - (head?.offsetHeight ?? 0) - 12) : 0
+  }, [loaded, view, offset])
 
   const types = postTypes.map((t) => t.name)
   const todayKey = siteParts(new Date()).key
@@ -138,7 +157,7 @@ export function CalendarPage({ openComposer }: PageProps) {
       )}
       <span className="sint-pc-tools">
         {item.remote_url && (
-          <a className="sint-pc-tool" href={item.remote_url} target="_blank" rel="noreferrer" aria-label={__('View the live post', 'social-integrations')} title={__('View the live post', 'social-integrations')}>
+          <a className="sint-pc-tool" href={item.remote_url} target="_blank" rel="noreferrer" aria-label={__('Open the post on the network', 'social-integrations')} title={__('Open the post on the network', 'social-integrations')}>
             <Icon name="external" size={14} stroke={2} />
           </a>
         )}
@@ -198,7 +217,7 @@ export function CalendarPage({ openComposer }: PageProps) {
         <aside className="sint-cal-side">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px 6px' }}>
-              <span style={{ fontSize: 18, fontWeight: 700 }}>{__('Channels', 'social-integrations')}</span>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>{__('Accounts', 'social-integrations')}</span>
               <a href="#/accounts" style={{ fontSize: 13, fontWeight: 600 }}>{__('Manage', 'social-integrations')}</a>
             </div>
             {accounts.length === 0 && (
@@ -236,30 +255,32 @@ export function CalendarPage({ openComposer }: PageProps) {
 
         <section className="sint-cal-main">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--field-border)', borderRadius: 12, background: 'var(--field)' }}>
-              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Previous', 'social-integrations')} onClick={() => setOffset((o) => o - 1)}>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--field-border)', borderRadius: 999, background: 'var(--field)' }}>
+              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Previous', 'social-integrations')} onClick={() => move(offset - 1)}>
                 <Icon name="left" size={16} stroke={2} />
               </button>
               <span style={{ padding: '0 12px', fontWeight: 600, borderLeft: '1px solid var(--border)', borderRight: '1px solid var(--border)', height: 42, display: 'flex', alignItems: 'center' }}>
                 {period.title ?? `${fmtDate(days[0]!.toISOString())} – ${fmtDate(days[days.length - 1]!.toISOString())}`}
               </span>
-              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Next', 'social-integrations')} onClick={() => setOffset((o) => o + 1)}>
+              <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Next', 'social-integrations')} onClick={() => move(offset + 1)}>
                 <Icon name="right" size={16} stroke={2} />
               </button>
             </div>
-            <button type="button" className="sint-btn" onClick={() => setOffset(0)}>{__('Today', 'social-integrations')}</button>
+            <button type="button" className="sint-btn" onClick={() => move(0)}>{__('Today', 'social-integrations')}</button>
             <div style={{ marginLeft: 'auto' }}>
-              <Segmented label={__('View', 'social-integrations')} value={def.value} onChange={(v) => { setView(v); setOffset(0) }} options={views.map((v) => ({ value: v.value, label: v.label }))} />
+              <Segmented label={__('View', 'social-integrations')} value={def.value} onChange={(v) => { setView(v); setDir(0); setOffset(0) }} options={views.map((v) => ({ value: v.value, label: v.label }))} />
             </div>
           </div>
 
+          <div className="sint-cal-body" ref={body}>
+          <m.div key={`${view}-${offset}`} initial={{ opacity: 0, x: dir * 28 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, ease: easeOut }}>
           {items === null ? (
             <div className="sint-skeleton" style={{ height: 420 }} />
           ) : CustomView ? (
             <CustomView items={visible} days={days} reload={load} openComposer={openComposer} card={card} />
           ) : view === 'list' ? (
             visible.length === 0 ? (
-              <Empty title={__('Nothing planned this week', 'social-integrations')}>
+              <Empty title={__('No shares this week', 'social-integrations')}>
                 <button type="button" className="sint-btn primary" onClick={() => openComposer()}>{__('New campaign', 'social-integrations')}</button>
               </Empty>
             ) : (
@@ -287,8 +308,8 @@ export function CalendarPage({ openComposer }: PageProps) {
               </div>
             )
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <div className="sint-week">
+            <>
+              <div className="sint-week head">
                 <div />
                 {days.map((d) => {
                   const key = d.toISOString().slice(0, 10)
@@ -303,12 +324,16 @@ export function CalendarPage({ openComposer }: PageProps) {
                     </div>
                   )
                 })}
+              </div>
+              <div className="sint-week">
                 {HOURS.map((h) => (
                   <Row key={h} hour={h} days={days} items={visible} todayKey={todayKey} now={now} card={card} />
                 ))}
               </div>
-            </div>
+            </>
           )}
+          </m.div>
+          </div>
         </section>
       </div>
     </>
@@ -368,7 +393,7 @@ function StatusPill({ item }: { item: QueueItem }) {
     case 'draft':
       return <span className="sint-pill muted">{__('Draft', 'social-integrations')}</span>
     case 'sending':
-      return <span className="sint-pill accent">{__('Sending', 'social-integrations')}</span>
+      return <span className="sint-pill accent">{__('In progress', 'social-integrations')}</span>
     default:
       return <span className="sint-pill accent">{fmtTime(item.scheduled_at)}</span>
   }

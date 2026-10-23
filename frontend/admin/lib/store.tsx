@@ -53,12 +53,12 @@ export function useStore(): Store {
   return store
 }
 
-/* Hash routing: #/calendar, #/campaigns, #/accounts?connected=bluesky */
+/* Hash routing: #/dashboard, #/calendar, #/accounts?connected=bluesky */
 export function useRoute(): { path: string; params: URLSearchParams; go: (to: string) => void } {
   const read = () => {
     const hash = window.location.hash.replace(/^#\/?/, '')
     const [path, qs] = hash.split('?')
-    return { path: path || 'calendar', params: new URLSearchParams(qs ?? '') }
+    return { path: path || 'dashboard', params: new URLSearchParams(qs ?? '') }
   }
   const [route, setRoute] = useState(read)
   useEffect(() => {

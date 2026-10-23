@@ -94,7 +94,7 @@ final class Assets {
 	 * Shown when `build/` is missing.
 	 */
 	public function missing_build_notice(): void {
-		echo '<div class="notice notice-error"><p>' . esc_html__( 'Social Integrations cannot find its built files. Run the build, then reload this page.', 'social-integrations' ) . '</p></div>';
+		echo '<div class="notice notice-error"><p>' . esc_html__( 'Social Integrations cannot find its built files. Run the build. Then reload this page.', 'social-integrations' ) . '</p></div>';
 	}
 
 	/**

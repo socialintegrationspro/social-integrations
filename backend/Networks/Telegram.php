@@ -82,7 +82,7 @@ class Telegram extends AbstractNetwork {
 				'name'  => 'bot_token',
 				'label' => __( 'Bot token', 'social-integrations' ),
 				'type'  => 'password',
-				'help'  => __( 'Create a bot with @BotFather in Telegram and paste the token it gives you.', 'social-integrations' ),
+				'help'  => __( 'Create a bot with @BotFather in Telegram. Then paste the bot token here.', 'social-integrations' ),
 			),
 			array(
 				'name'  => 'chat_id',
@@ -148,7 +148,7 @@ class Telegram extends AbstractNetwork {
 	 */
 	private function check_token( string $token ): array {
 		if ( ! preg_match( '/^\d+:[A-Za-z0-9_-]+$/', $token ) ) {
-			throw new NetworkException( 'invalid', esc_html__( 'This does not look like a bot token. Copy it again from @BotFather.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'This is not a valid bot token. Copy it again from @BotFather.', 'social-integrations' ) );
 		}
 
 		try {
@@ -177,7 +177,7 @@ class Telegram extends AbstractNetwork {
 			if ( $e->is_expired() ) {
 				throw $e;
 			}
-			throw new NetworkException( 'invalid', esc_html__( 'The bot cannot find this channel or group. Add the bot to it as an admin and check the @username or chat ID.', 'social-integrations' ) );
+			throw new NetworkException( 'invalid', esc_html__( 'The bot cannot find this channel or group. Add the bot to it as an admin. Then check the @username or chat ID.', 'social-integrations' ) );
 		}
 
 		if ( 'channel' === ( $info['type'] ?? '' ) && ! empty( $me['id'] ) ) {
@@ -247,7 +247,7 @@ class Telegram extends AbstractNetwork {
 
 		$message_id = (string) ( $message['message_id'] ?? '' );
 		if ( '' === $message_id ) {
-			throw new NetworkException( 'unknown', esc_html__( 'Telegram did not confirm the message. Check the chat before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Telegram did not confirm the message. Check the chat before you try again.', 'social-integrations' ) );
 		}
 
 		return array(

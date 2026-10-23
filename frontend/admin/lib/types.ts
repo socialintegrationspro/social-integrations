@@ -197,3 +197,15 @@ export interface BlockType {
   core: boolean
   use: BlockUse | null
 }
+
+/** The Dashboard screen's summary of sharing activity. */
+export interface DashboardData {
+  /** One entry for each day of the period, oldest first, as site dates ('Y-m-d'). */
+  days: { date: string; published: number; failed: number }[]
+  totals: { published: number; failed: number; previous_published: number; previous_failed: number; scheduled: number; drafts: number }
+  /** Shares in the period, by network, the most first. */
+  networks: { network: string; published: number; failed: number }[]
+  campaigns: { active: number; total: number }
+  upcoming: { id: number; network: string; account_id: string; title: string; scheduled_at: string }[]
+  recent: { id: number; network: string; account_id: string; status: 'published' | 'failed'; message: string; remote_url: string; title: string; created_at: string }[]
+}

@@ -12,7 +12,7 @@ function initial(): Theme {
   } catch {
     /* storage blocked */
   }
-  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 export function applyTheme(theme: Theme): void {

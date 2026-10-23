@@ -6,7 +6,7 @@ export type When = 'now' | 'pick'
 
 export const MEDIA_FROM: { value: MediaSource | ''; label: () => string }[] = [
   { value: '', label: () => __('Post type setting', 'social-integrations') },
-  { value: 'auto', label: () => __('Featured + post images', 'social-integrations') },
+  { value: 'auto', label: () => __('Featured image and post images', 'social-integrations') },
   { value: 'featured', label: () => __('Featured image', 'social-integrations') },
   { value: 'content', label: () => __('Images in the post', 'social-integrations') },
   { value: 'none', label: () => __('No media', 'social-integrations') },
@@ -40,7 +40,7 @@ export function timePresets(live: string): { label: string; value: string }[] {
     { label: __('In an hour', 'social-integrations'), value: defaultLocal() },
     { label: __('Tomorrow 9:00', 'social-integrations'), value: atLocal(1, 9) },
     { label: __('Next week', 'social-integrations'), value: atLocal(toNextWeek(), 9) },
-    ...(live ? [{ label: __('When the post goes live', 'social-integrations'), value: live }] : []),
+    ...(live ? [{ label: __('When the post is published', 'social-integrations'), value: live }] : []),
   ]
 }
 

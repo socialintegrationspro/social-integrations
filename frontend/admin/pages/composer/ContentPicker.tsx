@@ -75,7 +75,7 @@ export function ContentPicker({ search: { type, setType, search, setSearch, resu
 }
 
 function itemDate(item: ContentItem): string {
-  if (item.status === 'future') return sprintf(__('Live %s', 'social-integrations'), fmtDate(item.date))
+  if (item.status === 'future') return sprintf(__('Scheduled for %s', 'social-integrations'), fmtDate(item.date))
   if (item.status === 'draft') return __('Draft', 'social-integrations')
   return fmtDate(item.date)
 }

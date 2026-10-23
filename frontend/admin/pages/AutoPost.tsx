@@ -105,7 +105,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
 
 
   const shownCaption = preview ? (current !== 'all' && !Array.isArray(preview.captions) && preview.captions[current]) || preview.caption : ''
-  const delayText = c.delay.value === 0 ? __('Right after publishing', 'social-integrations') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after publishing', 'social-integrations') : c.delay.unit === 'hours' ? __('%d hours after publishing', 'social-integrations') : __('%d days after publishing', 'social-integrations'), c.delay.value)
+  const delayText = c.delay.value === 0 ? __('Immediately after you publish', 'social-integrations') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after you publish', 'social-integrations') : c.delay.unit === 'hours' ? __('%d hours after you publish', 'social-integrations') : __('%d days after you publish', 'social-integrations'), c.delay.value)
 
   const save = async () => {
     if (!c?.name.trim()) {
@@ -117,7 +117,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     try {
       const r = await api.post<AutoCampaign>(editing ? `campaigns/auto/${editing}` : 'campaigns/auto', c)
       await Promise.all(Object.values(savers.current).map((fn) => fn(r.data.id)))
-      toast(editing ? __('Campaign saved.', 'social-integrations') : __('Campaign created. New posts that match will be shared.', 'social-integrations'))
+      toast(editing ? __('Campaign saved.', 'social-integrations') : __('Campaign created. The plugin will share new posts that match.', 'social-integrations'))
       onSaved()
     } catch (e) {
       toast((e as Error).message, true)
@@ -170,7 +170,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           <div className="sint-autopost-share">
             <span className="sint-label">{sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : __('Preview', 'social-integrations')}</span>
             {sample === null ? (
-              <p className="sint-sub">{__('Nothing published yet to preview with.', 'social-integrations')}</p>
+              <p className="sint-sub">{__('No published post is available for the preview.', 'social-integrations')}</p>
             ) : preview ? (
               <>
                 <p>{shownCaption}</p>
@@ -203,7 +203,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
               </select>
             </span>
             <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {[{ value: 0, unit: 'minutes' as Unit, label: __('Right away', 'social-integrations') }, { value: 10, unit: 'minutes' as Unit, label: __('10 min', 'social-integrations') }, { value: 1, unit: 'hours' as Unit, label: __('1 hour', 'social-integrations') }, { value: 1, unit: 'days' as Unit, label: __('1 day', 'social-integrations') }].map((p) => (
+              {[{ value: 0, unit: 'minutes' as Unit, label: __('Immediately', 'social-integrations') }, { value: 10, unit: 'minutes' as Unit, label: __('10 min', 'social-integrations') }, { value: 1, unit: 'hours' as Unit, label: __('1 hour', 'social-integrations') }, { value: 1, unit: 'days' as Unit, label: __('1 day', 'social-integrations') }].map((p) => (
                 <button key={p.label} type="button" className={`sint-chip${c.delay.value === p.value && (p.value === 0 || c.delay.unit === p.unit) ? ' on' : ''}`} onClick={() => set({ delay: { value: p.value, unit: p.unit } })}>{p.label}</button>
               ))}
             </span>
@@ -215,8 +215,8 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
             <input ref={nameRef} className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn', 'social-integrations')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
             {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.', 'social-integrations')}</small>}
           </label>
-          <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('A post shares on its first publish, not on updates. If it matches several campaigns, each account gets it once. Editors can change the caption or accounts for one post in the editor sidebar.', 'social-integrations')}</small>
-          <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Saving…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
+          <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar.', 'social-integrations')}</small>
+          <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Wait…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
         </aside>
       </div>
     </>

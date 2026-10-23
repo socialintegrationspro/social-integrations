@@ -268,7 +268,7 @@ class Bluesky extends AbstractNetwork {
 
 		$uri = (string) ( $data['uri'] ?? '' );
 		if ( '' === $uri ) {
-			throw new NetworkException( 'unknown', esc_html__( 'Bluesky did not confirm the post. Check the profile before trying again.', 'social-integrations' ) );
+			throw new NetworkException( 'unknown', esc_html__( 'Bluesky did not confirm the post. Check the account before you try again.', 'social-integrations' ) );
 		}
 
 		$actor = '' !== (string) ( $credentials['handle'] ?? '' ) ? (string) $credentials['handle'] : (string) $credentials['did'];
@@ -524,7 +524,7 @@ class Bluesky extends AbstractNetwork {
 		wp_delete_file( $source );
 
 		if ( strlen( $file['bytes'] ) > self::MAX_BLOB ) {
-			throw new NetworkException( 'media', esc_html__( 'An image is larger than Bluesky accepts (1 MB) and could not be made smaller.', 'social-integrations' ) );
+			throw new NetworkException( 'media', esc_html__( 'An image is larger than the Bluesky limit (1 MB). The plugin cannot make it smaller.', 'social-integrations' ) );
 		}
 		return $file;
 	}

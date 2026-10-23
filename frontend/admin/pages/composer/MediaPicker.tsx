@@ -18,7 +18,7 @@ export function MediaPicker({ media, chosen, toggle, onAdd, mediaFrom }: Props) 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className="sint-label">{__('Media', 'social-integrations')}</span>
-        <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected · tap to turn on or off', 'social-integrations'), chosen.length)}</span>
+        <span style={{ fontSize: 12, color: 'var(--faint)' }}>{sprintf(__('%d selected. Click an image to add or remove it.', 'social-integrations'), chosen.length)}</span>
         {mediaFrom && (
           <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
             {__('From', 'social-integrations')}

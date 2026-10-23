@@ -31,7 +31,7 @@ final class CaptionGenerator {
 	public function write( array $args ): string {
 		$provider = Providers::current();
 		if ( ! $provider ) {
-			throw new AIException( esc_html__( 'Choose an AI provider and enter its API key in Settings first.', 'social-integrations' ) );
+			throw new AIException( esc_html__( 'In Settings, select an AI provider. Then enter its API key.', 'social-integrations' ) );
 		}
 
 		$ai    = (array) Settings::get( 'ai', array() );

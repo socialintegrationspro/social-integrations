@@ -40,7 +40,7 @@ export function SidebarContent() {
         setState(s)
         setError('')
       })
-      .catch((e: unknown) => setError(errorText(e, __('The share state could not be loaded. Reload the page.', 'social-integrations'))))
+      .catch((e: unknown) => setError(errorText(e, __('The share status did not load. Reload the page.', 'social-integrations'))))
   }
 
   // Load on open, and again after each save, so new shares show.
@@ -82,16 +82,16 @@ function SharePanel({ state, published, disabled, onChange }: { state: EditorSta
   const closed = state.shared || published === 'publish'
   let help: string
   if (state.shared) {
-    help = __('The plugin shared this post when it was published. An update does not share it again.', 'social-integrations')
+    help = __('The plugin shared this post when you published it. An update does not share it again.', 'social-integrations')
   } else if (published === 'publish') {
-    help = __('This post is published. The plugin shares a post only when it is published for the first time.', 'social-integrations')
+    help = __('This post is published. The plugin shares a post only when you publish it for the first time.', 'social-integrations')
   } else if (!state.campaigns.length) {
     help = __('No auto-post campaign shares this post type.', 'social-integrations')
   } else if (disabled) {
-    help = __('This post does not share when you publish it.', 'social-integrations')
+    help = __('The plugin does not share this post when you publish it.', 'social-integrations')
   } else {
     const delays = Array.from(new Set(state.campaigns.map((c) => delayText(c.delay))))
-    help = sprintf(__('The post shares %1$s after you publish it. Campaigns: %2$s.', 'social-integrations'), delays.join(', '), state.campaigns.map((c) => c.name).join(', '))
+    help = sprintf(__('The plugin shares the post %1$s after you publish it. Campaigns: %2$s.', 'social-integrations'), delays.join(', '), state.campaigns.map((c) => c.name).join(', '))
   }
   return (
     <PanelBody>
@@ -104,7 +104,7 @@ function SharePanel({ state, published, disabled, onChange }: { state: EditorSta
         help={help}
       />
       {!closed && !state.campaigns.length && state.can_manage && (
-        <ExternalLink href={`${config.pageUrl}#/campaigns`}>{__('Make an auto-post campaign', 'social-integrations')}</ExternalLink>
+        <ExternalLink href={`${config.pageUrl}#/campaigns`}>{__('Create an auto-post campaign', 'social-integrations')}</ExternalLink>
       )}
     </PanelBody>
   )
@@ -116,7 +116,7 @@ function AccountsPanel({ state, chosen, onChange }: { state: EditorState; chosen
     <PanelBody title={__('Accounts', 'social-integrations')} initialOpen={chosen.length > 0}>
       <p className="sint-ed-help">
         {chosen.length
-          ? __('This post shares only to the accounts you select.', 'social-integrations')
+          ? __('The plugin shares this post only to the accounts that you select.', 'social-integrations')
           : __('Each campaign shares to its own accounts. Select accounts to use other accounts for this post.', 'social-integrations')}
       </p>
       {state.accounts.length === 0 && <p className="sint-ed-help">{__('No account is connected.', 'social-integrations')}</p>}

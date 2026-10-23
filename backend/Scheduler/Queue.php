@@ -390,6 +390,66 @@ final class Queue {
 	}
 
 	/**
+	 * Sent and failed shares since a date, counted for each day and network. A share counts
+	 * on the day it was due to go out.
+	 *
+	 * @param string $from   UTC 'Y-m-d H:i:s'.
+	 * @param int    $offset Seconds to add to UTC to get the site's time.
+	 * @return array Rows [ 'day' => site 'Y-m-d', 'network', 'status' => 'published' | 'failed', 'n' ].
+	 */
+	public static function activity( string $from, int $offset ): array {
+		global $wpdb;
+		$table = Migrations::queue_table();
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT DATE(DATE_ADD(scheduled_at, INTERVAL %d SECOND)) AS day, network, status, COUNT(*) AS n FROM {$table} WHERE scheduled_at >= %s AND status IN ('published', 'failed') GROUP BY day, network, status", $offset, $from ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		return (array) $rows;
+	}
+
+	/**
+	 * The number of shares with each status.
+	 *
+	 * @return array<string, int> [ status => count ].
+	 */
+	public static function status_counts(): array {
+		global $wpdb;
+		$table  = Migrations::queue_table();
+		$counts = array_fill_keys( self::STATUSES, 0 );
+		foreach ( (array) $wpdb->get_results( "SELECT status, COUNT(*) AS n FROM {$table} GROUP BY status", ARRAY_A ) as $row ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$counts[ $row['status'] ] = (int) $row['n'];
+		}
+		return $counts;
+	}
+
+	/**
+	 * The next scheduled shares, the soonest first.
+	 *
+	 * @param int $limit Maximum rows.
+	 */
+	public static function upcoming( int $limit = 6 ): array {
+		global $wpdb;
+		$table = Migrations::queue_table();
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE status = 'scheduled' AND scheduled_at >= %s ORDER BY scheduled_at ASC, id ASC LIMIT %d", current_time( 'mysql', true ), $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		return array_map( array( self::class, 'hydrate' ), (array) $rows );
+	}
+
+	/**
+	 * The newest log rows, the newest first.
+	 *
+	 * @param int $limit Maximum rows.
+	 */
+	public static function recent_logs( int $limit = 8 ): array {
+		global $wpdb;
+		$table = Migrations::logs_table();
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, queue_id, post_id, network, account_id, status, message, remote_url, created_at FROM {$table} ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (array) $rows;
+	}
+
+	/**
 	 * Decodes JSON columns and casts numbers.
 	 *
 	 * @param array $row Raw row.
