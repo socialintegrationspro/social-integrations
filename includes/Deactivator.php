@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations;
 
+use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Publisher;
 
 defined( 'ABSPATH' ) || exit;
@@ -42,8 +43,10 @@ final class Deactivator {
 	 * Stops the scheduled work of the current site.
 	 */
 	private static function stop(): void {
-		wp_clear_scheduled_hook( Publisher::CRON_HOOK );
-		wp_clear_scheduled_hook( Plugin::PRUNE_HOOK );
+		// wp_unschedule_hook() also removes the single events that carry arguments.
+		wp_unschedule_hook( Publisher::CRON_HOOK );
+		wp_unschedule_hook( AutoShare::CRON_HOOK );
+		wp_unschedule_hook( Plugin::PRUNE_HOOK );
 		flush_rewrite_rules( false );
 	}
 }

@@ -10,6 +10,8 @@ export interface SintConfig {
   gmtOffset: number
   weekStart: number
   redirectUri: string
+  /** The sign-in error of the last connect, kept on the server. Empty when there is none. */
+  oauthError: string
   user: { name: string; avatar: string }
   /** Whether an AI provider and its key are set. */
   ai: { ready: boolean }
@@ -42,6 +44,7 @@ export const config: SintConfig = window.sintConfig ?? {
   nonce: '',
   adminUrl: '/wp-admin/',
   pageUrl: '/wp-admin/admin.php?page=social-integrations',
+  oauthError: '',
   version: 'dev',
   siteName: 'WordPress',
   timezone: 'UTC',

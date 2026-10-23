@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Editor;
 
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\AutoShare;
 
 defined( 'ABSPATH' ) || exit;
@@ -30,8 +31,14 @@ final class BlockSupport {
 	 * Post meta for every shareable post type.
 	 */
 	public function register_meta(): void {
-		$auth = static function () {
-			return current_user_can( 'edit_posts' );
+		// The caption and the accounts change what a share sends and where, so only a user who
+		// manages the plugin sets them. Turning sharing off for a post only stops a share, so
+		// anyone who can edit the post can do it.
+		$manage   = static function () {
+			return current_user_can( 'manage_options' );
+		};
+		$own_post = static function ( $allowed, $meta_key, $post_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- WordPress passes these first.
+			return current_user_can( 'edit_post', (int) $post_id );
 		};
 		foreach ( PostTypes::names() as $type ) {
 			register_post_meta(
@@ -42,7 +49,7 @@ final class BlockSupport {
 					'single'        => true,
 					'default'       => false,
 					'show_in_rest'  => true,
-					'auth_callback' => $auth,
+					'auth_callback' => $own_post,
 				)
 			);
 			register_post_meta(
@@ -54,26 +61,37 @@ final class BlockSupport {
 					'default'           => '',
 					'show_in_rest'      => true,
 					'sanitize_callback' => 'sanitize_textarea_field',
-					'auth_callback'     => $auth,
+					'auth_callback'     => $manage,
 				)
 			);
 			register_post_meta(
 				$type,
 				AutoShare::META_ACCOUNTS,
 				array(
-					'type'          => 'array',
-					'single'        => true,
-					'default'       => array(),
-					'show_in_rest'  => array(
+					'type'              => 'array',
+					'single'            => true,
+					'default'           => array(),
+					'show_in_rest'      => array(
 						'schema' => array(
 							'type'  => 'array',
 							'items' => array( 'type' => 'string' ),
 						),
 					),
-					'auth_callback' => $auth,
+					'sanitize_callback' => array( self::class, 'sanitize_accounts' ),
+					'auth_callback'     => $manage,
 				)
 			);
 		}
+	}
+
+	/**
+	 * Keeps only the IDs of connected accounts.
+	 *
+	 * @param mixed $value Raw meta value.
+	 */
+	public static function sanitize_accounts( $value ): array {
+		$known = array_column( Accounts::all(), 'id' );
+		return array_values( array_intersect( array_map( 'strval', (array) $value ), $known ) );
 	}
 
 	/**

@@ -331,19 +331,9 @@ class LinkedIn extends AbstractNetwork {
 			}
 		}
 
-		$url = (string) ( $image['url'] ?? '' );
-		if ( '' !== $url ) {
-			$response = wp_remote_get( $url, array( 'timeout' => 30 ) );
-			if ( ! is_wp_error( $response ) && 200 === (int) wp_remote_retrieve_response_code( $response ) ) {
-				$bytes = (string) wp_remote_retrieve_body( $response );
-				$mime  = strtok( (string) wp_remote_retrieve_header( $response, 'content-type' ), ';' );
-				if ( '' !== $bytes ) {
-					return array(
-						'bytes' => $bytes,
-						'mime'  => $mime ? trim( $mime ) : 'image/jpeg',
-					);
-				}
-			}
+		$file = $this->fetch_image( (string) ( $image['url'] ?? '' ) );
+		if ( $file ) {
+			return $file;
 		}
 
 		throw new NetworkException( 'media', esc_html__( 'An image of the post could not be read, so it was not sent to LinkedIn.', 'social-integrations' ) );

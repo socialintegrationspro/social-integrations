@@ -41,8 +41,11 @@ When you connect LinkedIn and when a share runs, the plugin sends the caption, t
 Terms: https://www.linkedin.com/legal/user-agreement — Privacy: https://www.linkedin.com/legal/privacy-policy
 
 = Bluesky =
-When you connect Bluesky and when a share runs, the plugin sends your handle, your app password (to sign in), the caption, the post link and the selected images to bsky.social.
+When you connect Bluesky and when a share runs, the plugin sends your handle, your app password (to sign in), the caption, the post link and the selected images to bsky.social. To show the account name and picture, it sends the account ID to public.api.bsky.app.
 Terms: https://bsky.social/about/support/tos — Privacy: https://bsky.social/about/support/privacy-policy
+
+= Link previews and images =
+For a Bluesky link card, the plugin gets the page of the shared link to read its title, description and image. When a post holds an image from another site, the plugin gets that image to send it to the network. These requests go to the site of the link or the image. They do not send your data.
 
 = Telegram Bot API =
 When you connect Telegram and when a share runs, the plugin sends the caption, the post link and the selected images to api.telegram.org.
@@ -50,6 +53,10 @@ Terms: https://telegram.org/tos — Privacy: https://telegram.org/privacy
 
 = AI providers =
 Only when you enter your own API key and select "Write with AI", the plugin sends the post title, excerpt and text to the provider you selected: OpenAI (api.openai.com, terms https://openai.com/policies/terms-of-use, privacy https://openai.com/policies/privacy-policy), Google Gemini (generativelanguage.googleapis.com, terms https://ai.google.dev/gemini-api/terms, privacy https://policies.google.com/privacy) or Anthropic (api.anthropic.com, terms https://www.anthropic.com/legal/consumer-terms, privacy https://www.anthropic.com/legal/privacy).
+
+== Credits ==
+
+The admin screens use the Plus Jakarta Sans font, included in the plugin (SIL Open Font License 1.1). The plugin does not load fonts from other sites.
 
 == Installation ==
 

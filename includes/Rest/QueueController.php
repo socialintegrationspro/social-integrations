@@ -180,13 +180,19 @@ final class QueueController extends RestController {
 		if ( ! $job ) {
 			return $this->error( 'not_found', __( 'This share does not exist.', 'social-integrations' ), 404 );
 		}
-		Queue::update(
+		// Only a failed share goes again, so a sent share or one that is being sent is not
+		// posted twice.
+		$reset = Queue::update(
 			$job['id'],
 			array(
 				'status'       => 'scheduled',
 				'scheduled_at' => current_time( 'mysql', true ),
-			)
+			),
+			'failed'
 		);
+		if ( ! $reset ) {
+			return $this->error( 'not_failed', __( 'Only a failed share can be sent again.', 'social-integrations' ), 409 );
+		}
 		if ( ! Queue::claim( $job['id'] ) ) {
 			return $this->error( 'sending', __( 'This share is being sent now.', 'social-integrations' ), 409 );
 		}

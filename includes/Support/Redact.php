@@ -20,7 +20,12 @@ final class Redact {
 	/**
 	 * Parts of a key name that mark a secret value.
 	 */
-	const SECRET_KEYS = '/token|secret|password|passwd|authorization|api[_-]?key|apikey|signature|cookie|session|credential|refresh|code_verifier/i';
+	const SECRET_KEYS = '/token|secret|password|passwd|authorization|api[_-]?key|apikey|signature|cookie|session|credential|refresh|code_verifier|jwt|bearer/i';
+
+	/**
+	 * A JSON Web Token, whatever its key is called.
+	 */
+	const JWT = '/\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/';
 
 	/**
 	 * A URL without secret query values or a bot token in its path.
@@ -56,6 +61,8 @@ final class Redact {
 		foreach ( $data as $key => $value ) {
 			if ( is_string( $key ) && preg_match( self::SECRET_KEYS, $key ) && ! is_array( $value ) ) {
 				$data[ $key ] = self::HIDDEN;
+			} elseif ( is_string( $value ) ) {
+				$data[ $key ] = (string) preg_replace( self::JWT, self::HIDDEN, $value );
 			} else {
 				$data[ $key ] = self::data( $value );
 			}
@@ -78,6 +85,7 @@ final class Redact {
 			return strlen( $text ) > $max ? substr( $text, 0, $max ) . '…' : $clean;
 		}
 		// An HTML error page keeps only its text, on one line.
+		$body = (string) preg_replace( self::JWT, self::HIDDEN, $body );
 		$body = trim( (string) preg_replace( '/\s+/', ' ', html_entity_decode( wp_strip_all_tags( $body ), ENT_QUOTES, 'UTF-8' ) ) );
 		return strlen( $body ) > $max ? substr( $body, 0, $max ) . '…' : $body;
 	}

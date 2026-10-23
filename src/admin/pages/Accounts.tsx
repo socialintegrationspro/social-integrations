@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'r
 import { Header, type PageProps } from '../App'
 import { AccountAvatar, CopyField, Icon, Modal, NetBadge, useToast } from '../components/ui'
 import { api } from '../lib/api'
+import { config } from '../lib/config'
 import { fmtDate } from '../lib/format'
 import { applyFilters } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
@@ -18,7 +19,8 @@ export function AccountsPage({ params, go }: PageProps) {
   const { networks, accounts, network, reload, redirectUri } = useStore()
   const toast = useToast()
   const [connecting, setConnecting] = useState<Network | null>(null)
-  const [error, setError] = useState(params.get('error') ?? '')
+  // The URL only flags an error; the text comes from the server, so a link cannot set it.
+  const [error, setError] = useState(params.get('error') ? config.oauthError : '')
   const pick = params.get('pick')
 
   useEffect(() => {

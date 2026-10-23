@@ -37,6 +37,7 @@ final class OAuth {
 	const CALLBACK_PATH   = 'social-integrations/oauth/callback';
 	const STATE_PREFIX    = 'sint_oauth_state_';
 	const PENDING_PREFIX  = 'sint_oauth_pending_';
+	const ERROR_PREFIX    = 'sint_oauth_error_';
 	const STATE_TTL       = 10 * MINUTE_IN_SECONDS;
 	const PENDING_TTL     = 15 * MINUTE_IN_SECONDS;
 	const NETWORK_PATTERN = '(?P<network>[a-z0-9_-]+)';
@@ -379,12 +380,32 @@ final class OAuth {
 	/**
 	 * Redirects to the accounts screen of the admin app and stops.
 	 *
+	 * An error message stays on the server for the current user, and the URL only says that
+	 * there is one. A link from someone else cannot put its own text on the screen.
+	 *
 	 * @param string $param 'connected', 'pick' or 'error'.
 	 * @param string $value Network key, or the error message.
 	 */
 	private function finish( string $param, string $value ): void {
+		if ( 'error' === $param ) {
+			set_transient( self::ERROR_PREFIX . get_current_user_id(), $value, 5 * MINUTE_IN_SECONDS );
+			$value = '1';
+		}
 		wp_safe_redirect( admin_url( 'admin.php?page=social-integrations#/accounts?' . $param . '=' . rawurlencode( $value ) ) );
 		exit;
+	}
+
+	/**
+	 * The sign-in error for the current user, once. Empty when there is none.
+	 */
+	public static function take_error(): string {
+		$key     = self::ERROR_PREFIX . get_current_user_id();
+		$message = get_transient( $key );
+		if ( false === $message ) {
+			return '';
+		}
+		delete_transient( $key );
+		return (string) $message;
 	}
 
 	/**

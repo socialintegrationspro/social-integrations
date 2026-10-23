@@ -24,8 +24,9 @@ $sint_uninstall = static function () {
 	delete_post_meta_by_key( '_sint_caption' );
 	delete_post_meta_by_key( '_sint_accounts' );
 
-	wp_clear_scheduled_hook( 'sint_run_queue' );
-	wp_clear_scheduled_hook( 'sint_prune_logs' );
+	wp_unschedule_hook( 'sint_run_queue' );
+	wp_unschedule_hook( 'sint_auto_share_post' );
+	wp_unschedule_hook( 'sint_prune_logs' );
 };
 
 if ( is_multisite() ) {

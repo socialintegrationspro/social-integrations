@@ -40,7 +40,10 @@ final class Assets {
 		}
 
 		$deps = (array) apply_filters( Hooks::ADMIN_SCRIPT_DEPENDENCIES, array( 'wp-hooks', 'wp-i18n' ) );
-		$dev  = defined( 'SINT_DEV_SERVER' ) ? untrailingslashit( (string) SINT_DEV_SERVER ) : '';
+		// The Vite dev server is for local development only. On any other site the plugin
+		// loads only its own build/ files.
+		$local = in_array( wp_get_environment_type(), array( 'local', 'development' ), true );
+		$dev   = $local && defined( 'SINT_DEV_SERVER' ) ? untrailingslashit( (string) SINT_DEV_SERVER ) : '';
 
 		if ( $dev ) {
 			// React Fast Refresh expects this preamble before the app module loads.
@@ -113,6 +116,7 @@ final class Assets {
 				'gmtOffset'   => (float) get_option( 'gmt_offset' ),
 				'weekStart'   => (int) get_option( 'start_of_week', 1 ),
 				'redirectUri' => OAuth::redirect_uri(),
+				'oauthError'  => OAuth::take_error(),
 				'ai'          => array( 'ready' => null !== Providers::current() ),
 				'user'        => array(
 					'name'   => $user->display_name,

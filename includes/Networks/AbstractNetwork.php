@@ -30,6 +30,11 @@ abstract class AbstractNetwork {
 	const TRACE_MAX = 10;
 
 	/**
+	 * Largest image that fetch_image() downloads, in bytes.
+	 */
+	const MAX_IMAGE = 15 * MB_IN_BYTES;
+
+	/**
 	 * Requests since the last take_trace(), without secrets, for the share log.
 	 *
 	 * @var array[]
@@ -292,6 +297,39 @@ abstract class AbstractNetwork {
 			throw new NetworkException( $this->error_code( $code, $body ), esc_html( $this->error_message( $code, $body ) ), $code, $body ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 		return $body;
+	}
+
+	/**
+	 * Downloads an image from a URL in the post. wp_safe_remote_get() refuses private and
+	 * local addresses, also after a redirect, so a URL in a post cannot reach the server's
+	 * own network. Only an image up to MAX_IMAGE bytes is returned.
+	 *
+	 * @param string $url Image URL.
+	 * @return array|null ['bytes', 'mime'], or null when the URL gives no usable image.
+	 */
+	protected function fetch_image( string $url ): ?array {
+		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
+			return null;
+		}
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'timeout'             => 30,
+				'limit_response_size' => self::MAX_IMAGE,
+			)
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return null;
+		}
+		$bytes = (string) wp_remote_retrieve_body( $response );
+		$info  = '' !== $bytes && strlen( $bytes ) < self::MAX_IMAGE ? getimagesizefromstring( $bytes ) : false;
+		if ( ! $info || empty( $info['mime'] ) ) {
+			return null;
+		}
+		return array(
+			'bytes' => $bytes,
+			'mime'  => (string) $info['mime'],
+		);
 	}
 
 	/**
