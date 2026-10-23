@@ -3,7 +3,7 @@ import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, copyText, Empty, Icon, Modal, NetBadge, Pagination, usePageSize, useToast } from '../components/ui'
 import { api, query } from '../lib/api'
 import { fmtStamp, siteParts } from '../lib/format'
-import { applyFilters } from '../lib/hooks'
+import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { LogEntry, LogPage as LogData, LogRequest, LogShare, LogTry } from '../lib/types'
@@ -44,8 +44,6 @@ const retryable = (shares: LogShare[]) => shares.filter((s) => s.status === 'fai
 export function LogPage({ params, go }: PageProps) {
   const { network, accounts } = useStore()
   const toast = useToast()
-  const [data, setData] = useState<LogData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<'' | 'failed'>('')
   const [typed, setTyped] = useState('')
   const [search, setSearch] = useState('')
@@ -61,7 +59,6 @@ export function LogPage({ params, go }: PageProps) {
   // Entries checked for bulk delete, and the delete that waits for a second click.
   const [selected, setSelected] = useState<string[]>([])
   const [armed, setArmed] = useState('')
-  const request = useRef(0)
   // The first row opens once, when the log first loads.
   const firstOpened = useRef(false)
   const campaign = params.get('campaign') ?? ''
@@ -86,31 +83,16 @@ export function LogPage({ params, go }: PageProps) {
     setArmed('')
   }, [page, campaign, status, search, from, to, size])
 
-  const load = () => {
-    const id = ++request.current
-    setLoading(true)
-    return api
-      .get<LogData>(`logs?${query({ page, per_page: size, campaign, status, search, from, to })}`)
-      .then(
-        (r) => {
-          if (id !== request.current) return
-          setData(r.data)
-          if (!firstOpened.current && r.data.items[0]) {
-            firstOpened.current = true
-            setOpen({ [r.data.items[0].key]: true })
-          }
-        },
-        (e) => {
-          if (id === request.current) toast((e as Error).message, true)
-        },
-      )
-      .finally(() => {
-        if (id === request.current) setLoading(false)
-      })
-  }
+  const log = useFetch<LogData>(`logs?${query({ page, per_page: size, campaign, status, search, from, to })}`)
+  const { data, loading, reload: load } = log
   useEffect(() => {
-    load()
-  }, [page, size, campaign, status, search, from, to])
+    if (!loading && log.error) toast(log.error, true)
+  }, [loading])
+  useEffect(() => {
+    if (firstOpened.current || !data?.items[0]) return
+    firstOpened.current = true
+    setOpen({ [data.items[0].key]: true })
+  }, [data])
 
   const names = new Map((data?.campaigns ?? []).map((c) => [c.key, c]))
   const setCampaign = (key: string) => go(key ? `log?campaign=${encodeURIComponent(key)}` : 'log')
@@ -281,7 +263,7 @@ export function LogPage({ params, go }: PageProps) {
           <div className="sint-log-filter-set">
             {(data?.campaigns.length ?? 0) > 0 && (
               <label className={`sint-filter${campaign ? ' on' : ''}`}>
-                <Icon name="content" size={16} />
+                <Icon name="campaign" size={16} />
                 <span className="sint-sr">{__('Campaign', 'social-integrations')}</span>
                 <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
                   <option value="">{__('All campaigns', 'social-integrations')}</option>
@@ -454,18 +436,12 @@ export function LogPage({ params, go }: PageProps) {
 function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; entry: LogEntry; campaign: string; onClose: () => void }) {
   const { network, accounts } = useStore()
   const toast = useToast()
-  const [tries, setTries] = useState<LogTry[] | null>(null)
-  const [error, setError] = useState('')
+  const fetched = useFetch<LogTry[]>(`logs/${share.id}/tries`)
+  const tries = fetched.stale ? null : fetched.data
+  const error = fetched.error
   const [copied, setCopied] = useState(false)
   const acct = accounts.find((a) => a.id === share.account_id)
   const net = network(share.network)
-
-  useEffect(() => {
-    api.get<LogTry[]>(`logs/${share.id}/tries`).then(
-      (r) => setTries(r.data),
-      (e) => setError((e as Error).message),
-    )
-  }, [share.id])
 
   const copy = async () => {
     const text = JSON.stringify({ account: acct?.name ?? share.account_id, network: share.network, campaign, post: entry.post_title || entry.excerpt, tries }, null, 2)

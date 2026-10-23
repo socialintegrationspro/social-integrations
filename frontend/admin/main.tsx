@@ -11,13 +11,14 @@ import { api, createApi } from './lib/api'
 import * as baseUi from './components/ui'
 import { TemplateEditor } from './components/TemplateEditor'
 import * as format from './lib/format'
+import { useFetch } from './lib/hooks'
 import { useStore } from './lib/store'
 import { applyTheme, initialTheme } from './lib/theme'
 
 // Shared with scripts that extend the app through `wp.hooks`, so their
 // components use the same React instance.
 const ui = { ...baseUi, TemplateEditor }
-;(window as unknown as { sintApp: unknown }).sintApp = { React, api, createApi, ui, format, useStore }
+;(window as unknown as { sintApp: unknown }).sintApp = { React, api, createApi, ui, format, useStore, useFetch }
 
 const mount = () => {
   const el = document.getElementById('sint-app')

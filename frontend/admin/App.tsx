@@ -36,7 +36,7 @@ function Shell() {
   const routes = applyFilters<RouteDef[]>('sint.routes', [
     { path: 'dashboard', label: __('Dashboard', 'social-integrations'), icon: 'dashboard', component: DashboardPage },
     { path: 'calendar', label: __('Calendar', 'social-integrations'), icon: 'calendar', component: CalendarPage },
-    { path: 'campaigns', label: __('Campaigns', 'social-integrations'), icon: 'content', component: CampaignsPage },
+    { path: 'campaigns', label: __('Campaigns', 'social-integrations'), icon: 'campaign', component: CampaignsPage },
     { path: 'accounts', label: __('Accounts', 'social-integrations'), icon: 'accounts', component: AccountsPage },
     { path: 'log', label: __('Share log', 'social-integrations'), icon: 'log', component: LogPage },
     { path: 'settings', label: __('Settings', 'social-integrations'), icon: 'settings', component: SettingsPage, bottom: true },

@@ -91,6 +91,15 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-root a:hover { color: var(--link-hover); }
 .sint-root button, .sint-root input, .sint-root select, .sint-root textarea { font: inherit; color: inherit; }
 .sint-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* All scroll areas use the same thin scrollbar. Later rules, such as the one for .sint-nav, can hide it. */
+.sint-root, .sint-root * { scrollbar-width: thin; scrollbar-color: var(--hover-border) transparent; }
+@supports not (scrollbar-color: auto) {
+  .sint-root ::-webkit-scrollbar { width: 8px; height: 8px; }
+  .sint-root ::-webkit-scrollbar-track { background: transparent; }
+  .sint-root ::-webkit-scrollbar-thumb { background: var(--hover-border); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+}
+/* Text fields show focus with their border ring, or with the ring of the box around them. */
+.sint-root input:not([type='checkbox']):not([type='radio']):focus-visible, .sint-root select:focus-visible, .sint-root textarea:focus-visible { outline: none; }
 .sint-root input[type='checkbox'] { accent-color: var(--ink); width: 16px; height: 16px; min-width: 16px; margin: 0; appearance: auto; -webkit-appearance: checkbox; }
 /* wp-admin draws its own check mark on small screens; the native box has one already. */
 .sint-root input[type='checkbox']:checked::before { content: none; }
@@ -209,12 +218,11 @@ body.sint-admin-page #wpfooter { display: none; }
   /* Calendar: the panel stops scrolling. The toolbar and weekday row stay; the grid and the account list scroll independently. */
   .sint-main:has(> .sint-cal-layout) { overflow: hidden; }
   .sint-root .sint-cal-layout { flex-wrap: nowrap; min-height: 0; }
-  .sint-root .sint-cal-side { overflow-y: auto; scrollbar-width: thin; }
+  .sint-root .sint-cal-side { overflow-y: auto; }
   .sint-root .sint-cal-main { min-height: 0; }
-  .sint-root .sint-cal-body { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--hover-border) transparent; margin-right: -8px; padding-right: 8px; }
+  .sint-root .sint-cal-body { flex: 1; min-height: 0; overflow: auto; margin-right: -8px; padding-right: 8px; }
   .sint-week.head { position: sticky; top: 0; z-index: 3; }
 }
-.sint-main { scrollbar-width: thin; scrollbar-color: var(--hover-border) transparent; }
 
 /* Desktop keeps the top bar on one row: below 1280px the brand and Settings show only their icons,
    and below 1100px the nav removes its icons. A nav that is still too wide scrolls sideways. */
@@ -314,7 +322,21 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-root select.sint-select option { background: var(--panel); color: var(--text); }
 .sint-root input.sint-input:hover, .sint-root select.sint-select:hover, .sint-root textarea.sint-textarea:hover { border-color: var(--hover-border); }
 .sint-root input.sint-input:focus, .sint-root select.sint-select:focus, .sint-root textarea.sint-textarea:focus { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
-.sint-root .sint-search input, .sint-root .sint-search input:focus { border: 0; box-shadow: none; background: transparent; color: var(--text); min-height: 0; padding: 0; }
+
+/* The open list of a select looks like .sint-menu where the browser can style it. Other browsers show their own list. */
+@supports (appearance: base-select) {
+  .sint-root select.sint-select, .sint-root .sint-filter select, .sint-root select.sint-select::picker(select), .sint-root .sint-filter select::picker(select) { appearance: base-select; }
+  .sint-root select.sint-select, .sint-root .sint-filter select { display: inline-flex; align-items: center; }
+  .sint-root select.sint-select::picker-icon, .sint-root .sint-filter select::picker-icon { display: none; }
+  .sint-root select.sint-select::picker(select), .sint-root .sint-filter select::picker(select) { margin-top: 6px; padding: 6px; min-width: anchor-size(width); max-height: min(320px, 60vh); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--hover-border) transparent; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.28); }
+  .sint-root select.sint-select option, .sint-root .sint-filter select option { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 999px; background: transparent; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .sint-root select.sint-select option::checkmark, .sint-root .sint-filter select option::checkmark { display: none; }
+  .sint-root select.sint-select option:hover, .sint-root select.sint-select option:focus-visible, .sint-root .sint-filter select option:hover, .sint-root .sint-filter select option:focus-visible { background: var(--raised); outline: none; box-shadow: inset 0 0 0 1px var(--border); }
+  .sint-root select.sint-select option:checked, .sint-root .sint-filter select option:checked { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+  .sint-root select.sint-select option:disabled, .sint-root .sint-filter select option:disabled { opacity: 0.45; cursor: default; }
+}
+.sint-root .sint-search input, .sint-root .sint-search input:focus, .sint-root .sint-search input:focus-visible { border: 0; outline: 0; box-shadow: none; background: transparent; color: var(--text); min-height: 0; padding: 0; }
+.sint-root .sint-search:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 .sint-root textarea { color: var(--text); }
 .sint-root ::placeholder { color: var(--faint); opacity: 1; }
 .sint-root textarea:focus { box-shadow: none; }
@@ -441,6 +463,13 @@ body.folded .sint-overlay { left: 36px; }
 .sint-modal.narrow { flex: 0 1 520px; margin: auto; max-height: 100%; }
 .sint-modal-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px dashed var(--hover-border); flex-wrap: wrap; }
 .sint-modal-head h2 { font-size: 24px; font-weight: 400; letter-spacing: -0.03em; }
+/* Narrow screens: the title and the Close button share the first row; tabs get a full row below. */
+@media (max-width: 600px) {
+  .sint-modal-head { gap: 10px; padding: 16px; }
+  .sint-modal-head > :not(h2):not(.sint-icon-btn) { order: 2; }
+  .sint-modal-head > .sint-seg { display: flex; flex: 1 1 100%; }
+  .sint-modal-head > .sint-seg button { flex: 1; justify-content: center; padding: 0 8px; white-space: nowrap; }
+}
 .sint-modal-body { flex: 1; overflow: auto; min-height: 0; }
 .sint-modal-foot { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px dashed var(--hover-border); flex-wrap: wrap; }
 

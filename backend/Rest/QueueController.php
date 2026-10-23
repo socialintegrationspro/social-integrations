@@ -224,13 +224,7 @@ final class QueueController extends RestController {
 		$args = $this->log_args( $request );
 		$page = Queue::log_entries( $args );
 		// How many entries have a failed share, with the same other filters, for the Failed button.
-		$failed = 'failed' === $args['status'] ? $page['total'] : Queue::log_entries(
-			array(
-				'status'   => 'failed',
-				'page'     => 1,
-				'per_page' => 1,
-			) + $args
-		)['total'];
+		$failed = 'failed' === $args['status'] ? $page['total'] : Queue::count_log_entries( array( 'status' => 'failed' ) + $args );
 
 		$items = array();
 		foreach ( $page['entries'] as $batch => $shares ) {

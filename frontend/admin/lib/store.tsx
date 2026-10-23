@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api } from './api'
+import { config } from './config'
 import type { Account, Network, PostType } from './types'
 
 interface Store {
@@ -14,12 +15,16 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null)
 
+// The page gives the first data, so the app does not wait for three requests.
+const boot = config.store
+const booted = !!(boot?.networks && boot.accounts && boot['post-types'])
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [networks, setNetworks] = useState<Network[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [postTypes, setPostTypes] = useState<PostType[]>([])
-  const [redirectUri, setRedirectUri] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [networks, setNetworks] = useState<Network[]>(boot?.networks?.networks ?? [])
+  const [accounts, setAccounts] = useState<Account[]>(boot?.accounts ?? [])
+  const [postTypes, setPostTypes] = useState<PostType[]>(boot?.['post-types'] ?? [])
+  const [redirectUri, setRedirectUri] = useState(boot?.networks?.redirect_uri ?? '')
+  const [loading, setLoading] = useState(!booted)
 
   const reload = useCallback(async () => {
     const [n, a, p] = await Promise.all([
@@ -35,7 +40,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    reload().catch(() => setLoading(false))
+    if (!booted) reload().catch(() => setLoading(false))
   }, [reload])
 
   const network = useCallback((key: string) => networks.find((n) => n.key === key), [networks])

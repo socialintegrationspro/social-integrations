@@ -11,15 +11,20 @@ export function useContentSearch() {
   const [type, setType] = useState('any')
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<ContentItem[]>([])
+  // False until the first answer, so the list does not show "no posts" while it loads.
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
-      api.get<ContentItem[]>(`content?${query({ type, search, per_page: 8 })}`).then((r) => setResults(r.data), () => setResults([]))
+      api
+        .get<ContentItem[]>(`content?${query({ type, search, per_page: 8 })}`)
+        .then((r) => setResults(r.data), () => setResults([]))
+        .finally(() => setLoaded(true))
     }, 250)
     return () => clearTimeout(t)
   }, [type, search])
 
-  return { type, setType, search, setSearch, results }
+  return { type, setType, search, setSearch, results, loaded }
 }
 
 interface Props {
@@ -30,12 +35,12 @@ interface Props {
 }
 
 /** The "From your site" column: search posts of any type and select one to share. */
-export function ContentPicker({ search: { type, setType, search, setSearch, results }, postId, onPick, onClear }: Props) {
+export function ContentPicker({ search: { type, setType, search, setSearch, results, loaded }, postId, onPick, onClear }: Props) {
   const { postTypes } = useStore()
   const types = postTypes.map((t) => t.name)
 
   return (
-    <aside style={{ flex: '1 1 280px', maxWidth: 320, borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+    <aside style={{ flex: '1 1 280px', borderRight: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
       <div className="sint-label">{__('From your site', 'social-integrations')}</div>
       <label className="sint-search" style={{ minWidth: 0 }}>
         <Icon name="search" size={16} stroke={2} />
@@ -64,6 +69,11 @@ export function ContentPicker({ search: { type, setType, search, setSearch, resu
             </span>
           </button>
         ))}
+        {loaded && results.length === 0 && (
+          <p className="sint-sub" style={{ fontSize: 13, padding: '8px 4px' }}>
+            {search.trim() ? __('No posts match the search.', 'social-integrations') : __('There are no posts yet.', 'social-integrations')}
+          </p>
+        )}
       </div>
       {postId && (
         <button type="button" className="sint-btn ghost sm" onClick={onClear}>

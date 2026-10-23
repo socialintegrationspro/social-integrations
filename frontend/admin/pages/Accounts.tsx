@@ -4,7 +4,7 @@ import { AccountAvatar, CopyField, Icon, Modal, NetBadge, useToast } from '../co
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate } from '../lib/format'
-import { applyFilters } from '../lib/hooks'
+import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { Account, Network } from '../lib/types'
@@ -211,11 +211,11 @@ function ConnectModal({ network, redirectUri, onClose, onDone }: { network: Netw
 
 function PickEntity({ network, onClose, onDone }: { network: Network; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
-  const [entities, setEntities] = useState<Entity[] | null>(null)
-  const [error, setError] = useState('')
-  useEffect(() => {
-    api.get<Entity[]>(`oauth/${network.key}/entities`).then((r) => setEntities(r.data), (e) => setError((e as Error).message))
-  }, [network.key])
+  const fetched = useFetch<Entity[]>(`oauth/${network.key}/entities`)
+  const entities = fetched.stale ? null : fetched.data
+  const loadError = fetched.error
+  const [chooseError, setError] = useState('')
+  const error = chooseError || loadError
   const choose = async (e: Entity) => {
     try {
       await api.post(`oauth/${network.key}/entities`, { remote_id: e.remote_id })

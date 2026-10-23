@@ -1,3 +1,5 @@
+import type { Account, Network, PostType } from './types'
+
 export interface SintConfig {
   restUrl: string
   nonce: string
@@ -11,6 +13,12 @@ export interface SintConfig {
   user: { name: string }
   /** Whether an AI provider and its key are set. */
   ai: { ready: boolean }
+  /** The answers of these GET routes when the page loaded, or null for a route that failed. */
+  store?: {
+    networks: { networks: Network[]; redirect_uri: string } | null
+    accounts: Account[] | null
+    'post-types': PostType[] | null
+  }
 }
 
 /** The parts of a wp.media frame the composer uses. */

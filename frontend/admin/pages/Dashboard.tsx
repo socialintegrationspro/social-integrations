@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { m } from 'motion/react'
 import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, Icon, NetBadge, Segmented } from '../components/ui'
-import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtStamp } from '../lib/format'
+import { useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { DashboardData } from '../lib/types'
@@ -17,20 +17,9 @@ type Period = '7' | '30'
 export function DashboardPage({ openComposer, go }: PageProps) {
   const { accounts, network } = useStore()
   const [period, setPeriod] = useState<Period>('7')
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    let live = true
-    setError(false)
-    api.get<DashboardData>(`dashboard?days=${period}`).then(
-      (r) => live && setData(r.data),
-      () => live && setError(true),
-    )
-    return () => {
-      live = false
-    }
-  }, [period])
+  const fetched = useFetch<DashboardData>(`dashboard?days=${period}`)
+  const data = fetched.data
+  const error = !!fetched.error
 
   const account = (id: string) => accounts.find((a) => a.id === id)
   const expired = accounts.filter((a) => a.status === 'expired')
@@ -94,7 +83,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
               <m.div variants={rise} className="sint-strip-wrap"><StatusStrip totals={t} /></m.div>
               <m.dl className="sint-stats" variants={rise}>
                 <div>
-                  <dt><Icon name="content" size={16} />{__('Active campaigns', 'social-integrations')}</dt>
+                  <dt><Icon name="campaign" size={16} />{__('Active campaigns', 'social-integrations')}</dt>
                   <dd><CountUp value={data.campaigns.active} /></dd>
                 </div>
                 <div>

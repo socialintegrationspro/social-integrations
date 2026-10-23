@@ -92,6 +92,7 @@ final class Migrations {
 				updated_at datetime NOT NULL,
 				PRIMARY KEY  (id),
 				KEY status_scheduled (status, scheduled_at),
+				KEY scheduled_at (scheduled_at),
 				KEY post_id (post_id),
 				KEY campaign_id (campaign_id),
 				KEY campaign_key (campaign_key),

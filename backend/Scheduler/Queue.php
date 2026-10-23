@@ -239,6 +239,11 @@ final class Queue {
 	}
 
 	/**
+	 * The entry key of a log row: its batch ID, or 'l' and the row ID when the row has no batch.
+	 */
+	const LOG_BATCH = "COALESCE(NULLIF(q.batch_id, ''), CONCAT('l', l.id))";
+
+	/**
 	 * One page of the share log, as entries: the shares of one batch, newest entry first.
 	 * Each share is its newest log row, with the number of times it was tried.
 	 *
@@ -248,51 +253,85 @@ final class Queue {
 	 */
 	public static function log_entries( array $args ): array {
 		global $wpdb;
-		$sql = self::log_entries_sql( $args );
+		$shares = self::log_shares_sql( $args );
+		$batch  = self::LOG_BATCH;
+		$per    = max( 1, (int) ( $args['per_page'] ?? 10 ) );
+		$offset = ( max( 1, (int) ( $args['page'] ?? 1 ) ) - 1 ) * $per;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-		$total   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT batch_id) FROM ({$sql}) s" );
-		$per     = max( 1, (int) ( $args['per_page'] ?? 10 ) );
-		$offset  = ( max( 1, (int) ( $args['page'] ?? 1 ) ) - 1 ) * $per;
-		$batches = $wpdb->get_col( $wpdb->prepare( "SELECT batch_id FROM ({$sql}) s GROUP BY batch_id ORDER BY MAX(id) DESC LIMIT %d OFFSET %d", $per, $offset ) );
+		// The alias is not a column name: GROUP BY uses a column before an alias of the same name.
+		$batches = $wpdb->get_col( $wpdb->prepare( "SELECT {$batch} AS entry_key {$shares} GROUP BY entry_key ORDER BY MAX(l.id) DESC LIMIT %d OFFSET %d", $per, $offset ) );
 		$entries = array();
 		if ( $batches ) {
-			$in = implode( ',', array_map( array( $wpdb, 'prepare' ), array_fill( 0, count( $batches ), '%s' ), $batches ) );
-			foreach ( (array) $wpdb->get_results( "SELECT * FROM ({$sql}) s WHERE batch_id IN ({$in}) ORDER BY id DESC", ARRAY_A ) as $row ) {
+			// The rows of this page only: a batch ID comes from the queue row, an 'l' key is a log row ID.
+			$ids  = array();
+			$keys = array();
+			foreach ( $batches as $key ) {
+				if ( preg_match( '/^l(\d+)$/', $key, $m ) ) {
+					$ids[] = (int) $m[1];
+				} else {
+					$keys[] = $wpdb->prepare( '%s', $key );
+				}
+			}
+			$in   = array();
+			$in[] = $keys ? 'q.batch_id IN (' . implode( ',', $keys ) . ')' : '';
+			$in[] = $ids ? 'l.id IN (' . implode( ',', $ids ) . ')' : '';
+			$rows = $wpdb->get_results(
+				"SELECT l.id, l.queue_id, l.post_id, l.network, l.account_id, l.status, l.message, l.remote_url, l.created_at, t.tries,
+					{$batch} AS batch_id, COALESCE(q.campaign_key, '') AS campaign_key, COALESCE(q.caption, '') AS caption
+				{$shares} AND (" . implode( ' OR ', array_filter( $in ) ) . ') ORDER BY l.id DESC',
+				ARRAY_A
+			);
+			foreach ( (array) $rows as $row ) {
 				$entries[ $row['batch_id'] ][] = $row;
 			}
 		}
 		// phpcs:enable
 		// Keep the order of the page: the newest entry first.
 		$ordered = array();
-		foreach ( $batches as $batch ) {
-			$ordered[ $batch ] = $entries[ $batch ] ?? array();
+		foreach ( $batches as $key ) {
+			$ordered[ $key ] = $entries[ $key ] ?? array();
 		}
 		return array(
-			'total'   => $total,
+			'total'   => self::count_log_entries( $args ),
 			'entries' => $ordered,
 		);
 	}
 
 	/**
-	 * The SQL for the share log rows that match the filters: one row for each share,
-	 * which is its newest log row, with the number of times it was tried.
+	 * The number of share log entries that match the filters of log_entries().
+	 *
+	 * @param array $args The filters of log_entries().
+	 */
+	public static function count_log_entries( array $args ): int {
+		global $wpdb;
+		$batch = self::LOG_BATCH;
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT {$batch}) " . self::log_shares_sql( $args ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	/**
+	 * FROM and WHERE for the share log rows that match the filters: one row for each share,
+	 * which is its newest log row, with the number of tries in t.tries. A log row without
+	 * a queue row is its own share.
 	 *
 	 * @param array $args The filters of log_entries(): 'campaign', 'status', 'search', 'from', 'to'.
 	 * @return string Prepared SQL.
 	 */
-	private static function log_entries_sql( array $args ): string {
+	private static function log_shares_sql( array $args ): string {
 		global $wpdb;
-		$logs  = Migrations::logs_table();
-		$queue = Migrations::queue_table();
-		// A log row without a queue row is its own share and batch.
-		$shares = "SELECT l.id, l.queue_id, l.post_id, l.network, l.account_id, l.status, l.message, l.remote_url, l.created_at, t.tries,
-				COALESCE(NULLIF(q.batch_id, ''), CONCAT('l', l.id)) AS batch_id, COALESCE(q.campaign_key, '') AS campaign_key, COALESCE(q.caption, '') AS caption
-			FROM {$logs} l
-			JOIN (SELECT MAX(id) AS id, COUNT(*) AS tries FROM {$logs} GROUP BY IF(queue_id > 0, CONCAT('q', queue_id), CONCAT('l', id))) t ON t.id = l.id
-			LEFT JOIN {$queue} q ON q.id = l.queue_id
-			LEFT JOIN {$wpdb->posts} p ON p.ID = l.post_id";
-		$where  = array();
+		$logs   = Migrations::logs_table();
+		$queue  = Migrations::queue_table();
+		$search = (string) ( $args['search'] ?? '' );
+		// The newest row of each queue row comes from the queue_id index. Only a search reads the post title.
+		$sql    = "FROM {$logs} l
+			JOIN (
+				SELECT MAX(id) AS id, COUNT(*) AS tries FROM {$logs} WHERE queue_id > 0 GROUP BY queue_id
+				UNION ALL
+				SELECT id, 1 FROM {$logs} WHERE queue_id = 0
+			) t ON t.id = l.id
+			LEFT JOIN {$queue} q ON q.id = l.queue_id"
+			. ( '' !== $search ? " LEFT JOIN {$wpdb->posts} p ON p.ID = l.post_id" : '' );
+		$where  = array( '1 = 1' );
 		$params = array();
 		if ( '' !== ( $args['campaign'] ?? '' ) ) {
 			$where[]  = "COALESCE(q.campaign_key, '') = %s";
@@ -301,8 +340,8 @@ final class Queue {
 		if ( 'failed' === ( $args['status'] ?? '' ) ) {
 			$where[] = "l.status = 'failed'";
 		}
-		if ( '' !== ( $args['search'] ?? '' ) ) {
-			$like     = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+		if ( '' !== $search ) {
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
 			$where[]  = '(p.post_title LIKE %s OR q.caption LIKE %s)';
 			$params[] = $like;
 			$params[] = $like;
@@ -315,7 +354,7 @@ final class Queue {
 			$where[]  = 'l.created_at < %s';
 			$params[] = $args['to'];
 		}
-		$sql = $shares . ( $where ? ' WHERE ' . implode( ' AND ', $where ) : '' );
+		$sql .= ' WHERE ' . implode( ' AND ', $where );
 		if ( $params ) {
 			$sql = $wpdb->prepare( $sql, $params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}

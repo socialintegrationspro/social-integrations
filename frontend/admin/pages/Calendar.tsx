@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { m } from 'motion/react'
 import { easeOut } from '../lib/motion'
 import { Header, type PageProps } from '../components/Header'
@@ -6,7 +6,7 @@ import { AccountAvatar, Empty, Icon, NetBadge, Segmented, typeColor, useToast } 
 import { api, query } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate, fmtTime, siteParts } from '../lib/format'
-import { applyFilters } from '../lib/hooks'
+import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { QueueItem } from '../lib/types'
@@ -58,7 +58,6 @@ export function CalendarPage({ openComposer }: PageProps) {
     setDir(Math.sign(to - offset))
     setOffset(to)
   }
-  const [items, setItems] = useState<QueueItem[] | null>(null)
   const [hidden, setHidden] = useState<string[]>([])
 
   // Filter `sint.calendar.views`: other plugins add views to the switcher.
@@ -72,14 +71,13 @@ export function CalendarPage({ openComposer }: PageProps) {
   const start = period.start
   const days = useMemo(() => Array.from({ length: period.days }, (_, i) => new Date(start.getTime() + i * DAY_MS)), [start, period.days])
 
-  const load = useCallback(() => {
-    // Request one more day on each side, because the site's time zone moves the edges of the period.
-    const from = new Date(start.getTime() - DAY_MS).toISOString()
-    const to = new Date(start.getTime() + (period.days + 1) * DAY_MS).toISOString()
-    setItems(null)
-    api.get<QueueItem[]>(`queue?${query({ from, to })}`).then((r) => setItems(r.data), () => setItems([]))
-  }, [start, period.days])
-  useEffect(load, [load])
+  // Request one more day on each side, because the site's time zone moves the edges of the period.
+  const from = new Date(start.getTime() - DAY_MS).toISOString()
+  const to = new Date(start.getTime() + (period.days + 1) * DAY_MS).toISOString()
+  const queue = useFetch<QueueItem[]>(`queue?${query({ from, to })}`)
+  // The skeleton shows only for a period that has no data yet. A reload keeps the cards in place.
+  const items = queue.stale ? null : queue.data ?? (queue.error ? [] : null)
+  const load = queue.reload
 
   // The week grid scrolls in its own box. When it shows today, it opens at the current time.
   const body = useRef<HTMLDivElement>(null)
@@ -123,6 +121,7 @@ export function CalendarPage({ openComposer }: PageProps) {
   const remove = async (item: QueueItem) => {
     try {
       await api.del(`queue/${item.id}`)
+      queue.mutate((list) => (list ?? []).filter((i) => i.id !== item.id))
       toast(__('Share deleted.', 'social-integrations'))
       load()
     } catch (e) {

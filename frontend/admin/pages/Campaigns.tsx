@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Header, type PageProps } from '../components/Header'
 import { Empty, Icon, Menu, NetBadge, Pagination, usePaged, useToast, type MenuItem } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtStamp } from '../lib/format'
-import { applyFilters } from '../lib/hooks'
+import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 
@@ -45,15 +45,13 @@ const STATUS: Record<string, { label: () => string; tone: string }> = {
 export function CampaignsPage({ openComposer, go }: PageProps) {
   const { accounts, network } = useStore()
   const toast = useToast()
-  const [items, setItems] = useState<CampaignItem[] | null>(null)
   const [filter, setFilter] = useState('all')
   const [armed, setArmed] = useState('')
   const [busy, setBusy] = useState('')
 
-  const load = () => api.get<CampaignItem[]>('campaigns').then((r) => setItems(r.data), () => setItems([]))
-  useEffect(() => {
-    load()
-  }, [])
+  const campaigns = useFetch<CampaignItem[]>('campaigns')
+  const items = campaigns.data ?? (campaigns.error ? [] : null)
+  const load = campaigns.reload
 
   // Filter `sint.campaigns.actions`: buttons for other campaign types, keyed by type.
   const handlers = applyFilters<Record<string, CampaignActions>>('sint.campaigns.actions', {
@@ -73,8 +71,10 @@ export function CampaignsPage({ openComposer, go }: PageProps) {
     setBusy(keyOf(c))
     try {
       await fn(c)
+      // A deleted campaign leaves the list at once. The list loads again behind it.
+      if (action === 'remove') campaigns.mutate((list) => (list ?? []).filter((x) => keyOf(x) !== keyOf(c)))
       toast(done)
-      await load()
+      load()
     } catch (e) {
       toast((e as Error).message, true)
     }

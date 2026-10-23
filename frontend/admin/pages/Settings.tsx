@@ -3,7 +3,7 @@ import { Header, type PageProps } from '../components/Header'
 import { Toggle, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
-import { applyFilters } from '../lib/hooks'
+import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import type { BlockType, BlockUse, Settings } from '../lib/types'
 
@@ -12,7 +12,7 @@ export function SettingsPage(_props: PageProps) {
   const [settings, setSettings] = useState<Settings | null>(null)
   // The settings as the server last sent them, to tell when there are unsaved changes.
   const [saved, setSaved] = useState('')
-  const [blocks, setBlocks] = useState<BlockType[]>([])
+  const blocks = useFetch<{ blocks: BlockType[] }>('blocks').data?.blocks ?? []
   const [saving, setSaving] = useState(false)
   const [showAll, setShowAll] = useState(false)
   // API keys typed in this visit. The app sends a key once, and the server never sends it back.
@@ -23,7 +23,6 @@ export function SettingsPage(_props: PageProps) {
       setSettings(r.data)
       setSaved(JSON.stringify(r.data))
     })
-    api.get<{ blocks: BlockType[] }>('blocks').then((r) => setBlocks(r.data.blocks))
   }, [])
 
   const dirty = !!settings && (JSON.stringify(settings) !== saved || Object.values(keys).some((k) => k !== ''))
