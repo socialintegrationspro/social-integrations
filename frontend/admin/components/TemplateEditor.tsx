@@ -101,7 +101,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {value.custom_media.map((m, i) => (
             <button key={m.id} type="button" className="sint-media" aria-pressed="true" aria-label={sprintf(__('Remove image %d', 'social-integrations'), i + 1)} onClick={() => onChange({ custom_media: value.custom_media.filter((x) => x.id !== m.id) })}>
-              {m.type === 'image' ? <img src={m.url} alt="" /> : <Icon name="image" size={24} />}
+              {m.type === 'image' ? <img src={m.url} alt="" width={104} height={104} loading="lazy" decoding="async" /> : <Icon name="image" size={24} />}
               <span>{__('Remove', 'social-integrations')}</span>
             </button>
           ))}

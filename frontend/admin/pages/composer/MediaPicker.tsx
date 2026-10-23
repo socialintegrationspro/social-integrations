@@ -34,7 +34,7 @@ export function MediaPicker({ media, chosen, toggle, onAdd, mediaFrom }: Props) 
           const on = order > 0
           return (
             <button key={m.url} type="button" className="sint-media" aria-pressed={on} aria-label={m.alt || sprintf(__('Image %d', 'social-integrations'), i + 1)} onClick={() => toggle(m.url)}>
-              {m.type === 'image' ? <img src={m.url} alt="" /> : <Icon name="image" size={24} />}
+              {m.type === 'image' ? <img src={m.url} alt="" width={104} height={104} loading="lazy" decoding="async" /> : <Icon name="image" size={24} />}
               <span>{on ? `${order} · ` : ''}{mediaLabel(m)}</span>
             </button>
           )

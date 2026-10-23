@@ -921,3 +921,8 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-post-field-note { font-size: 12px; line-height: 1.5; }
 .sint-root .sint-post-field-note details { margin-top: 6px; }
 .sint-root .sint-post-field-note summary { cursor: pointer; font-weight: 600; color: var(--link); }
+
+/* Scrolling the modal does not scroll the page behind it. */
+.sint-root .sint-modal-body { overscroll-behavior: contain; }
+/* The footer asks before the composer closes with unsaved changes. */
+.sint-root .sint-discard { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; font-weight: 600; }

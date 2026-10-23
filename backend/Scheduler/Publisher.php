@@ -182,6 +182,13 @@ final class Publisher {
 				'code'  => $e instanceof NetworkException ? $e->error_code() : 'exception',
 				'error' => Errors::text( $e ),
 			);
+			// A refused permission is the usual cause: the account was connected before the plugin asked
+			// for comments. The user can fix that, so say how. The details keep the network's own text.
+			$status = $e instanceof NetworkException ? (int) $e->getCode() : 0;
+			if ( 401 === $status || 403 === $status || ( $e instanceof NetworkException && $e->is_expired() ) || false !== stripos( Errors::text( $e ), 'permission' ) ) {
+				/* translators: %s: network name */
+				return sprintf( __( 'The post is on %s. The network did not allow the first comment. Reconnect the account to give the plugin permission for comments.', 'social-integrations' ), $network->label() );
+			}
 			/* translators: 1: network name, 2: reason */
 			return sprintf( __( 'The post is on %1$s. The first comment failed: %2$s', 'social-integrations' ), $network->label(), Errors::text( $e ) );
 		}

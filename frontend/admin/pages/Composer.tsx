@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
 import { PostFields, resolveFields } from '../components/PostFields'
 import { api } from '../lib/api'
@@ -136,7 +136,17 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const Mode = modes.find((m) => m.value === mode)?.component
   // Filter `sint.composer.options`: controls next to the timing of a new share, such as a control that repeats it.
   const optionControls = item ? [] : applyFilters<{ key: string; component: (props: ComposerOptionProps) => JSX.Element }[]>('sint.composer.options', [])
-  const setOption = (key: string, value: unknown) => setOptions((o) => ({ ...o, [key]: value }))
+  const setOption = (key: string, value: unknown) => {
+    setTouched(true)
+    setOptions((o) => ({ ...o, [key]: value }))
+  }
+  // True after the user changes the post. Then closing the modal asks first, so a stray Esc keeps the work.
+  const [touched, setTouched] = useState(false)
+  const [askClose, setAskClose] = useState(false)
+  // A stable function: Modal sets the focus again when onClose changes, which would move it away while the user types.
+  const closeNow = useRef(() => {})
+  closeNow.current = () => (touched && !busy && !Mode ? setAskClose(true) : onClose())
+  const requestClose = useCallback(() => closeNow.current(), [])
 
   /** Shows the post's built caption and media. */
   const applyBuilt = (share: BuiltShare) => {
@@ -241,6 +251,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   }
 
   const addMedia = () => {
+    setTouched(true)
     const opened = pickMedia((items) => {
       setMedia((m) => addNew(m, items))
       setMediaOn((on) => [...on, ...items.map((x) => x.url).filter((u) => !on.includes(u))])
@@ -248,7 +259,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     if (!opened) toast(__('The media library did not load. Reload the page and try again.', 'social-integrations'), true)
   }
 
-  const toggleMedia = (url: string) => setMediaOn((s) => (s.includes(url) ? s.filter((x) => x !== url) : [...s, url]))
+  const toggleMedia = (url: string) => {
+    setTouched(true)
+    setMediaOn((s) => (s.includes(url) ? s.filter((x) => x !== url) : [...s, url]))
+  }
 
   const rejected = (r: ShareResult) => r.message || sprintf(__('%s did not accept the post.', 'social-integrations'), network(r.network)?.label ?? r.network)
 
@@ -320,13 +334,21 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   return (
     <Modal
       title={item ? __('Edit post', 'social-integrations') : editing ? __('Edit campaign', 'social-integrations') : __('New campaign', 'social-integrations')}
-      onClose={onClose}
-      footer={Mode ? undefined : (
-        <TimingFooter when={when} setWhen={setWhen} local={local} setLocal={setLocal} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
+      onClose={requestClose}
+      footer={Mode ? undefined : askClose ? (
+        <div className="sint-discard" role="alertdialog" aria-labelledby="sint-discard-text">
+          <span id="sint-discard-text">{__('You have changes that are not saved.', 'social-integrations')}</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+            <button type="button" className="sint-btn ghost" ref={(el) => el?.focus()} onClick={() => setAskClose(false)}>{__('Go back', 'social-integrations')}</button>
+            <button type="button" className="sint-btn danger" onClick={onClose}>{__('Discard changes', 'social-integrations')}</button>
+          </span>
+        </div>
+      ) : (
+        <TimingFooter when={when} setWhen={(w) => { setTouched(true); setWhen(w) }} local={local} setLocal={(l) => { setTouched(true); setLocal(l) }} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
           <button type="button" className="sint-btn ghost" disabled={busy || building || opening || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
           {!can(caps.publish) && <span className="sint-sub" style={{ margin: 0, fontSize: 12 }}>{__('You save drafts only. A user who can publish schedules them.', 'social-integrations')}</span>}
           {can(caps.publish) && <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
-            {when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
+            {busy ? <><Spinner size={14} />{__('Wait…', 'social-integrations')}</> : when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
           </button>}
         </TimingFooter>
       )}
@@ -340,7 +362,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       }
     >
       {mode !== 'auto' && (
-        <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onClose={onClose} />
+        <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onClose={requestClose} />
       )}
 
       {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : (
@@ -363,7 +385,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               setTab={setTab}
               edited={(n) => overrides[n] !== undefined || Object.keys(fields[n] ?? {}).length > 0}
               text={text}
-              setText={setText}
+              setText={(v) => { setTouched(true); setText(v) }}
               captionFor={captionFor}
               tokens={built?.tokens}
               onSubmit={() => { if (canSend) save(false) }}
@@ -400,7 +422,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
             )}
 
-            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} mediaHidesCard={cardHidden} />
+            <PostFields nets={nets} tab={tab} value={fields} onChange={(f) => { setTouched(true); setFields(f) }} base={fieldBase} mediaHidesCard={cardHidden} />
 
             </>
             )}
