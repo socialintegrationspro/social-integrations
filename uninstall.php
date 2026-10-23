@@ -8,6 +8,8 @@
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
+require_once __DIR__ . '/backend/Support/Sites.php';
+
 $sint_uninstall = static function () {
 	global $wpdb;
 
@@ -30,16 +32,7 @@ $sint_uninstall = static function () {
 };
 
 if ( is_multisite() ) {
-	foreach ( get_sites(
-		array(
-			'fields' => 'ids',
-			'number' => 0,
-		)
-	) as $sint_site ) {
-		switch_to_blog( $sint_site );
-		$sint_uninstall();
-		restore_current_blog();
-	}
+	\SocialIntegrations\Support\Sites::each( $sint_uninstall );
 } else {
 	$sint_uninstall();
 }

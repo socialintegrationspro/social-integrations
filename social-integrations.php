@@ -33,7 +33,7 @@ if ( is_readable( SINT_PATH . 'vendor/autoload.php' ) ) {
 			if ( 0 !== strpos( $class_name, $prefix ) ) {
 				return;
 			}
-			$file = SINT_PATH . 'includes/' . str_replace( '\\', '/', substr( $class_name, strlen( $prefix ) ) ) . '.php';
+			$file = SINT_PATH . 'backend/' . str_replace( '\\', '/', substr( $class_name, strlen( $prefix ) ) ) . '.php';
 			if ( is_readable( $file ) ) {
 				require_once $file;
 			}

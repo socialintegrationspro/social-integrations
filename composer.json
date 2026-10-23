@@ -13,7 +13,7 @@
   },
   "autoload": {
     "psr-4": {
-      "SocialIntegrations\\": "includes/"
+      "SocialIntegrations\\": "backend/"
     }
   },
   "config": {

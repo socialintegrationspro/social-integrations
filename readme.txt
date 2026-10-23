@@ -23,7 +23,7 @@ Social Integrations shares your WordPress content to your social accounts.
 * A share log that shows the result for each account, with Retry.
 * AI captions with your own API key (OpenAI, Google Gemini or Anthropic Claude).
 
-The uncompiled source of the admin app is in the `src/` folder of the public repository: https://github.com/SocialIntegrations/social-integrations
+The uncompiled source of the admin app is in the `frontend/` folder of the public repository: https://github.com/SocialIntegrations/social-integrations
 
 == External services ==
 

@@ -12,9 +12,9 @@ pnpm dev          # Vite dev server on :5174; define SINT_DEV_SERVER in wp-confi
 ```
 
 - PHP 7.4+, WordPress 6.3+.
-- PHP source: `includes/` (PSR-4, namespace `SocialIntegrations\`).
-- Admin app source: `src/admin/` (React + TypeScript, built with Vite).
-- Extension points: `includes/Hooks.php`.
+- PHP source: `backend/` (PSR-4, namespace `SocialIntegrations\`).
+- Admin app source: `frontend/admin/` (React + TypeScript, built with Vite).
+- Extension points: `backend/Hooks.php`.
 
 ## License
 

@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const root = new URL('..', import.meta.url).pathname
-const dirs = ['includes', 'src', 'social-integrations.php', 'uninstall.php']
+const dirs = ['backend', 'frontend', 'social-integrations.php', 'uninstall.php']
 const patterns = [
   [/\bpro\b/i, 'the word "pro"'],
   [/premium/i, 'the word "premium"'],

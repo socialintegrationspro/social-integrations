@@ -2,7 +2,7 @@
 <ruleset name="Social Integrations">
 	<file>./social-integrations.php</file>
 	<file>./uninstall.php</file>
-	<file>./includes</file>
+	<file>./backend</file>
 	<arg name="extensions" value="php"/>
 	<arg value="sp"/>
 	<config name="testVersion" value="7.4-"/>

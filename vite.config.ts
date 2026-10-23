@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// The admin app is loaded by includes/Admin/Assets.php from build/.vite/manifest.json,
+// The admin app is loaded by backend/Admin/Assets.php from build/.vite/manifest.json,
 // or from this dev server when wp-config.php defines SINT_DEV_SERVER.
 export default defineConfig({
   plugins: [react()],
@@ -15,7 +15,7 @@ export default defineConfig({
     // bundle in build/editor/ (vite.editor.config.ts) stays while both watch.
     emptyOutDir: !process.argv.includes('--watch'),
     manifest: true,
-    rollupOptions: { input: 'src/admin/main.tsx' },
+    rollupOptions: { input: 'frontend/admin/main.tsx' },
   },
   server: {
     host: '0.0.0.0',

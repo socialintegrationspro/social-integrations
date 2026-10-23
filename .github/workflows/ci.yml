@@ -33,7 +33,7 @@ jobs:
         run: pnpm check:self-contained
 
       - name: PHP syntax
-        run: find includes social-integrations.php uninstall.php -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: find backend social-integrations.php uninstall.php -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Coding standards
         run: composer lint
