@@ -42,6 +42,13 @@ abstract class AbstractNetwork {
 	private $trace = array();
 
 	/**
+	 * True while add_comment() runs, so error messages name the comment, not the post.
+	 *
+	 * @var bool
+	 */
+	private $commenting = false;
+
+	/**
 	 * Returns the requests made since the last call, and starts a new trace. Each request:
 	 * [ 'method', 'url', 'status' (0 on a transport error), 'ms', 'response', 'error'? ].
 	 */
@@ -49,6 +56,24 @@ abstract class AbstractNetwork {
 		$trace       = $this->trace;
 		$this->trace = array();
 		return $trace;
+	}
+
+	/**
+	 * Adds the first comment below a published post through comment().
+	 *
+	 * @param array  $credentials Decrypted credentials of the account.
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Comment text.
+	 * @return array ['remote_id' => string].
+	 * @throws NetworkException When the network refuses the comment.
+	 */
+	final public function add_comment( array $credentials, array $post, string $text ): array {
+		$this->commenting = true;
+		try {
+			return $this->comment( $credentials, $post, $text );
+		} finally {
+			$this->commenting = false;
+		}
 	}
 
 	/**
@@ -70,8 +95,10 @@ abstract class AbstractNetwork {
 	 * Publishes one share.
 	 *
 	 * @param array $credentials Decrypted credentials of the account.
-	 * @param array $payload     ['message' => string, 'link' => string, 'images' => [['url','alt','path']], 'videos' => [['url','path']]].
-	 * @return array ['remote_id' => string, 'remote_url' => string].
+	 * @param array $payload     ['message' => string, 'link' => string, 'images' => [['url','alt','path']], 'videos' => [['url','path']],
+	 *                           'fields' => [name => value] of post_fields(), filled; read them with field()].
+	 * @return array ['remote_id' => string, 'remote_url' => string]. comment() gets this array, so a
+	 *               network can add the data its comments need.
 	 * @throws NetworkException When the network refuses the share.
 	 */
 	abstract public function publish( array $credentials, array $payload ): array;
@@ -102,6 +129,125 @@ abstract class AbstractNetwork {
 	 */
 	public function supports_video(): bool {
 		return false;
+	}
+
+	/**
+	 * Fields of a post that the network takes in addition to the caption, the link and the media.
+	 *
+	 * Each field: [ 'name', 'label', 'type' => 'text'|'textarea'|'select'|'toggle', 'default',
+	 * 'tokens' => bool, 'max' => int (0: no limit), 'options' => [ ['value', 'label'] ] (select),
+	 * 'help' ]. A field with 'tokens' holds a template, such as '{title}', that the plugin fills
+	 * from the post. The same name has the same meaning on each network; see the *_field() methods.
+	 *
+	 * @return array[]
+	 */
+	public function post_fields(): array {
+		return array();
+	}
+
+	/**
+	 * The definition of one of post_fields(), or null.
+	 *
+	 * @param string $name Field name.
+	 */
+	public function post_field( string $name ): ?array {
+		foreach ( $this->post_fields() as $field ) {
+			if ( $name === $field['name'] ) {
+				return $field;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Field: what the post shows, a link card or the media. The Publisher applies it before publish().
+	 */
+	protected function format_field(): array {
+		return array(
+			'name'    => 'format',
+			'label'   => __( 'Post format', 'social-integrations' ),
+			'type'    => 'select',
+			'default' => 'auto',
+			'help'    => __( 'Automatic: the media of the post. When the post has no media, a link card.', 'social-integrations' ),
+			'options' => array(
+				array(
+					'value' => 'auto',
+					'label' => __( 'Automatic', 'social-integrations' ),
+				),
+				array(
+					'value' => 'link',
+					'label' => __( 'Link card only', 'social-integrations' ),
+				),
+				array(
+					'value' => 'text',
+					'label' => __( 'Text only', 'social-integrations' ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Field: the title of the link card.
+	 *
+	 * @param int $max Maximum length.
+	 */
+	protected function title_field( int $max = 300 ): array {
+		return array(
+			'name'    => 'title',
+			'label'   => __( 'Link card title', 'social-integrations' ),
+			'type'    => 'text',
+			'default' => '{title}',
+			'tokens'  => true,
+			'max'     => $max,
+		);
+	}
+
+	/**
+	 * Field: the description of the link card.
+	 *
+	 * @param int $max Maximum length.
+	 */
+	protected function description_field( int $max = 1000 ): array {
+		return array(
+			'name'    => 'description',
+			'label'   => __( 'Link card description', 'social-integrations' ),
+			'type'    => 'textarea',
+			'default' => '{excerpt}',
+			'tokens'  => true,
+			'max'     => $max,
+		);
+	}
+
+	/**
+	 * Field: a comment that the plugin adds below the post. Empty: no comment.
+	 *
+	 * @param string $help Help text, such as the permission that the comment needs.
+	 */
+	protected function first_comment_field( string $help = '' ): array {
+		return array(
+			'name'    => 'first_comment',
+			'label'   => __( 'First comment', 'social-integrations' ),
+			'type'    => 'textarea',
+			'default' => '',
+			'tokens'  => true,
+			'max'     => min( 2000, $this->char_limit() ),
+			'help'    => '' !== $help ? $help : __( 'The plugin adds this comment below the post. Leave empty for no comment.', 'social-integrations' ),
+		);
+	}
+
+	/**
+	 * The value of a post field in a payload, or the field's default. A field with tokens
+	 * has no default here: the template was filled before the share.
+	 *
+	 * @param array  $payload Share payload.
+	 * @param string $name    Field name.
+	 */
+	protected function field( array $payload, string $name ): string {
+		if ( isset( $payload['fields'][ $name ] ) ) {
+			return (string) $payload['fields'][ $name ];
+		}
+		$field = $this->post_field( $name );
+		return $field && empty( $field['tokens'] ) ? (string) ( $field['default'] ?? '' ) : '';
 	}
 
 	/**
@@ -230,6 +376,20 @@ abstract class AbstractNetwork {
 		return null;
 	}
 
+	/**
+	 * Adds a comment below a published post. The Publisher calls it through add_comment()
+	 * for the 'first_comment' field, after publish().
+	 *
+	 * @param array  $credentials Decrypted credentials of the account.
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Comment text.
+	 * @return array ['remote_id' => string].
+	 * @throws NetworkException When the network refuses the comment.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		throw new NetworkException( 'unsupported', esc_html__( 'This network does not take comments.', 'social-integrations' ) );
+	}
+
 	// phpcs:enable
 
 	/**
@@ -245,6 +405,7 @@ abstract class AbstractNetwork {
 			'url_length'     => $this->url_length(),
 			'max_images'     => $this->max_images(),
 			'supports_video' => $this->supports_video(),
+			'post_fields'    => $this->post_fields(),
 			'connect_fields' => $this->connect_fields(),
 			'app_fields'     => $this->app_fields(),
 			'app_setup_url'  => $this->app_setup_url(),
@@ -466,7 +627,12 @@ abstract class AbstractNetwork {
 		} elseif ( isset( $body['description'] ) ) {
 			$detail = (string) $body['description'];
 		}
-		/* translators: 1: network name, 2: reason from the network */
-		return trim( sprintf( __( '%1$s did not accept the post. %2$s', 'social-integrations' ), $this->label(), $detail ) );
+		return trim(
+			$this->commenting
+				/* translators: 1: network name, 2: reason from the network */
+				? sprintf( __( '%1$s did not accept the comment. %2$s', 'social-integrations' ), $this->label(), $detail )
+				/* translators: 1: network name, 2: reason from the network */
+				: sprintf( __( '%1$s did not accept the post. %2$s', 'social-integrations' ), $this->label(), $detail )
+		);
 	}
 }

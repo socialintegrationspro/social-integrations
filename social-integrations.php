@@ -19,7 +19,7 @@
 defined( 'ABSPATH' ) || exit;
 
 define( 'SINT_VERSION', '0.1.0' );
-define( 'SINT_DB_VERSION', '6' );
+define( 'SINT_DB_VERSION', '7' );
 define( 'SINT_FILE', __FILE__ );
 define( 'SINT_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SINT_URL', plugin_dir_url( __FILE__ ) );

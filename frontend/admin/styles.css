@@ -883,3 +883,14 @@ body.folded .sint-overlay { left: 36px; }
   /* A busy indicator must still show that work continues, so it turns slowly. */
   .sint-root .sint-spinner, .sint-root .sint-refresh.spinning svg { animation-duration: 2s !important; }
 }
+
+/* Post fields of a network: link card, post format, first comment and options. */
+.sint-root .sint-post-fields { border: 0; border-top: 1px dashed var(--line); margin: 0; padding: 14px 0 0; min-width: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.sint-root .sint-post-fields > legend { padding: 0 8px 0 0; }
+.sint-root .sint-post-fields > .sint-field:has(textarea) { grid-column: 1 / -1; }
+.sint-root .sint-post-field-nets { display: inline-flex; gap: 4px; margin-left: auto; }
+.sint-root .sint-field-preview { margin: 0; display: grid; gap: 6px; font-size: 12px; }
+.sint-root .sint-field-preview > div { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.sint-root .sint-field-preview > div::before { content: ''; order: 1; flex: 1 1 12px; min-width: 12px; border-bottom: 1px dotted var(--line); }
+.sint-root .sint-field-preview dt { order: 0; display: inline-flex; gap: 6px; align-items: center; flex: none; color: var(--muted); font-weight: 600; }
+.sint-root .sint-field-preview dd { order: 2; margin: 0; min-width: 0; max-width: 70%; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }

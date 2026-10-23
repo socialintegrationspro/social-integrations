@@ -74,6 +74,60 @@ class Telegram extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format, silent message and link button.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			array(
+				'name'    => 'silent',
+				'label'   => __( 'Send without sound', 'social-integrations' ),
+				'type'    => 'toggle',
+				'default' => '',
+				'help'    => __( 'Members get the message without a notification sound.', 'social-integrations' ),
+			),
+			array(
+				'name'    => 'button',
+				'label'   => __( 'Button text', 'social-integrations' ),
+				'type'    => 'text',
+				'default' => '',
+				'tokens'  => true,
+				'max'     => 64,
+				'help'    => __( 'A button below the message opens the link. Leave empty for no button. An album of images gets no button.', 'social-integrations' ),
+			),
+		);
+	}
+
+	/**
+	 * Request fields from the post fields: the silent message and the link button.
+	 *
+	 * @param array  $payload Share payload.
+	 * @param string $link    Post link.
+	 */
+	private function message_options( array $payload, string $link ): array {
+		$extra = array();
+		if ( '1' === $this->field( $payload, 'silent' ) ) {
+			$extra['disable_notification'] = 'true';
+		}
+		$button = $this->field( $payload, 'button' );
+		if ( '' !== $button && '' !== $link ) {
+			$extra['reply_markup'] = (string) wp_json_encode(
+				array(
+					'inline_keyboard' => array(
+						array(
+							array(
+								'text' => $button,
+								'url'  => $link,
+							),
+						),
+					),
+				)
+			);
+		}
+		return $extra;
+	}
+
+	/**
 	 * Fields that the user completes.
 	 */
 	public function connect_fields(): array {
@@ -237,12 +291,13 @@ class Telegram extends AbstractNetwork {
 		$separate  = $has_media && mb_strlen( $text ) > self::CAPTION_LIMIT;
 		$caption   = $separate ? '' : $text;
 
+		$extra   = $this->message_options( $payload, $link );
 		$message = $has_media
-			? $this->send_media( $token, $chat, $images, $video, $caption )
-			: $this->send_text( $token, $chat, $text, $link );
+			? $this->send_media( $token, $chat, $images, $video, $caption, $separate ? array_diff_key( $extra, array( 'reply_markup' => true ) ) : $extra )
+			: $this->send_text( $token, $chat, $text, $link, $extra );
 
 		if ( $separate ) {
-			$message = $this->send_text( $token, $chat, $text, $link );
+			$message = $this->send_text( $token, $chat, $text, $link, $extra );
 		}
 
 		$message_id = (string) ( $message['message_id'] ?? '' );
@@ -264,10 +319,11 @@ class Telegram extends AbstractNetwork {
 	 * @param string[] $images  Image URLs.
 	 * @param string   $video   Video URL, or ''. More than one image goes before the video.
 	 * @param string   $caption Caption, or '' when the text goes in its own message.
+	 * @param array    $extra   More fields of the request, from message_options(). An album takes no button.
 	 * @return array The sent message.
 	 * @throws NetworkException When Telegram refuses the media.
 	 */
-	private function send_media( string $token, string $chat, array $images, string $video, string $caption ): array {
+	private function send_media( string $token, string $chat, array $images, string $video, string $caption, array $extra = array() ): array {
 		if ( count( $images ) > 1 ) {
 			$media = array();
 			foreach ( $images as $index => $url ) {
@@ -286,7 +342,7 @@ class Telegram extends AbstractNetwork {
 				array(
 					'chat_id' => $chat,
 					'media'   => (string) wp_json_encode( $media ),
-				)
+				) + array_diff_key( $extra, array( 'reply_markup' => true ) )
 			);
 			return isset( $result[0] ) && is_array( $result[0] ) ? $result[0] : array();
 		}
@@ -299,7 +355,7 @@ class Telegram extends AbstractNetwork {
 					'video'              => $video,
 					'caption'            => $caption,
 					'supports_streaming' => 'true',
-				)
+				) + $extra
 			);
 		}
 		return $this->call(
@@ -309,7 +365,7 @@ class Telegram extends AbstractNetwork {
 				'chat_id' => $chat,
 				'photo'   => $images[0],
 				'caption' => $caption,
-			)
+			) + $extra
 		);
 	}
 
@@ -320,8 +376,9 @@ class Telegram extends AbstractNetwork {
 	 * @param string $chat  Chat ID.
 	 * @param string $text  Text.
 	 * @param string $link  Link to preview, or ''.
+	 * @param array  $extra More fields of the request, from message_options().
 	 */
-	private function send_text( string $token, string $chat, string $text, string $link ): array {
+	private function send_text( string $token, string $chat, string $text, string $link, array $extra = array() ): array {
 		if ( '' === trim( $text ) ) {
 			$text = $link;
 		}
@@ -332,7 +389,7 @@ class Telegram extends AbstractNetwork {
 		if ( '' !== $link ) {
 			$fields['link_preview_options'] = (string) wp_json_encode( array( 'url' => $link ) );
 		}
-		return $this->call( $token, 'sendMessage', $fields );
+		return $this->call( $token, 'sendMessage', $fields + $extra );
 	}
 
 	/**

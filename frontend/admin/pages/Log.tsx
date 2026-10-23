@@ -484,7 +484,7 @@ function ShareDetails({ share, entry, campaign, onClose }: { share: LogShare; en
               </>
             )}
           </dl>
-          {share.message && <div className="sint-banner bad sint-sd-msg">{share.message}</div>}
+          {share.message && <div className={`sint-banner ${share.status === 'published' ? 'warn' : 'bad'} sint-sd-msg`}>{share.message}</div>}
         </section>
 
         <section>

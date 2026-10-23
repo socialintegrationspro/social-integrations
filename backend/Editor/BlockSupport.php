@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Editor;
 
+use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\AutoShare;
@@ -82,6 +83,27 @@ final class BlockSupport {
 						),
 					) : false,
 					'sanitize_callback' => array( self::class, 'sanitize_accounts' ),
+					'auth_callback'     => $manage,
+				)
+			);
+			// Post field templates for this post: [ '*' | network => [ name => template ] ].
+			register_post_meta(
+				$type,
+				AutoShare::META_FIELDS,
+				array(
+					'type'              => 'object',
+					'single'            => true,
+					'default'           => array(),
+					'show_in_rest'      => $admin_rest ? array(
+						'schema' => array(
+							'type'                 => 'object',
+							'additionalProperties' => array(
+								'type'                 => 'object',
+								'additionalProperties' => array( 'type' => 'string' ),
+							),
+						),
+					) : false,
+					'sanitize_callback' => array( PostFields::class, 'clean' ),
 					'auth_callback'     => $manage,
 				)
 			);

@@ -1,18 +1,23 @@
 import { __, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
 import { useStore } from '../lib/store'
-import type { MediaItem, MediaSource } from '../lib/types'
+import type { FieldMap, MediaItem, MediaSource } from '../lib/types'
+import { PostFields } from './PostFields'
 import { Icon, NetBadge, useToast } from './ui'
 
-/** What a campaign shares for each post: captions with tokens, and where the media comes from. */
+/** What a campaign shares for each post: captions, link and post fields with tokens, and where the media comes from. */
 export interface ShareTemplate {
   caption: string
   captions: Record<string, string>
   media: MediaSource
   custom_media: MediaItem[]
+  /** Link template; empty: the post's permalink. */
+  link?: string
+  /** Post field templates (see PostFields). */
+  fields?: FieldMap | []
 }
 
-const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}', '{site}']
+export const TOKENS = ['{title}', '{excerpt}', '{url}', '{tags}', '{author}', '{site}']
 
 const SOURCES = (): { value: MediaSource; label: string }[] => [
   { value: 'auto', label: __('Featured image and post images', 'social-integrations') },
@@ -36,7 +41,7 @@ interface Props {
   hint?: string
 }
 
-/** Caption tabs, the caption with token chips, and the media source with selected images. */
+/** Caption tabs, the caption with token chips, the media source with selected images, the link and the post fields. */
 export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder, hint }: Props) {
   const { network } = useStore()
   const toast = useToast()
@@ -99,6 +104,21 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
           </button>
         </div>
       )}
+      {all && (
+        <label className="sint-field">
+          <span>{__('Link', 'social-integrations')}</span>
+          <input className="sint-input" value={value.link ?? ''} placeholder="{url}" onChange={(e) => onChange({ link: e.target.value })} />
+          <small>{__('Leave empty to use the link of the post. {field:meta_key} uses a link from a custom field.', 'social-integrations')}</small>
+        </label>
+      )}
+      <PostFields
+        nets={nets}
+        tab={tab}
+        value={Array.isArray(value.fields) ? {} : value.fields ?? {}}
+        onChange={(fields) => onChange({ fields })}
+        base={(_net, field) => field.default}
+        tokens={TOKENS}
+      />
     </>
   )
 }

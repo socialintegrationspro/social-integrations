@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Content;
 
 use SocialIntegrations\Hooks;
+use SocialIntegrations\Plugin;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Support\Settings;
 use SocialIntegrations\Templates\TemplateParser;
@@ -20,6 +21,11 @@ defined( 'ABSPATH' ) || exit;
 final class ShareBuilder {
 
 	const DEFAULT_TEMPLATE = "{title}\n\n{excerpt}\n\n{url}";
+
+	/**
+	 * The link a share uses when the template does not give one.
+	 */
+	const DEFAULT_LINK = '{url}';
 
 	/**
 	 * Where a share's media comes from.
@@ -47,7 +53,8 @@ final class ShareBuilder {
 	 * @param string   $context Who asks: 'auto' on publish, 'composer' in the admin app.
 	 * @param array    $base    The template to start from, such as an auto-post campaign's;
 	 *                          empty for the default caption and media.
-	 * @return array ['caption', 'captions', 'link', 'media', 'tokens', 'blocks', 'links'].
+	 * @return array ['caption', 'captions', 'link', 'media', 'fields' => [network => [name => value]],
+	 *               'tokens', 'blocks', 'links'].
 	 */
 	public function build( \WP_Post $post, array $account = array(), string $context = 'composer', array $base = array() ): array {
 		if ( ! isset( $this->parsed[ $post->ID ] ) ) {
@@ -62,6 +69,9 @@ final class ShareBuilder {
 		$parser   = new TemplateParser();
 		$template = $this->template( $post, $account, $context, $base );
 
+		// The editor's post fields replace the template's, as its caption does.
+		$template['fields'] = PostFields::merge( $template['fields'], PostFields::clean( get_post_meta( $post->ID, AutoShare::META_FIELDS, true ) ) );
+
 		$captions = array();
 		$custom   = (string) get_post_meta( $post->ID, AutoShare::META_CAPTION, true );
 		if ( '' !== trim( $custom ) ) {
@@ -75,16 +85,49 @@ final class ShareBuilder {
 		}
 		$caption = $parser->render( $base, $post, $tokens );
 		$network = (string) ( $account['network'] ?? '' );
+		$render  = static function ( string $text ) use ( $parser, $post, $tokens ): string {
+			return $parser->render( $text, $post, $tokens );
+		};
 
 		return array(
 			'caption'  => '' !== $network && isset( $captions[ $network ] ) ? $captions[ $network ] : $caption,
 			'captions' => $captions,
-			'link'     => (string) get_permalink( $post ),
+			'link'     => $this->link( $post, $render( $template['link'] ) ),
 			'media'    => $this->media( $post, $parsed['media'], $template ),
+			'fields'   => $this->fields( $template['fields'], $network, $render ),
 			'tokens'   => $tokens,
 			'blocks'   => $parsed['blocks'],
 			'links'    => $parsed['links'],
 		);
+	}
+
+	/**
+	 * The share's link: the filled link template when it is a valid URL, otherwise the permalink.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @param string   $link Filled link template.
+	 */
+	private function link( \WP_Post $post, string $link ): string {
+		$link = esc_url_raw( trim( $link ) );
+		return '' !== $link && wp_http_validate_url( $link ) ? $link : (string) get_permalink( $post );
+	}
+
+	/**
+	 * Filled post fields for one network, or for each network when the account is not known yet.
+	 *
+	 * @param array    $map     Field map of the template.
+	 * @param string   $network Network key, or ''.
+	 * @param callable $render  Fills a template with the post's tokens.
+	 * @return array<string, array<string, string>> [network => [name => value]].
+	 */
+	private function fields( array $map, string $network, callable $render ): array {
+		$fields = array();
+		foreach ( Plugin::instance()->networks->all() as $item ) {
+			if ( '' === $network || $network === $item->key() ) {
+				$fields[ $item->key() ] = PostFields::fill( $item, $map, $render );
+			}
+		}
+		return $fields;
 	}
 
 	/**
@@ -94,7 +137,7 @@ final class ShareBuilder {
 	 * @param array    $account Account, or empty.
 	 * @param string   $context Who asks.
 	 * @param array    $base    Template to start from; empty for the default.
-	 * @return array{caption: string, captions: array<string, string>, media: string, custom_media: array}
+	 * @return array{caption: string, captions: array<string, string>, media: string, custom_media: array, link: string, fields: array}
 	 */
 	public function template( \WP_Post $post, array $account = array(), string $context = 'composer', array $base = array() ): array {
 		$template = array(
@@ -102,6 +145,8 @@ final class ShareBuilder {
 			'captions'     => (array) ( $base['captions'] ?? array() ),
 			'media'        => (string) ( $base['media'] ?? 'auto' ),
 			'custom_media' => (array) ( $base['custom_media'] ?? array() ),
+			'link'         => (string) ( $base['link'] ?? '' ),
+			'fields'       => (array) ( $base['fields'] ?? array() ),
 		);
 		$template = (array) apply_filters( Hooks::SHARE_TEMPLATE, $template, $post, $account, $context );
 
@@ -113,19 +158,24 @@ final class ShareBuilder {
 		}
 		$caption = (string) ( $template['caption'] ?? '' );
 		$media   = (string) ( $template['media'] ?? 'auto' );
+		$link    = trim( (string) ( $template['link'] ?? '' ) );
 		return array(
 			'caption'      => '' !== trim( $caption ) ? $caption : self::DEFAULT_TEMPLATE,
 			'captions'     => $captions,
 			'media'        => in_array( $media, self::MEDIA_SOURCES, true ) ? $media : 'auto',
 			'custom_media' => (array) ( $template['custom_media'] ?? array() ),
+			'link'         => '' !== $link ? $link : self::DEFAULT_LINK,
+			'fields'       => PostFields::clean( $template['fields'] ?? array() ),
 		);
 	}
 
 	/**
-	 * Sanitizes the caption and media of a template that the admin app sends.
+	 * Sanitizes the caption, media, link and post fields of a template that the admin app sends.
+	 *
+	 * The link is a template too, such as '{url}' or '{field:product_url}'. Empty: the post's permalink.
 	 *
 	 * @param array $input Raw template.
-	 * @return array{caption: string, captions: array, media: string, custom_media: array}
+	 * @return array{caption: string, captions: array, media: string, custom_media: array, link: string, fields: array}
 	 */
 	public static function clean_template( array $input ): array {
 		$media = (string) ( $input['media'] ?? 'auto' );
@@ -134,6 +184,8 @@ final class ShareBuilder {
 			'captions'     => Settings::captions( (array) ( $input['captions'] ?? array() ) ),
 			'media'        => in_array( $media, self::MEDIA_SOURCES, true ) ? $media : 'auto',
 			'custom_media' => Settings::media_items( (array) ( $input['custom_media'] ?? array() ) ),
+			'link'         => mb_substr( sanitize_text_field( (string) ( $input['link'] ?? '' ) ), 0, 2048 ),
+			'fields'       => PostFields::clean( $input['fields'] ?? array() ),
 		);
 	}
 

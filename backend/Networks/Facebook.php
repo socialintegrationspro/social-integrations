@@ -63,6 +63,35 @@ class Facebook extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format and first comment.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			$this->first_comment_field( __( 'The plugin adds this comment below the post, as the Page. Leave empty for no comment. Accounts connected before this option need a reconnect.', 'social-integrations' ) ),
+		);
+	}
+
+	/**
+	 * Adds a comment below the post, as the Page.
+	 *
+	 * @param array  $credentials ['page_id', 'access_token'].
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Comment text.
+	 * @throws NetworkException When Facebook refuses the comment.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		$node = $this->graph_post(
+			'/' . rawurlencode( (string) $post['remote_id'] ) . '/comments',
+			array(
+				'message'      => $text,
+				'access_token' => (string) ( $credentials['access_token'] ?? '' ),
+			)
+		);
+		return array( 'remote_id' => (string) ( $node['id'] ?? '' ) );
+	}
+
+	/**
 	 * Where the user creates a Meta app.
 	 */
 	public function app_setup_url(): string {
@@ -72,11 +101,11 @@ class Facebook extends AbstractNetwork {
 	/**
 	 * Permissions that the sign-in requests.
 	 *
-	 * The first three list Pages and post to them; business_management also lists
-	 * Pages owned by a Business Portfolio.
+	 * The first three list Pages and post to them; pages_manage_engagement adds the first
+	 * comment; business_management also lists Pages owned by a Business Portfolio.
 	 */
 	protected function scopes(): array {
-		return array( 'pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'business_management' );
+		return array( 'pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'pages_manage_engagement', 'business_management' );
 	}
 
 	/**

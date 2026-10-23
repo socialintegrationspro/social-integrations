@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Campaigns\Auto;
+use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Networks\Accounts;
@@ -51,6 +52,10 @@ final class EditorController extends RestController {
 				'caption' => array(
 					'type'    => 'string',
 					'default' => '',
+				),
+				'fields'  => array(
+					'type'    => 'object',
+					'default' => array(),
 				),
 			)
 		);
@@ -152,8 +157,15 @@ final class EditorController extends RestController {
 		$draft->post_excerpt = sanitize_textarea_field( (string) $request['excerpt'] );
 
 		$caption = sanitize_textarea_field( (string) $request['caption'] );
-		$meta    = static function ( $value, $object_id, $meta_key ) use ( $post, $caption ) {
-			return (int) $object_id === $post->ID && AutoShare::META_CAPTION === $meta_key ? array( $caption ) : $value;
+		$fields  = PostFields::clean( $request['fields'] ?? array() );
+		$meta    = static function ( $value, $object_id, $meta_key ) use ( $post, $caption, $fields ) {
+			if ( (int) $object_id !== $post->ID ) {
+				return $value;
+			}
+			if ( AutoShare::META_CAPTION === $meta_key ) {
+				return array( $caption );
+			}
+			return AutoShare::META_FIELDS === $meta_key ? array( $fields ) : $value;
 		};
 		add_filter( 'get_post_metadata', $meta, 10, 3 );
 
@@ -168,6 +180,8 @@ final class EditorController extends RestController {
 				'caption' => $share['caption'],
 				'media'   => array_values( $share['media'] ),
 				'blocks'  => $share['blocks'],
+				'link'    => $share['link'],
+				'fields'  => (object) $share['fields'],
 			)
 		);
 	}

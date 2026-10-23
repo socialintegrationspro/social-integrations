@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
+import { PostFields, resolveFields } from '../components/PostFields'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
@@ -15,7 +16,7 @@ import { defaultLocal, measure, type When } from './composer/helpers'
 import { MediaPicker } from './composer/MediaPicker'
 import { Preview } from './composer/Preview'
 import { TimingFooter } from './composer/TimingFooter'
-import type { Account, BuiltShare, ContentItem, MediaItem, MediaSource, QueueItem } from '../lib/types'
+import type { Account, BuiltShare, ContentItem, FieldMap, MediaItem, MediaSource, PostField, QueueItem } from '../lib/types'
 
 export interface ComposerSeed {
   postId?: number
@@ -45,6 +46,8 @@ interface SingleCampaign {
   captions: Record<string, string> | []
   accounts: string[]
   media: MediaItem[]
+  /** Post field values: network => name => value. */
+  fields?: FieldMap | []
   scheduled_at: string
   draft: boolean
   options: Record<string, unknown> | []
@@ -111,6 +114,8 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [previewPick, setPreviewPick] = useState('')
   const [media, setMedia] = useState<MediaItem[]>(from?.media ?? [])
   const [mediaOn, setMediaOn] = useState<string[]>(from?.media.map((m) => m.url) ?? [])
+  // Post field values that the user set; other fields use the values built from the post.
+  const [fields, setFields] = useState<FieldMap>(() => (from && !Array.isArray(from.fields) && from.fields ? { [from.network]: from.fields } : {}))
   const [when, setWhen] = useState<When>(upcoming || seed.at ? 'pick' : 'now')
   const [local, setLocal] = useState(() => (upcoming ? utcToLocal(item!.scheduled_at) : seed.at ? utcToLocal(seed.at) : defaultLocal()))
   const [busy, setBusy] = useState(false)
@@ -139,6 +144,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     setOverrides(noArray(share.captions))
     setMedia(share.media)
     setMediaOn(share.media.map((m) => m.url))
+    setFields({})
   }
 
   // A single campaign opens with what it was saved with.
@@ -151,6 +157,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       setOverrides(noArray(c.captions))
       setMedia(c.media)
       setMediaOn(c.media.map((m) => m.url))
+      setFields(c.fields ? noArray(c.fields) : {})
       setSelected(c.accounts.filter((id) => connected.some((a) => a.id === id)))
       setOptions(noArray(c.options))
       if (c.scheduled_at && Date.parse(c.scheduled_at) > Date.now()) {
@@ -209,6 +216,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const text = tab === 'all' ? caption : captionFor(tab)
   const setText = (v: string) => (tab === 'all' ? setCaption(v) : setOverrides((o) => ({ ...o, [tab]: v })))
   const chosenMedia = media.filter((m) => mediaOn.includes(m.url))
+  // A field without a value uses the value built from the post; without a post, a template field is empty.
+  const fieldBase = (n: string, field: PostField) => built?.fields?.[n]?.[field.name] ?? (field.tokens ? '' : field.default)
+  const fieldsFor = (list: string[]) => resolveFields(fields, list, network, fieldBase)
   const title = contentSearch.results.find((r) => r.id === postId)?.title ?? built?.tokens.title ?? ''
   const over = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
   const canSend = !busy && !building && !opening && selected.length > 0 && caption.trim() !== '' && over.length === 0
@@ -247,6 +257,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
     const r = await api.post<{ result?: { status: string; message?: string } }>(`queue/${queued.id}`, {
       caption: captionFor(queued.network),
       media: chosenMedia,
+      fields: fieldsFor([queued.network])[queued.network],
       scheduled_at: when === 'pick' ? localToUtc(local) : '',
       draft,
     })
@@ -270,6 +281,8 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       accounts: selected,
       media: chosenMedia,
       link: built?.link,
+      fields,
+      field_values: fieldsFor(nets),
       scheduled_at: when === 'pick' ? localToUtc(local) : '',
       draft,
       options,
@@ -297,6 +310,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
 
   const preview = tab !== 'all' ? tab : nets.includes(previewPick) ? previewPick : nets[0]
   const linkImage = picked?.thumbnail || media[0]?.url
+  // The preview shows what the post format sends: media, a link card, or the text only.
+  const shown = preview ? fieldsFor([preview])[preview] ?? {} : {}
+  const format = shown.format ?? 'auto'
 
   return (
     <Modal
@@ -378,6 +394,8 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             {(media.length > 0 || !!postId) && (
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
             )}
+
+            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} />
             </>
             )}
           </section>
@@ -389,8 +407,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             setPreview={setPreviewPick}
             captionFor={captionFor}
             account={connected.find((a) => a.network === preview)}
-            chosenMedia={chosenMedia}
-            link={built?.link ? { url: built.link, title: built.tokens.title ?? '', image: linkImage } : undefined}
+            chosenMedia={format === 'auto' ? chosenMedia : []}
+            link={built?.link && format !== 'text' ? { url: built.link, title: shown.title || built.tokens.title || '', description: shown.description, image: linkImage } : undefined}
+            comment={shown.first_comment}
           />
         </div>
       )}

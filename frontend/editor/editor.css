@@ -20,3 +20,6 @@
 .sint-ed-status.is-failed { color: #b32d2e; }
 .sint-ed-error { margin-top: 4px; color: #b32d2e; font-size: 12px; }
 .sint-ed-block { width: 260px; padding: 12px; }
+.sint-ed-fields { margin: 12px 0 0; font-size: 12px; }
+.sint-ed-fields dt { font-weight: 600; color: #50575e; margin-top: 8px; }
+.sint-ed-fields dd { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }

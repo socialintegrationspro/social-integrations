@@ -8,11 +8,29 @@ export interface Network {
   url_length: number
   max_images: number
   supports_video: boolean
+  /** Fields of a post in addition to the caption, the link and the media. */
+  post_fields: PostField[]
   connect_fields: Field[]
   app_fields: Field[]
   app_setup_url: string
   app_configured: boolean
 }
+
+/** A post field of a network, such as 'first_comment'. The same name has the same meaning on each network. */
+export interface PostField {
+  name: string
+  label: string
+  type: 'text' | 'textarea' | 'select' | 'toggle'
+  default: string
+  /** The value is a template with tokens, such as '{title}'. */
+  tokens?: boolean
+  max?: number
+  options?: { value: string; label: string }[]
+  help?: string
+}
+
+/** Post field values: '*' for all networks that have the field, or a network key; then field name => value. */
+export type FieldMap = Record<string, Record<string, string>>
 
 export interface Field {
   name: string
@@ -82,6 +100,8 @@ export interface BuiltShare {
   captions: Record<string, string>
   link: string
   media: MediaItem[]
+  /** Filled post fields of each network: network => name => value. */
+  fields: FieldMap
   tokens: Record<string, string>
   blocks: { name: string; use: string }[]
   links: string[]
@@ -97,6 +117,8 @@ export interface QueueItem {
   caption: string
   media: MediaItem[]
   link: string
+  /** Post field values of the share's network. */
+  fields: Record<string, string> | []
   status: QueueStatus
   scheduled_at: string
   attempts: number

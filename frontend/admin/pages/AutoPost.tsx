@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { FieldPreview } from '../components/FieldPreview'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
 import { AccountToggle, LoadError, Toggle, useToast } from '../components/ui'
 import { api } from '../lib/api'
@@ -81,7 +82,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     )
   }, [typesKey])
 
-  const key = c && sample ? JSON.stringify([sample.id, c.caption, c.captions, c.media, c.custom_media.map((m) => m.id)]) : ''
+  const key = c && sample ? JSON.stringify([sample.id, c.caption, c.captions, c.media, c.custom_media.map((m) => m.id), c.link, c.fields]) : ''
   useEffect(() => {
     if (!c || !sample) return setPreview(null)
     const t = setTimeout(() => {
@@ -205,6 +206,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
                     {preview.media.map((m) => (m.type === 'image' ? <img key={m.url} className="sint-thumb" src={m.url} alt={m.alt} /> : <span key={m.url} className="sint-pill muted">{__('Video', 'social-integrations')}</span>))}
                   </span>
                 )}
+                <FieldPreview nets={current === 'all' ? nets : [current]} fields={preview.fields} link={preview.link} />
               </>
             ) : (
               <div className="sint-skeleton" style={{ height: 80 }} />

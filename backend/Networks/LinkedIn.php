@@ -56,6 +56,61 @@ class LinkedIn extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format, link card, visibility and first comment.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			$this->title_field( 200 ),
+			$this->description_field( 300 ),
+			array(
+				'name'    => 'visibility',
+				'label'   => __( 'Who can see the post', 'social-integrations' ),
+				'type'    => 'select',
+				'default' => 'PUBLIC',
+				'options' => array(
+					array(
+						'value' => 'PUBLIC',
+						'label' => __( 'Anyone', 'social-integrations' ),
+					),
+					array(
+						'value' => 'CONNECTIONS',
+						'label' => __( 'Connections only', 'social-integrations' ),
+					),
+				),
+			),
+			$this->first_comment_field(),
+		);
+	}
+
+	/**
+	 * Adds a comment below the post, as the member.
+	 *
+	 * @param array  $credentials ['access_token', 'member_id'].
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Comment text.
+	 * @throws NetworkException When LinkedIn refuses the comment.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		$urn  = (string) $post['remote_id'];
+		$data = $this->request(
+			'POST',
+			self::API . '/socialActions/' . rawurlencode( $urn ) . '/comments',
+			array(
+				'headers' => $this->headers( (string) ( $credentials['access_token'] ?? '' ), 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'actor'   => 'urn:li:person:' . (string) ( $credentials['member_id'] ?? '' ),
+						'object'  => $urn,
+						'message' => array( 'text' => $text ),
+					)
+				),
+			)
+		);
+		return array( 'remote_id' => (string) ( $data['id'] ?? $data['$URN'] ?? '' ) );
+	}
+
+	/**
 	 * App fields, with LinkedIn's names for them.
 	 */
 	public function app_fields(): array {
@@ -193,6 +248,10 @@ class LinkedIn extends AbstractNetwork {
 		$text    = (string) ( $payload['message'] ?? '' );
 		$link    = (string) ( $payload['link'] ?? '' );
 		$content = $this->share_content( $token, $author, $text, $link, (array) ( $payload['images'] ?? array() ) );
+		if ( 'ARTICLE' === $content['shareMediaCategory'] ) {
+			$content['media'][0] += $this->card_text( $payload );
+		}
+		$audience = 'CONNECTIONS' === $this->field( $payload, 'visibility' ) ? 'CONNECTIONS' : 'PUBLIC';
 
 		$data = $this->request(
 			'POST',
@@ -204,7 +263,7 @@ class LinkedIn extends AbstractNetwork {
 						'author'          => $author,
 						'lifecycleState'  => 'PUBLISHED',
 						'specificContent' => array( 'com.linkedin.ugc.ShareContent' => $content ),
-						'visibility'      => array( 'com.linkedin.ugc.MemberNetworkVisibility' => 'PUBLIC' ),
+						'visibility'      => array( 'com.linkedin.ugc.MemberNetworkVisibility' => $audience ),
 					)
 				),
 			)
@@ -219,6 +278,22 @@ class LinkedIn extends AbstractNetwork {
 			'remote_id'  => $post_id,
 			'remote_url' => 'https://www.linkedin.com/feed/update/' . $post_id . '/',
 		);
+	}
+
+	/**
+	 * The title and description of the link card, as a ugcPosts media item holds them.
+	 *
+	 * @param array $payload Share payload.
+	 */
+	private function card_text( array $payload ): array {
+		$out = array();
+		foreach ( array( 'title', 'description' ) as $name ) {
+			$value = $this->field( $payload, $name );
+			if ( '' !== $value ) {
+				$out[ $name ] = array( 'text' => $value );
+			}
+		}
+		return $out;
 	}
 
 	/**

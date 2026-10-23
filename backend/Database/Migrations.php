@@ -84,6 +84,7 @@ final class Migrations {
 				caption longtext NOT NULL,
 				media longtext NULL,
 				link varchar(2048) NOT NULL DEFAULT '',
+				fields longtext NULL,
 				status varchar(20) NOT NULL DEFAULT 'scheduled',
 				scheduled_at datetime NOT NULL,
 				attempts smallint(5) unsigned NOT NULL DEFAULT 0,
