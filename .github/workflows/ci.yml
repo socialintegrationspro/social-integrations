@@ -41,5 +41,11 @@ jobs:
       - name: PHP compatibility
         run: composer compat
 
+      - name: PHP unit tests
+        run: composer test
+
+      - name: JS unit tests
+        run: pnpm test
+
       - name: Type check and build
         run: pnpm build

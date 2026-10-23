@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- Integration tests in a real WordPress. Run them in Docker: `pnpm test:integration` at the repository root. -->
+<phpunit
+	bootstrap="tests/php/Integration/bootstrap.php"
+	colors="true"
+	beStrictAboutOutputDuringTests="true"
+	failOnWarning="true"
+>
+	<testsuites>
+		<testsuite name="integration">
+			<directory suffix="Test.php">tests/php/Integration</directory>
+		</testsuite>
+	</testsuites>
+</phpunit>

@@ -244,8 +244,9 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           </div>
           {renderExtras('when')}
           <label className="sint-field">
-            <span>{__('Name', 'social-integrations')}</span>
-            <input ref={nameRef} className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn', 'social-integrations')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
+            <span id="sint-auto-name-label">{__('Name', 'social-integrations')}</span>
+            {/* The name comes from the span only, so a screen reader does not read the error two times. */}
+            <input ref={nameRef} aria-labelledby="sint-auto-name-label" className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn', 'social-integrations')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
             {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.', 'social-integrations')}</small>}
           </label>
           <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar.', 'social-integrations')}</small>

@@ -206,12 +206,12 @@ function AICard({ settings, setSettings, keys, setKeys }: { settings: Settings; 
         </label>
         {provider?.needs_key && (
           <label className="sint-field">
-            <span>{sprintf(__('%s API key', 'social-integrations'), provider.label)}</span>
+            <span id="sint-ai-key-label">{sprintf(__('%s API key', 'social-integrations'), provider.label)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type a new key to replace it.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
+              <input aria-labelledby="sint-ai-key-label" aria-describedby="sint-ai-key-help" className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type a new key to replace it.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
               {saved && <button type="button" className="sint-btn ghost sm" style={{ height: 42 }} onClick={() => setKeys({ ...keys, [provider.key]: null })}>{__('Remove', 'social-integrations')}</button>}
             </div>
-            <small>{typed === null ? __('The plugin removes the key when you save.', 'social-integrations') : __('The plugin keeps the key encrypted on your site. It does not show the key again.', 'social-integrations')}</small>
+            <small id="sint-ai-key-help">{typed === null ? __('The plugin removes the key when you save.', 'social-integrations') : __('The plugin keeps the key encrypted on your site. It does not show the key again.', 'social-integrations')}</small>
           </label>
         )}
         {provider && provider.default_model && (

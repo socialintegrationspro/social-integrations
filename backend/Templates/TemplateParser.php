@@ -75,8 +75,18 @@ final class TemplateParser {
 		}
 		$tags = array();
 		foreach ( $terms as $term ) {
-			$tag = preg_replace( '/[^\p{L}\p{N}_]/u', '', ucwords( $term->name ) );
-			if ( $tag ) {
+			// Each word starts with a capital letter, so "café-bar" becomes #CaféBar. Other letters do not change.
+			$words = preg_split( '/[^\p{L}\p{N}]+/u', (string) $term->name, -1, PREG_SPLIT_NO_EMPTY );
+			$tag   = implode(
+				'',
+				array_map(
+					static function ( $word ) {
+						return mb_strtoupper( mb_substr( $word, 0, 1 ) ) . mb_substr( $word, 1 );
+					},
+					(array) $words
+				)
+			);
+			if ( '' !== $tag ) {
 				$tags[] = '#' . $tag;
 			}
 		}
