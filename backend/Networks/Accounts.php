@@ -36,6 +36,52 @@ final class Accounts {
 	}
 
 	/**
+	 * The IDs of the accounts that a user can use, or null for every account.
+	 *
+	 * @param int $user_id User ID. Default: the current user.
+	 * @return string[]|null
+	 */
+	public static function allowed( int $user_id = 0 ): ?array {
+		$ids = apply_filters( Hooks::USER_ACCOUNTS, null, $user_id ? $user_id : get_current_user_id() );
+		return is_array( $ids ) ? array_values( array_map( 'strval', $ids ) ) : null;
+	}
+
+	/**
+	 * The accounts that the current user can use, without credentials.
+	 *
+	 * @return array[]
+	 */
+	public static function visible(): array {
+		$allowed = self::allowed();
+		if ( null === $allowed ) {
+			return self::all();
+		}
+		return array_values(
+			array_filter(
+				self::all(),
+				static function ( array $account ) use ( $allowed ): bool {
+					return in_array( (string) $account['id'], $allowed, true );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Whether the current user can use all of these accounts. For a user with a limit, an
+	 * empty list, which means every account, is not allowed.
+	 *
+	 * @param string[] $ids Account IDs.
+	 */
+	public static function can_use( array $ids ): bool {
+		$allowed = self::allowed();
+		if ( null === $allowed ) {
+			return true;
+		}
+		$ids = array_filter( array_map( 'strval', $ids ) );
+		return $ids && ! array_diff( $ids, $allowed );
+	}
+
+	/**
 	 * One account with decrypted credentials, or null.
 	 *
 	 * @param string $id Account ID.

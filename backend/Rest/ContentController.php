@@ -10,8 +10,10 @@ namespace SocialIntegrations\Rest;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Hooks;
+use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -24,7 +26,7 @@ final class ContentController extends RestController {
 	 * Registers routes.
 	 */
 	public function register_routes(): void {
-		$this->route( '/post-types', \WP_REST_Server::READABLE, array( $this, 'post_types' ) );
+		$this->route( '/post-types', \WP_REST_Server::READABLE, array( $this, 'post_types' ), array(), Capabilities::VIEW );
 		$this->route(
 			'/content',
 			\WP_REST_Server::READABLE,
@@ -54,10 +56,11 @@ final class ContentController extends RestController {
 					'minimum' => 1,
 					'maximum' => 100,
 				),
-			)
+			),
+			Capabilities::VIEW
 		);
-		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::READABLE, array( $this, 'share' ) );
-		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::CREATABLE, array( $this, 'share_with' ) );
+		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::READABLE, array( $this, 'share' ), array(), Capabilities::VIEW );
+		$this->route( '/content/(?P<id>\d+)/share', \WP_REST_Server::CREATABLE, array( $this, 'share_with' ), array(), Capabilities::SHARE );
 	}
 
 	/**
@@ -91,7 +94,7 @@ final class ContentController extends RestController {
 
 		$ids  = wp_list_pluck( $query->posts, 'ID' );
 		$logs = array();
-		foreach ( Queue::logs( $ids, 500 ) as $log ) {
+		foreach ( Queue::logs( $ids, 500, Accounts::allowed() ) as $log ) {
 			$key = $log['post_id'] . ':' . $log['account_id'];
 			if ( ! isset( $logs[ $key ] ) ) {
 				$logs[ $key ] = $log;

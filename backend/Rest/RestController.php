@@ -9,6 +9,9 @@ namespace SocialIntegrations\Rest;
 
 defined( 'ABSPATH' ) || exit;
 
+use SocialIntegrations\Support\Capabilities;
+
+
 /**
  * Shared namespace and permission check. WordPress checks the REST nonce through
  * the X-WP-Nonce header that the admin app sends.
@@ -28,29 +31,31 @@ abstract class RestController {
 	abstract public function register_routes(): void;
 
 	/**
-	 * Only administrators manage sharing.
-	 */
-	public function can_manage(): bool {
-		return current_user_can( 'manage_options' );
-	}
-
-	/**
-	 * Registers a route with the shared permission check.
+	 * Registers a route. Without a permission, only a user who can change the settings can use the route.
 	 *
-	 * @param string        $route    Route.
-	 * @param string        $methods  Methods.
-	 * @param callable      $callback Callback.
-	 * @param array         $args     Argument schema.
-	 * @param callable|null $permission Permission callback; defaults to can_manage().
+	 * @param string               $route      Route.
+	 * @param string               $methods    Methods.
+	 * @param callable             $callback   Callback.
+	 * @param array                $args       Argument schema.
+	 * @param string|callable|null $permission A capability from Capabilities, or a permission callback.
 	 */
-	protected function route( string $route, string $methods, callable $callback, array $args = array(), ?callable $permission = null ): void {
+	protected function route( string $route, string $methods, callable $callback, array $args = array(), $permission = null ): void {
+		if ( null === $permission ) {
+			$permission = Capabilities::MANAGE_SETTINGS;
+		}
+		if ( is_string( $permission ) ) {
+			$cap        = $permission;
+			$permission = static function () use ( $cap ): bool {
+				return current_user_can( $cap );
+			};
+		}
 		register_rest_route(
 			static::NAMESPACE,
 			$route,
 			array(
 				'methods'             => $methods,
 				'callback'            => $callback,
-				'permission_callback' => $permission ? $permission : array( $this, 'can_manage' ),
+				'permission_callback' => $permission,
 				'args'                => $args,
 			)
 		);

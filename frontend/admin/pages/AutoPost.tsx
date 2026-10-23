@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { FieldPreview } from '../components/FieldPreview'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
 import { AccountToggle, LoadError, Toggle, useToast } from '../components/ui'
+import { can, caps } from '../lib/config'
 import { api } from '../lib/api'
 import { applyFilters } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
@@ -47,7 +48,9 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   const toast = useToast()
   const source = campaign ? Number(campaign.id) : 0
   const editing = campaign && !campaign.copy ? source : 0
-  const [c, setC] = useState<AutoCampaign | null>(campaign ? null : BLANK)
+  // A user who cannot publish saves a campaign that is off. A user who can publish turns it on.
+  const publish = can(caps.publish)
+  const [c, setC] = useState<AutoCampaign | null>(campaign ? null : { ...BLANK, active: publish })
   const [tab, setTab] = useState('all')
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
@@ -154,7 +157,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     <>
       <div className="sint-autopost-to">
         <span className="sint-label">{__('Share to', 'social-integrations')}</span>
-        {accounts.length === 0 && <a href="#/accounts">{__('Connect an account first', 'social-integrations')}</a>}
+        {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts">{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
         {accounts.map((a) => {
           const on = chosen(a.id)
           return (
@@ -217,9 +220,10 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
         <aside className="col side">
           <div className="sint-label">{__('When', 'social-integrations')}</div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 700, fontSize: 14 }}>
-            <Toggle checked={c.active} onChange={(v) => set({ active: v })} label={__('Campaign is on', 'social-integrations')} />
-            {c.active ? __('On: shares new posts', 'social-integrations') : __('Paused', 'social-integrations')}
+            <Toggle checked={c.active && publish} disabled={!publish} onChange={(v) => set({ active: v })} label={__('Campaign is on', 'social-integrations')} />
+            {c.active && publish ? __('On: shares new posts', 'social-integrations') : __('Paused', 'social-integrations')}
           </label>
+          {!publish && <p className="sint-sub" style={{ margin: 0 }}>{__('You save the campaign off. A user who can publish turns it on.', 'social-integrations')}</p>}
           <div className="sint-field">
             <span>{__('Share', 'social-integrations')}</span>
             <span style={{ display: 'flex', gap: 8 }}>

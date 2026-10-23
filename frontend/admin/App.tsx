@@ -9,6 +9,7 @@ import { CampaignsPage } from './pages/Campaigns'
 import { AccountsPage } from './pages/Accounts'
 import { SettingsPage } from './pages/Settings'
 import { LogPage } from './pages/Log'
+import { can, caps } from './lib/config'
 import { applyFilters } from './lib/hooks'
 import { __ } from './lib/i18n'
 import { StoreProvider, useRoute } from './lib/store'
@@ -24,6 +25,8 @@ export interface RouteDef {
   bottom?: boolean
   /** Reached by link only; not listed in the top bar. */
   hidden?: boolean
+  /** The capability the screen needs. Without it, the app does not show the screen. */
+  cap?: string
 }
 
 function Shell() {
@@ -33,14 +36,15 @@ function Shell() {
   const [theme, toggleTheme] = useTheme()
 
   // Filter `sint.routes`: other plugins add or replace screens.
-  const routes = applyFilters<RouteDef[]>('sint.routes', [
+  const all = applyFilters<RouteDef[]>('sint.routes', [
     { path: 'dashboard', label: __('Dashboard', 'social-integrations'), icon: 'dashboard', component: DashboardPage },
     { path: 'calendar', label: __('Calendar', 'social-integrations'), icon: 'calendar', component: CalendarPage },
     { path: 'campaigns', label: __('Campaigns', 'social-integrations'), icon: 'campaign', component: CampaignsPage },
-    { path: 'accounts', label: __('Accounts', 'social-integrations'), icon: 'accounts', component: AccountsPage },
+    { path: 'accounts', label: __('Accounts', 'social-integrations'), icon: 'accounts', component: AccountsPage, cap: caps.manageAccounts },
     { path: 'log', label: __('Share log', 'social-integrations'), icon: 'log', component: LogPage },
-    { path: 'settings', label: __('Settings', 'social-integrations'), icon: 'settings', component: SettingsPage, bottom: true },
+    { path: 'settings', label: __('Settings', 'social-integrations'), icon: 'settings', component: SettingsPage, bottom: true, cap: caps.manageSettings },
   ])
+  const routes = all.filter((r) => !r.cap || can(r.cap))
   const current = routes.find((r) => r.path === path) ?? routes[0]!
   const Page = current.component
 

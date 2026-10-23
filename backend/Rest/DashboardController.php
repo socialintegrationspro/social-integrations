@@ -10,7 +10,9 @@ namespace SocialIntegrations\Rest;
 use SocialIntegrations\Campaigns\Campaigns;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Hooks;
+use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Dates;
 
 defined( 'ABSPATH' ) || exit;
@@ -39,7 +41,8 @@ final class DashboardController extends RestController {
 					'enum'    => self::PERIODS,
 					'default' => 7,
 				),
-			)
+			),
+			Capabilities::VIEW
 		);
 	}
 
@@ -60,6 +63,7 @@ final class DashboardController extends RestController {
 		$from  = $start->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
 		$split = $today->modify( '-' . ( $days - 1 ) . ' days' )->format( 'Y-m-d' );
 
+		$accounts = Accounts::allowed();
 		$by_day   = array();
 		$networks = array();
 		$totals   = array(
@@ -74,7 +78,7 @@ final class DashboardController extends RestController {
 				'failed'    => 0,
 			);
 		}
-		foreach ( Queue::activity( $from, $offset ) as $row ) {
+		foreach ( Queue::activity( $from, $offset, $accounts ) as $row ) {
 			$n      = (int) $row['n'];
 			$status = (string) $row['status'];
 			if ( $row['day'] < $split ) {
@@ -102,8 +106,8 @@ final class DashboardController extends RestController {
 			}
 		);
 
-		$counts    = Queue::status_counts();
-		$campaigns = Campaigns::all();
+		$counts    = Queue::status_counts( $accounts );
+		$campaigns = Campaigns::visible_all();
 
 		return rest_ensure_response(
 			array(
@@ -130,7 +134,7 @@ final class DashboardController extends RestController {
 					),
 					'total'  => count( $campaigns ),
 				),
-				'upcoming'  => $this->upcoming(),
+				'upcoming'  => $this->upcoming( $accounts ),
 				'recent'    => array_map(
 					function ( array $row ): array {
 						return array(
@@ -144,7 +148,7 @@ final class DashboardController extends RestController {
 							'created_at' => Dates::iso( (string) $row['created_at'] ),
 						);
 					},
-					Queue::recent_logs()
+					Queue::recent_logs( 8, $accounts )
 				),
 			)
 		);
@@ -152,8 +156,10 @@ final class DashboardController extends RestController {
 
 	/**
 	 * The next shares: queued ones, and planned ones that other plugins add.
+	 *
+	 * @param string[]|null $accounts Only shares of these accounts. Null: every account.
 	 */
-	private function upcoming(): array {
+	private function upcoming( ?array $accounts ): array {
 		$limit  = 6;
 		$shares = array_map(
 			function ( array $row ): array {
@@ -165,9 +171,16 @@ final class DashboardController extends RestController {
 					'scheduled_at' => Dates::iso( $row['scheduled_at'] ),
 				);
 			},
-			Queue::upcoming( $limit )
+			Queue::upcoming( $limit, $accounts )
 		);
-		$shares = array_values( array_filter( (array) apply_filters( Hooks::UPCOMING_SHARES, $shares ), 'is_array' ) );
+		$shares = array_values(
+			array_filter(
+				(array) apply_filters( Hooks::UPCOMING_SHARES, $shares ),
+				static function ( $share ) use ( $accounts ): bool {
+					return is_array( $share ) && ( null === $accounts || in_array( (string) ( $share['account_id'] ?? '' ), $accounts, true ) );
+				}
+			)
+		);
 		usort(
 			$shares,
 			static function ( array $a, array $b ): int {

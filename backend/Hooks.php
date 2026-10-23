@@ -77,6 +77,17 @@ final class Hooks {
 	const ACCOUNTS = 'sint/accounts';
 
 	/**
+	 * Filter. The IDs of the accounts that a user can use in the admin app and the editor.
+	 * Null: every account. The plugin then shows the user only these accounts, and the shares
+	 * and campaigns on them. It refuses a change that uses another account. Shares that the
+	 * plugin sends on WP-Cron or on publish use every account.
+	 *
+	 * @param string[]|null $account_ids
+	 * @param int           $user_id
+	 */
+	const USER_ACCOUNTS = 'sint/user_accounts';
+
+	/**
 	 * Action. Fires after a share to one account finishes.
 	 *
 	 * @param array $result ['status' => 'published'|'failed', ...].
@@ -137,6 +148,15 @@ final class Hooks {
 	 *                       [ 'source' => 'auto', 'campaign' => int ], once per campaign.
 	 */
 	const SHARES_CREATED = 'sint/shares_created';
+
+	/**
+	 * Action. Fires after a user saves a campaign in the admin app.
+	 *
+	 * @param int    $id   Campaign ID.
+	 * @param string $type Campaign type, for example 'single' or 'auto'.
+	 * @param bool   $live False when the campaign is a draft or off, so it sends nothing yet.
+	 */
+	const CAMPAIGN_SAVED = 'sint/campaign_saved';
 
 	/**
 	 * Filter. Campaigns listed on the Campaigns screen. Add items of your own `type`; the

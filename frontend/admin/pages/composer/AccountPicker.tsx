@@ -1,4 +1,5 @@
 import { AccountToggle, Icon } from '../../components/ui'
+import { can, caps } from '../../lib/config'
 import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
 import type { Account } from '../../lib/types'
@@ -22,7 +23,7 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
       <span className="sint-label">{__('Share to', 'social-integrations')}</span>
-      {accounts.length === 0 && <a href="#/accounts" onClick={onClose}>{__('Connect an account first', 'social-integrations')}</a>}
+      {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts" onClick={onClose}>{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
       {accounts.map((a) => {
         const on = selected.includes(a.id)
         const expired = a.status === 'expired'
@@ -39,7 +40,13 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
       {accounts.filter((a) => a.status === 'expired').map((a) => (
         <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Icon name="alert" size={14} stroke={2.2} />
-          {sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)} · <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
+          {sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}
+          {can(caps.manageAccounts) && (
+            <>
+              {' · '}
+              <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
+            </>
+          )}
         </span>
       ))}
     </div>

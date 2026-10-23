@@ -10,7 +10,8 @@ export interface SintConfig {
   redirectUri: string
   /** The sign-in error of the last connect, kept on the server. Empty when there is none. */
   oauthError: string
-  user: { name: string }
+  /** The current user, and the plugin's capabilities that the user has, such as `sint_share`. */
+  user: { name: string; caps: Record<string, boolean> }
   /** Whether an AI provider and its key are set. */
   ai: { ready: boolean }
   /** The answers of these GET routes when the page loaded, or null for a route that failed. */
@@ -51,6 +52,18 @@ export const config: SintConfig = window.sintConfig ?? {
   gmtOffset: 0,
   weekStart: 1,
   redirectUri: '',
-  user: { name: '' },
+  user: { name: '', caps: {} },
   ai: { ready: false },
 }
+
+/** The plugin's capabilities. The server checks them again on each request. */
+export const caps = {
+  view: 'sint_view',
+  share: 'sint_share',
+  publish: 'sint_publish',
+  manageAccounts: 'sint_manage_accounts',
+  manageSettings: 'sint_manage_settings',
+} as const
+
+/** Whether the current user has a capability of the plugin. */
+export const can = (cap: string): boolean => !!config.user.caps?.[cap]

@@ -10,6 +10,7 @@ namespace SocialIntegrations\Admin;
 use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Auth\OAuth;
+use SocialIntegrations\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -139,10 +140,27 @@ final class Assets {
 				'redirectUri' => OAuth::redirect_uri(),
 				'oauthError'  => OAuth::take_error(),
 				'ai'          => array( 'ready' => null !== Providers::current() ),
-				'user'        => array( 'name' => wp_get_current_user()->display_name ),
+				'user'        => array(
+					'name' => wp_get_current_user()->display_name,
+					'caps' => $this->caps(),
+				),
 				'store'       => $this->store(),
 			)
 		);
+	}
+
+	/**
+	 * The plugin's capabilities that the current user has, so the app shows only the screens and
+	 * controls that the user can use.
+	 *
+	 * @return array<string, bool>
+	 */
+	private function caps(): array {
+		$caps = array();
+		foreach ( Capabilities::ALL as $cap ) {
+			$caps[ $cap ] = current_user_can( $cap );
+		}
+		return $caps;
 	}
 
 	/**

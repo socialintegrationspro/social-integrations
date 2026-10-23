@@ -11,6 +11,7 @@ use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\AutoShare;
+use SocialIntegrations\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -33,10 +34,10 @@ final class BlockSupport {
 	 */
 	public function register_meta(): void {
 		// The caption and the accounts change what a share sends and where, so only a user who
-		// manages the plugin sets them. The setting that stops sharing for a post only stops a
+		// can share sets them. The setting that stops sharing for a post only stops a
 		// share, so any user who can edit the post can set it.
 		$manage   = static function () {
-			return current_user_can( 'manage_options' );
+			return current_user_can( Capabilities::SHARE );
 		};
 		$own_post = static function ( $allowed, $meta_key, $post_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- WordPress passes these first.
 			return current_user_can( 'edit_post', (int) $post_id );
@@ -44,7 +45,7 @@ final class BlockSupport {
 		// The editor sends every meta key it received when it saves, also keys it did not
 		// change. The REST API checks the permission for a key that has no stored value, so
 		// a user who cannot set the caption and the accounts must not get them at all.
-		$admin_rest = current_user_can( 'manage_options' );
+		$admin_rest = current_user_can( Capabilities::SHARE );
 		foreach ( PostTypes::names() as $type ) {
 			register_post_meta(
 				$type,
@@ -111,12 +112,12 @@ final class BlockSupport {
 	}
 
 	/**
-	 * Keeps only the IDs of connected accounts.
+	 * Keeps only the IDs of connected accounts that the current user can use.
 	 *
 	 * @param mixed $value Raw meta value.
 	 */
 	public static function sanitize_accounts( $value ): array {
-		$known = array_column( Accounts::all(), 'id' );
+		$known = array_column( Accounts::visible(), 'id' );
 		return array_values( array_intersect( array_map( 'strval', (array) $value ), $known ) );
 	}
 

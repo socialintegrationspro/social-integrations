@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\AI\Providers;
+use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -21,9 +22,9 @@ final class SettingsController extends RestController {
 	 * Registers routes.
 	 */
 	public function register_routes(): void {
-		$this->route( '/settings', \WP_REST_Server::READABLE, array( $this, 'show' ) );
-		$this->route( '/settings', \WP_REST_Server::EDITABLE, array( $this, 'update' ) );
-		$this->route( '/blocks', \WP_REST_Server::READABLE, array( $this, 'blocks' ) );
+		$this->route( '/settings', \WP_REST_Server::READABLE, array( $this, 'show' ), array(), Capabilities::VIEW );
+		$this->route( '/settings', \WP_REST_Server::EDITABLE, array( $this, 'update' ), array(), Capabilities::MANAGE_SETTINGS );
+		$this->route( '/blocks', \WP_REST_Server::READABLE, array( $this, 'blocks' ), array(), Capabilities::VIEW );
 	}
 
 	/**
