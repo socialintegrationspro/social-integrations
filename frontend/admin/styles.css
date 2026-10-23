@@ -650,6 +650,9 @@ body.folded .sint-overlay { left: 36px; }
 
 /* On a phone, each log row is a card: date and actions, then the campaign, then type and accounts. */
 @media (max-width: 782px) {
+  /* A segmented control keeps each option on one line, and scrolls sideways when the options do not fit. */
+  .sint-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .sint-seg button { white-space: nowrap; flex: none; }
   .sint-log-filter-set { margin-left: 0; width: 100%; }
   .sint-log-filter-set .sint-filter { flex: 1 1 140px; }
   .sint-root .sint-log-filter-set .sint-filter select { max-width: none; width: 100%; }
@@ -660,14 +663,15 @@ body.folded .sint-overlay { left: 36px; }
   .sint-log-table thead th { border-bottom: 1px solid var(--line); }
   .sint-log-table thead th.sint-check-cell { flex: 0 0 44px; }
   .sint-log-table thead tr.sint-bulk th:last-child { flex: 1; }
-  .sint-log-table tr.sint-log-row { display: grid; grid-template-columns: 32px 1fr auto; grid-template-areas: 'check date actions' 'check camp camp' 'check type accts'; align-items: center; column-gap: 8px; row-gap: 6px; padding: 12px 12px 12px 8px; border-bottom: 1px solid var(--line); }
+  .sint-log-table tr.sint-log-row { display: grid; grid-template-columns: 32px 1fr auto; grid-template-areas: 'check date actions' 'check camp camp' 'check type type' 'check accts accts'; align-items: center; column-gap: 8px; row-gap: 6px; padding: 12px 12px 12px 8px; border-bottom: 1px solid var(--line); }
   .sint-log-table tr.sint-log-row > td { display: block; padding: 0; border: 0; background: transparent !important; box-shadow: none !important; }
   .sint-log-table tr.sint-log-row > td:nth-child(1) { grid-area: check; align-self: start; padding-top: 2px; }
   .sint-log-table tr.sint-log-row > td:nth-child(2) { grid-area: date; font-size: 12px; }
   .sint-log-table tr.sint-log-row > td:nth-child(3) { grid-area: camp; }
   .sint-log-table tr.sint-log-row > td:nth-child(4) { grid-area: type; }
   .sint-log-table tr.sint-log-row > td:nth-child(4) .sint-log-none { display: none; }
-  .sint-log-table tr.sint-log-row > td:nth-child(5) { grid-area: accts; justify-self: end; }
+  .sint-log-table tr.sint-log-row > td:nth-child(5) { grid-area: accts; justify-self: start; min-width: 0; }
+  .sint-log-table .sint-log-accts { flex-wrap: wrap; row-gap: 6px; }
   .sint-log-table tr.sint-log-row > td:nth-child(6) { grid-area: actions; }
   .sint-log-table tr.sint-log-row.open, .sint-log-table tr.sint-log-row.selected { background: var(--cell); }
   .sint-log-table tr.sint-log-row.selected { box-shadow: inset 3px 0 0 var(--accent); }
@@ -889,3 +893,14 @@ body.folded .sint-overlay { left: 36px; }
   /* A busy indicator must still show that work continues, so it turns slowly. */
   .sint-root .sint-spinner, .sint-root .sint-refresh.spinning svg { animation-duration: 2s !important; }
 }
+
+/* Post fields of a network: link card, post format, first comment and options. */
+.sint-root .sint-post-fields { border: 0; border-top: 1px dashed var(--line); margin: 0; padding: 14px 0 0; min-width: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.sint-root .sint-post-fields > legend { padding: 0 8px 0 0; }
+.sint-root .sint-post-fields > .sint-field:has(textarea) { grid-column: 1 / -1; }
+.sint-root .sint-post-field-nets { display: inline-flex; gap: 4px; margin-left: auto; }
+.sint-root .sint-field-preview { margin: 0; display: grid; gap: 6px; font-size: 12px; }
+.sint-root .sint-field-preview > div { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.sint-root .sint-field-preview > div::before { content: ''; order: 1; flex: 1 1 12px; min-width: 12px; border-bottom: 1px dotted var(--line); }
+.sint-root .sint-field-preview dt { order: 0; display: inline-flex; gap: 6px; align-items: center; flex: none; color: var(--muted); font-weight: 600; }
+.sint-root .sint-field-preview dd { order: 2; margin: 0; min-width: 0; max-width: 70%; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }

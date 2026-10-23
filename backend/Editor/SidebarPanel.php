@@ -98,13 +98,16 @@ final class SidebarPanel {
 	 * Data for `window.sintEditor`. Holds no secrets.
 	 */
 	private function config(): array {
-		$names = array();
+		$names  = array();
+		$fields = array();
 		foreach ( $this->networks->all() as $network ) {
-			$names[ $network->key() ] = $network->label();
+			$names[ $network->key() ]  = $network->label();
+			$fields[ $network->key() ] = $network->post_fields();
 		}
 		return array(
 			'pageUrl'       => esc_url_raw( Menu::url() ),
 			'networkNames'  => (object) $names,
+			'postFields'    => (object) $fields,
 			'blockOverride' => (bool) Settings::get( 'allow_block_override', true ),
 			'blockRules'    => (object) Settings::get( 'blocks', array() ),
 			'blockFallback' => (string) Settings::get( 'block_fallback', 'text' ),

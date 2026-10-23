@@ -1,4 +1,4 @@
-import { wp } from './wp'
+import { wp, type FieldMap } from './wp'
 
 export interface EditorAccount {
   id: string
@@ -30,11 +30,14 @@ export interface EditorPreview {
   caption: string
   media: { id?: number; url: string; type?: string }[]
   blocks: { name: string; use: string }[]
+  link: string
+  /** Filled post fields: network => name => value. */
+  fields: FieldMap | []
 }
 
 export const getState = (postId: number) => wp.apiFetch<EditorState>({ path: `/sint/v1/editor/${postId}` })
 
-export const getPreview = (postId: number, data: { title: string; content: string; excerpt: string; caption: string }) =>
+export const getPreview = (postId: number, data: { title: string; content: string; excerpt: string; caption: string; fields: FieldMap }) =>
   wp.apiFetch<EditorPreview>({ path: `/sint/v1/editor/${postId}/preview`, method: 'POST', data })
 
 export const writeCaption = (postId: number) => wp.apiFetch<{ caption: string }>({ path: '/sint/v1/ai/caption', method: 'POST', data: { post_id: postId } })

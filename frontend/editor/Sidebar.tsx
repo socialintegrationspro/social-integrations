@@ -1,13 +1,26 @@
 import { errorText, getPreview, getState, writeCaption, type EditorPreview, type EditorState } from './api'
 import { delayText, networkName, ruleLabel, statusLabel } from './labels'
-import { __, config, Fragment, h, sprintf, useEffect, useRef, useState, wp } from './wp'
+import { __, config, Fragment, h, sprintf, useEffect, useRef, useState, wp, type FieldMap, type PostField } from './wp'
 
-const { PanelBody, ToggleControl, CheckboxControl, TextareaControl, Button, Notice, Spinner, ExternalLink } = wp.components
+const { PanelBody, ToggleControl, CheckboxControl, TextareaControl, TextControl, SelectControl, Button, Notice, Spinner, ExternalLink } = wp.components
 
 interface Meta {
   _sint_disabled?: boolean
   _sint_caption?: string
   _sint_accounts?: string[]
+  _sint_fields?: FieldMap | []
+}
+
+/** Fields with the same meaning on each network; the panel sets them for all networks of the post. */
+const SHARED = ['format', 'title', 'description', 'first_comment']
+
+/** The post's field values, without the empty JSON array that PHP sends for an empty map. */
+const fieldsOf = (meta: Meta): FieldMap => (meta._sint_fields && !Array.isArray(meta._sint_fields) ? meta._sint_fields : {})
+
+/** Networks that the post goes to: the chosen accounts, else the accounts of its campaigns. */
+function postNetworks(state: EditorState, chosen: string[]): string[] {
+  const ids = chosen.length ? chosen : state.campaigns.flatMap((c) => (c.accounts.length ? c.accounts : state.accounts.map((a) => a.id)))
+  return Array.from(new Set(state.accounts.filter((a) => ids.includes(a.id)).map((a) => a.network)))
 }
 
 /** The values of the post in the editor, saved or not. */
@@ -76,7 +89,8 @@ export function SidebarContent() {
       {state.can_manage && (
         <Fragment>
           <AccountsPanel state={state} chosen={post.meta._sint_accounts ?? []} onChange={(ids) => setMeta({ _sint_accounts: ids })} />
-          <CaptionPanel post={post} onChange={(caption) => setMeta({ _sint_caption: caption })} />
+          <FieldsPanel nets={postNetworks(state, post.meta._sint_accounts ?? [])} fields={fieldsOf(post.meta)} onChange={(fields) => setMeta({ _sint_fields: fields })} />
+          <CaptionPanel post={post} nets={postNetworks(state, post.meta._sint_accounts ?? [])} onChange={(caption) => setMeta({ _sint_caption: caption })} />
         </Fragment>
       )}
       <SharesPanel state={state} loading={loading} error={error} onRefresh={load} />
@@ -145,8 +159,58 @@ function AccountsPanel({ state, chosen, onChange }: { state: EditorState; chosen
   )
 }
 
-function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; onChange: (caption: string) => void }) {
+/** The shared post fields of the post's networks, once each. An empty value uses the campaign's. */
+function FieldsPanel({ nets, fields, onChange }: { nets: string[]; fields: FieldMap; onChange: (fields: FieldMap) => void }) {
+  const shown: { field: PostField; nets: string[] }[] = []
+  for (const n of nets) {
+    for (const field of config.postFields[n] ?? []) {
+      if (!SHARED.includes(field.name)) continue
+      const found = shown.find((x) => x.field.name === field.name)
+      if (found) found.nets.push(n)
+      else shown.push({ field, nets: [n] })
+    }
+  }
+  if (shown.length === 0) return null
+
+  const values = fields['*'] ?? {}
+  const set = (name: string, value: string) => {
+    const next = { ...values, [name]: value }
+    if (value === '') delete next[name]
+    const map: FieldMap = { ...fields, '*': next }
+    if (Object.keys(next).length === 0) delete map['*']
+    onChange(map)
+  }
+
+  return (
+    <PanelBody title={__('Post options', 'social-integrations')} initialOpen={Object.keys(values).length > 0}>
+      <p className="sint-ed-help">{__('These values replace the values of the campaign for this post. Leave a field empty to use the campaign value.', 'social-integrations')}</p>
+      {shown.map(({ field, nets: on }) => {
+        const help = `${sprintf(__('For %s.', 'social-integrations'), on.map(networkName).join(', '))}${field.tokens ? ` ${__('You can use {title}, {excerpt}, {url}, {tags} and {author}.', 'social-integrations')}` : ''}`
+        const value = values[field.name] ?? ''
+        if (field.type === 'select') {
+          return (
+            <SelectControl
+              key={field.name}
+              __nextHasNoMarginBottom
+              label={field.label}
+              value={value}
+              options={[{ value: '', label: __('Campaign setting', 'social-integrations') }, ...(field.options ?? [])]}
+              onChange={(v: string) => set(field.name, v)}
+              help={help}
+            />
+          )
+        }
+        const Control = field.type === 'textarea' ? TextareaControl : TextControl
+        return <Control key={field.name} __nextHasNoMarginBottom label={field.label} value={value} rows={field.type === 'textarea' ? 3 : undefined} onChange={(v: string) => set(field.name, v)} help={help} />
+      })}
+    </PanelBody>
+  )
+}
+
+function CaptionPanel({ post, nets, onChange }: { post: ReturnType<typeof usePost>; nets: string[]; onChange: (caption: string) => void }) {
   const caption = post.meta._sint_caption ?? ''
+  const fields = fieldsOf(post.meta)
+  const fieldsKey = JSON.stringify(fields)
   const [preview, setPreview] = useState<EditorPreview | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState('')
@@ -155,7 +219,7 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
   // The preview follows the editor, one second after the last change.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      getPreview(post.id, { title: post.title, content: post.content, excerpt: post.excerpt, caption })
+      getPreview(post.id, { title: post.title, content: post.content, excerpt: post.excerpt, caption, fields })
         .then((p) => {
           setPreview(p)
           setPreviewFailed(false)
@@ -166,7 +230,8 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
         })
     }, 1000)
     return () => window.clearTimeout(timer)
-  }, [post.id, post.title, post.content, post.excerpt, caption])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id, post.title, post.content, post.excerpt, caption, fieldsKey])
 
   const write = () => {
     setWriting(true)
@@ -217,6 +282,7 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
                 {preview.media.slice(0, 4).map((m, i) => (m.type === 'video' ? <span key={i} className="sint-ed-video">{__('Video', 'social-integrations')}</span> : <img key={i} src={m.url} alt="" />))}
               </div>
             )}
+            <FieldLines nets={nets} fields={Array.isArray(preview.fields) ? {} : preview.fields} />
             {preview.blocks.length > 0 && (
               <Fragment>
                 <h3 className="sint-ed-sub">{__('Blocks in the post', 'social-integrations')}</h3>
@@ -234,6 +300,26 @@ function CaptionPanel({ post, onChange }: { post: ReturnType<typeof usePost>; on
         )}
       </PanelBody>
     </Fragment>
+  )
+}
+
+/** The filled text fields of each network, such as the first comment, that are not empty. */
+function FieldLines({ nets, fields }: { nets: string[]; fields: FieldMap }) {
+  const rows = nets.flatMap((n) =>
+    (config.postFields[n] ?? [])
+      .filter((f) => (f.type === 'text' || f.type === 'textarea') && (fields[n]?.[f.name] ?? '') !== '')
+      .map((f) => ({ key: `${n}-${f.name}`, label: `${networkName(n)} · ${f.label}`, value: fields[n]![f.name]! })),
+  )
+  if (rows.length === 0) return null
+  return (
+    <dl className="sint-ed-fields">
+      {rows.map((r) => (
+        <Fragment key={r.key}>
+          <dt>{r.label}</dt>
+          <dd>{r.value}</dd>
+        </Fragment>
+      ))}
+    </dl>
   )
 }
 

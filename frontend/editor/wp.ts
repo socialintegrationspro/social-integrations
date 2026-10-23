@@ -32,10 +32,27 @@ declare global {
 
 export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
 
+/** A post field of a network, as AbstractNetwork::post_fields() gives it. */
+export interface PostField {
+  name: string
+  label: string
+  type: 'text' | 'textarea' | 'select' | 'toggle'
+  default: string
+  tokens?: boolean
+  max?: number
+  options?: { value: string; label: string }[]
+  help?: string
+}
+
+/** Post field values: '*' or a network key, then field name => value. */
+export type FieldMap = Record<string, Record<string, string>>
+
 export interface EditorConfig {
   pageUrl: string
   /** Network labels by key, such as 'Facebook Page'. */
   networkNames: Record<string, string>
+  /** Post fields by network key. */
+  postFields: Record<string, PostField[]>
   blockOverride: boolean
   blockRules: Record<string, BlockUse>
   blockFallback: BlockUse
@@ -45,6 +62,7 @@ export const wp = window.wp
 export const config: EditorConfig = window.sintEditor ?? {
   pageUrl: '',
   networkNames: {},
+  postFields: {},
   blockOverride: false,
   blockRules: {},
   blockFallback: 'text',

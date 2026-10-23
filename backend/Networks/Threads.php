@@ -70,6 +70,82 @@ class Threads extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format, who can reply, and first comment.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			array(
+				'name'    => 'reply_control',
+				'label'   => __( 'Who can reply', 'social-integrations' ),
+				'type'    => 'select',
+				'default' => 'everyone',
+				'options' => array(
+					array(
+						'value' => 'everyone',
+						'label' => __( 'Everyone', 'social-integrations' ),
+					),
+					array(
+						'value' => 'accounts_you_follow',
+						'label' => __( 'Accounts you follow', 'social-integrations' ),
+					),
+					array(
+						'value' => 'mentioned_only',
+						'label' => __( 'Accounts you mention', 'social-integrations' ),
+					),
+				),
+			),
+			$this->first_comment_field( __( 'The plugin adds this text as a reply to the post. Leave empty for no reply. Accounts connected before this option need a reconnect.', 'social-integrations' ) ),
+		);
+	}
+
+	/**
+	 * Adds a reply to the post.
+	 *
+	 * @param array  $credentials ['access_token', 'user_id'].
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Reply text.
+	 * @throws NetworkException When Threads refuses the reply.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		$token     = (string) ( $credentials['access_token'] ?? '' );
+		$user      = '' !== (string) ( $credentials['user_id'] ?? '' ) ? (string) $credentials['user_id'] : 'me';
+		$container = $this->create_container(
+			$user,
+			$token,
+			array(
+				'media_type'  => 'TEXT',
+				'text'        => $this->fit_text( $text ),
+				'reply_to_id' => (string) $post['remote_id'],
+			)
+		);
+		return array( 'remote_id' => $this->publish_container( $user, $token, $container ) );
+	}
+
+	/**
+	 * Publishes a container.
+	 *
+	 * @param string $user      Threads user ID, or 'me'.
+	 * @param string $token     Access token.
+	 * @param string $container Container ID.
+	 * @return string The ID of the post, or '' when Threads does not give one.
+	 * @throws NetworkException When Threads refuses.
+	 */
+	private function publish_container( string $user, string $token, string $container ): string {
+		$published = $this->request(
+			'POST',
+			self::API . '/' . rawurlencode( $user ) . '/threads_publish',
+			array(
+				'body' => array(
+					'creation_id'  => $container,
+					'access_token' => $token,
+				),
+			)
+		);
+		return (string) ( $published['id'] ?? '' );
+	}
+
+	/**
 	 * App fields, with Meta's names for the Threads app.
 	 */
 	public function app_fields(): array {
@@ -107,7 +183,7 @@ class Threads extends AbstractNetwork {
 			array(
 				'client_id'     => (string) ( $app['client_id'] ?? '' ),
 				'redirect_uri'  => $redirect_uri,
-				'scope'         => 'threads_basic,threads_content_publish',
+				'scope'         => 'threads_basic,threads_content_publish,threads_manage_replies',
 				'response_type' => 'code',
 				'state'         => $state,
 			)
@@ -229,19 +305,9 @@ class Threads extends AbstractNetwork {
 		$text = $this->fit_text( (string) ( $payload['message'] ?? '' ) );
 		$link = (string) ( $payload['link'] ?? '' );
 
-		$container = $this->create_post_container( $user, $token, $this->collect_media( $payload ), $text, $link );
-
-		$published = $this->request(
-			'POST',
-			self::API . '/' . rawurlencode( $user ) . '/threads_publish',
-			array(
-				'body' => array(
-					'creation_id'  => $container,
-					'access_token' => $token,
-				),
-			)
-		);
-		$post_id   = (string) ( $published['id'] ?? '' );
+		$extra     = array( 'reply_control' => $this->field( $payload, 'reply_control' ) );
+		$container = $this->create_post_container( $user, $token, $this->collect_media( $payload ), $text, $link, $extra );
+		$post_id   = $this->publish_container( $user, $token, $container );
 		if ( '' === $post_id ) {
 			throw new NetworkException( 'unknown', esc_html__( 'Threads did not confirm the post. Check the account before you try again.', 'social-integrations' ) );
 		}
@@ -294,10 +360,12 @@ class Threads extends AbstractNetwork {
 	 * @param array[] $media From collect_media().
 	 * @param string  $text  Caption.
 	 * @param string  $link  Post link.
+	 * @param array   $extra More parameters of the top container, such as 'reply_control'. Empty values are left out.
 	 * @return string Container ID.
 	 * @throws NetworkException When Threads refuses a container.
 	 */
-	private function create_post_container( string $user, string $token, array $media, string $text, string $link ): string {
+	private function create_post_container( string $user, string $token, array $media, string $text, string $link, array $extra = array() ): string {
+		$extra = array_filter( $extra, 'strlen' );
 		if ( count( $media ) > 1 ) {
 			$children = array();
 			foreach ( $media as $item ) {
@@ -316,13 +384,13 @@ class Threads extends AbstractNetwork {
 					'media_type' => 'CAROUSEL',
 					'children'   => implode( ',', $children ),
 					'text'       => $text,
-				)
+				) + $extra
 			);
 			$this->wait_for_container( $container, $token, 30 );
 		} elseif ( 1 === count( $media ) ) {
 			$params         = $this->media_params( $media[0] );
 			$params['text'] = $text;
-			$container      = $this->create_container( $user, $token, $params );
+			$container      = $this->create_container( $user, $token, $params + $extra );
 			$this->wait_for_container( $container, $token, 'VIDEO' === $media[0]['type'] ? 120 : 30 );
 		} else {
 			$params = array(
@@ -332,7 +400,7 @@ class Threads extends AbstractNetwork {
 			if ( '' !== $link ) {
 				$params['link_attachment'] = $link;
 			}
-			$container = $this->create_container( $user, $token, $params );
+			$container = $this->create_container( $user, $token, $params + $extra );
 		}
 		return $container;
 	}

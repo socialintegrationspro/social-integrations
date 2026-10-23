@@ -129,7 +129,9 @@ final class Hooks {
 	 *
 	 * @param array    $template ['caption' => string, 'captions' => array<network, string>,
 	 *                           'media' => 'auto'|'featured'|'content'|'custom'|'none',
-	 *                           'custom_media' => array of attachment IDs or media items].
+	 *                           'custom_media' => array of attachment IDs or media items,
+	 *                           'link' => link template, such as '{url}',
+	 *                           'fields' => [ '*' | network => [ field name => template ] ] (see Content\PostFields)].
 	 * @param \WP_Post $post
 	 * @param array    $account  The account the share goes to; empty when not known yet.
 	 * @param string   $context  'auto' on publish, 'composer' in the admin app, or a caller's own name.

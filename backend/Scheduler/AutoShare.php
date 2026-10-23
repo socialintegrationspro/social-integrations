@@ -24,6 +24,7 @@ final class AutoShare {
 	const META_DISABLED = '_sint_disabled';
 	const META_CAPTION  = '_sint_caption';
 	const META_ACCOUNTS = '_sint_accounts';
+	const META_FIELDS   = '_sint_fields';
 	const CRON_HOOK     = 'sint_auto_share_post';
 
 	/**
@@ -108,6 +109,7 @@ final class AutoShare {
 						'caption'      => $share['caption'],
 						'media'        => $share['media'],
 						'link'         => $share['link'],
+						'fields'       => $share['fields'][ $account['network'] ] ?? array(),
 						'status'       => 'scheduled',
 						'scheduled_at' => gmdate( 'Y-m-d H:i:s', $when ),
 					)

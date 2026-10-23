@@ -221,6 +221,60 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format, link card and first comment.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			$this->title_field( 300 ),
+			$this->description_field( 1000 ),
+			$this->first_comment_field( __( 'The plugin adds this text as a reply to the post. Leave empty for no reply.', 'social-integrations' ) ),
+		);
+	}
+
+	/**
+	 * Adds a reply to the post.
+	 *
+	 * @param array  $credentials Session.
+	 * @param array  $post        What publish() returned, with 'cid'.
+	 * @param string $text        Reply text.
+	 * @throws NetworkException When Bluesky refuses the reply.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		$parent = array(
+			'uri' => (string) $post['remote_id'],
+			'cid' => (string) ( $post['cid'] ?? '' ),
+		);
+		$record = $this->record( $text ) + array(
+			'reply' => array(
+				'root'   => $parent,
+				'parent' => $parent,
+			),
+		);
+		$data   = $this->write_record( $credentials, $record );
+		return array( 'remote_id' => (string) ( $data['uri'] ?? '' ) );
+	}
+
+	/**
+	 * A post record with its text and the facets of its links and hashtags.
+	 *
+	 * @param string $text Text.
+	 */
+	private function record( string $text ): array {
+		$text   = $this->fit_text( $text );
+		$record = array(
+			'$type'     => 'app.bsky.feed.post',
+			'text'      => $text,
+			'createdAt' => gmdate( 'Y-m-d\TH:i:s.000\Z' ),
+		);
+		$facets = $this->facets( $text );
+		if ( ! empty( $facets ) ) {
+			$record['facets'] = $facets;
+		}
+		return $record;
+	}
+
+	/**
 	 * Builds and writes the post record.
 	 *
 	 * @param array $credentials Session.
@@ -228,27 +282,44 @@ class Bluesky extends AbstractNetwork {
 	 * @throws NetworkException When Bluesky refuses.
 	 */
 	private function create_post( array $credentials, array $payload ): array {
-		$jwt  = (string) $credentials['access_jwt'];
-		$text = $this->fit_text( (string) ( $payload['message'] ?? '' ) );
-		$link = (string) ( $payload['link'] ?? '' );
-
-		$record = array(
-			'$type'     => 'app.bsky.feed.post',
-			'text'      => $text,
-			'createdAt' => gmdate( 'Y-m-d\TH:i:s.000\Z' ),
+		$record = $this->record( (string) ( $payload['message'] ?? '' ) );
+		$card   = array(
+			'title'       => $this->field( $payload, 'title' ),
+			'description' => $this->field( $payload, 'description' ),
 		);
 
-		$facets = $this->facets( $text );
-		if ( ! empty( $facets ) ) {
-			$record['facets'] = $facets;
-		}
-
-		$embed = $this->embed( $jwt, (array) ( $payload['images'] ?? array() ), $link );
+		$embed = $this->embed( (string) $credentials['access_jwt'], (array) ( $payload['images'] ?? array() ), (string) ( $payload['link'] ?? '' ), $card );
 		if ( $embed ) {
 			$record['embed'] = $embed;
 		}
 
-		$data = $this->request(
+		$data = $this->write_record( $credentials, $record );
+		$uri  = (string) ( $data['uri'] ?? '' );
+		if ( '' === $uri ) {
+			throw new NetworkException( 'unknown', esc_html__( 'Bluesky did not confirm the post. Check the account before you try again.', 'social-integrations' ) );
+		}
+
+		$actor = '' !== (string) ( $credentials['handle'] ?? '' ) ? (string) $credentials['handle'] : (string) $credentials['did'];
+		$rkey  = substr( (string) strrchr( $uri, '/' ), 1 );
+
+		return array(
+			'remote_id'  => $uri,
+			'remote_url' => 'https://bsky.app/profile/' . $actor . '/post/' . $rkey,
+			'cid'        => (string) ( $data['cid'] ?? '' ),
+		);
+	}
+
+	/**
+	 * Writes a post record to the account's repository.
+	 *
+	 * @param array $credentials Session.
+	 * @param array $record      Post record.
+	 * @return array Bluesky's answer: ['uri', 'cid'].
+	 * @throws NetworkException When Bluesky refuses.
+	 */
+	private function write_record( array $credentials, array $record ): array {
+		$jwt = (string) $credentials['access_jwt'];
+		return $this->request(
 			'POST',
 			self::PDS . '/com.atproto.repo.createRecord',
 			array(
@@ -265,19 +336,6 @@ class Bluesky extends AbstractNetwork {
 				),
 			)
 		);
-
-		$uri = (string) ( $data['uri'] ?? '' );
-		if ( '' === $uri ) {
-			throw new NetworkException( 'unknown', esc_html__( 'Bluesky did not confirm the post. Check the account before you try again.', 'social-integrations' ) );
-		}
-
-		$actor = '' !== (string) ( $credentials['handle'] ?? '' ) ? (string) $credentials['handle'] : (string) $credentials['did'];
-		$rkey  = substr( (string) strrchr( $uri, '/' ), 1 );
-
-		return array(
-			'remote_id'  => $uri,
-			'remote_url' => 'https://bsky.app/profile/' . $actor . '/post/' . $rkey,
-		);
 	}
 
 	/**
@@ -286,9 +344,10 @@ class Bluesky extends AbstractNetwork {
 	 * @param string $jwt       Session token.
 	 * @param array  $images_in Payload images.
 	 * @param string $link      Post link.
+	 * @param array  $card      ['title', 'description'] from the post fields; empty values use the page's own.
 	 * @throws NetworkException When an image cannot be read or uploaded.
 	 */
-	private function embed( string $jwt, array $images_in, string $link ): ?array {
+	private function embed( string $jwt, array $images_in, string $link, array $card = array() ): ?array {
 		$images = array();
 		foreach ( array_slice( array_values( $images_in ), 0, $this->max_images() ) as $image ) {
 			if ( ! is_array( $image ) ) {
@@ -310,7 +369,7 @@ class Bluesky extends AbstractNetwork {
 		if ( '' !== $link ) {
 			return array(
 				'$type'    => 'app.bsky.embed.external',
-				'external' => $this->link_card( $jwt, $link ),
+				'external' => $this->link_card( $jwt, $link, $card ),
 			);
 		}
 		return null;
@@ -382,13 +441,16 @@ class Bluesky extends AbstractNetwork {
 	}
 
 	/**
-	 * Link card from the page's title, description and image.
+	 * Link card from the page's title, description and image. A title or description in
+	 * $own replaces the page's.
 	 *
 	 * @param string $jwt  Access token.
 	 * @param string $link URL.
+	 * @param array  $own  ['title', 'description'], empty values to use the page's.
 	 */
-	private function link_card( string $jwt, string $link ): array {
-		$card = array(
+	private function link_card( string $jwt, string $link, array $own = array() ): array {
+		$own  = array_filter( array_map( 'strval', $own ), 'strlen' );
+		$card = $own + array(
 			'uri'         => $link,
 			'title'       => $link,
 			'description' => '',
@@ -411,10 +473,12 @@ class Bluesky extends AbstractNetwork {
 		$desc  = $meta['og:description'] ?? ( $meta['description'] ?? '' );
 		$thumb = $meta['og:image'] ?? ( $meta['twitter:image'] ?? '' );
 
-		if ( '' !== $title ) {
+		if ( '' !== $title && ! isset( $own['title'] ) ) {
 			$card['title'] = mb_substr( $title, 0, 300 );
 		}
-		$card['description'] = mb_substr( $desc, 0, 1000 );
+		if ( ! isset( $own['description'] ) ) {
+			$card['description'] = mb_substr( $desc, 0, 1000 );
+		}
 
 		if ( '' !== $thumb && wp_http_validate_url( $thumb ) ) {
 			try {

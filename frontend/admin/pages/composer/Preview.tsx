@@ -16,11 +16,13 @@ interface Props {
   account?: Account
   chosenMedia: MediaItem[]
   /** Link card when no media is on. */
-  link?: { url: string; title: string; image?: string }
+  link?: { url: string; title: string; description?: string; image?: string }
+  /** The first comment below the post, if any. */
+  comment?: string
 }
 
 /** The right column: a post card for one network, then a fit check for each network. */
-export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link }: Props) {
+export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment }: Props) {
   const { network } = useStore()
   const net = preview ? network(preview) : undefined
 
@@ -63,6 +65,16 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
               <div style={{ padding: '10px 12px' }}>
                 <div style={{ fontSize: 11, color: '#65676b', textTransform: 'uppercase' }}>{hostOf(link.url)}</div>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{link.title}</div>
+                {link.description && <div style={{ fontSize: 13, color: '#65676b', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{link.description}</div>}
+              </div>
+            </div>
+          )}
+          {comment && (
+            <div style={{ borderTop: '1px solid #e4e6eb', padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              {account && <AccountAvatar account={account} network={net} />}
+              <div style={{ background: '#f0f2f5', borderRadius: 14, padding: '8px 12px', fontSize: 13, lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word', minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 12 }}>{account?.name}</div>
+                {comment}
               </div>
             </div>
           )}

@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Campaigns\Campaigns;
+use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\Publisher;
@@ -88,7 +89,9 @@ final class QueueController extends RestController {
 	 * Adds shares from the composer: one row for each account.
 	 *
 	 * Body: { post_id?, caption, captions?: {network: caption}, accounts: string[],
-	 * media?: array, link?, scheduled_at?: ISO 8601 (empty = now), draft?: bool }.
+	 * media?: array, link?, fields?: {'*' | network: {name: value}} (what the user set),
+	 * field_values?: {network: {name: value}} (final values), scheduled_at?: ISO 8601
+	 * (empty = now), draft?: bool }.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -102,8 +105,8 @@ final class QueueController extends RestController {
 	/**
 	 * Changes a draft, scheduled or failed share, and sends it now when asked.
 	 *
-	 * Body: { caption?, media?: array, scheduled_at?: ISO 8601 (empty = now), draft?: bool }.
-	 * Fields left out keep their value.
+	 * Body: { caption?, media?: array, fields?: {name: value}, scheduled_at?: ISO 8601 (empty = now),
+	 * draft?: bool }. Fields left out keep their value.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -133,6 +136,9 @@ final class QueueController extends RestController {
 		}
 		if ( isset( $body['media'] ) ) {
 			$fields['media'] = Campaigns::media( $body['media'] );
+		}
+		if ( isset( $body['fields'] ) && is_array( $body['fields'] ) ) {
+			$fields['fields'] = PostFields::for_network( $job['network'], array( $job['network'] => $body['fields'] ) );
 		}
 		// The scheduler can claim the row after this request reads it.
 		if ( ! Queue::update( $job['id'], $fields, $job['status'] ) ) {

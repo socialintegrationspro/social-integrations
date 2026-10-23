@@ -41,7 +41,7 @@ $sint_uninstall = static function () {
 		$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
-	foreach ( array( AutoShare::META_SHARED, AutoShare::META_DISABLED, AutoShare::META_CAPTION, AutoShare::META_ACCOUNTS ) as $meta_key ) {
+	foreach ( array( AutoShare::META_SHARED, AutoShare::META_DISABLED, AutoShare::META_CAPTION, AutoShare::META_ACCOUNTS, AutoShare::META_FIELDS ) as $meta_key ) {
 		delete_post_meta_by_key( $meta_key );
 	}
 

@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Scheduler;
 
 use SocialIntegrations\Auth\Broker;
+use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Support\Cron;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Hooks;
@@ -130,13 +131,15 @@ final class Publisher {
 			}
 
 			$credentials = $this->fresh_credentials( $network, $account );
-			$answer      = $network->publish( $credentials, $this->payload( $job ) );
+			$payload     = PostFields::apply_format( $network, $this->payload( $job ) );
+			$answer      = $network->publish( $credentials, $payload );
 			if ( ! empty( $answer['credentials'] ) && is_array( $answer['credentials'] ) ) {
+				$credentials = array_merge( $credentials, $answer['credentials'] );
 				Accounts::update_credentials( (string) $job['account_id'], $answer['credentials'] );
 			}
 			$result = array(
 				'status'     => 'published',
-				'message'    => '',
+				'message'    => $this->first_comment( $network, $credentials, $answer, $payload, $details ),
 				'remote_id'  => (string) ( $answer['remote_id'] ?? '' ),
 				'remote_url' => (string) ( $answer['remote_url'] ?? '' ),
 			);
@@ -152,6 +155,36 @@ final class Publisher {
 		Queue::log( $job, $result );
 		do_action( Hooks::SHARE_COMPLETED, $result, $job );
 		return $result;
+	}
+
+	/**
+	 * Adds the 'first_comment' field below a published post. A comment that fails does not
+	 * change the share's status: the post is on the network.
+	 *
+	 * @param AbstractNetwork $network     Network.
+	 * @param array           $credentials Credentials.
+	 * @param array           $answer      What publish() returned.
+	 * @param array           $payload     Share payload.
+	 * @param array           $details     Log details; gets 'comment'.
+	 * @return string A message for the share log, or '' when there is no problem.
+	 */
+	private function first_comment( AbstractNetwork $network, array $credentials, array $answer, array $payload, array &$details ): string {
+		$text = trim( (string) ( $payload['fields']['first_comment'] ?? '' ) );
+		if ( '' === $text || ! $network->post_field( 'first_comment' ) ) {
+			return '';
+		}
+		try {
+			$comment            = $network->add_comment( $credentials, $answer, $text );
+			$details['comment'] = array( 'remote_id' => (string) ( $comment['remote_id'] ?? '' ) );
+			return '';
+		} catch ( \Throwable $e ) {
+			$details['comment'] = array(
+				'code'  => $e instanceof NetworkException ? $e->error_code() : 'exception',
+				'error' => Errors::text( $e ),
+			);
+			/* translators: 1: network name, 2: reason */
+			return sprintf( __( 'The post is on %1$s. The first comment failed: %2$s', 'social-integrations' ), $network->label(), Errors::text( $e ) );
+		}
 	}
 
 	/**
@@ -258,6 +291,7 @@ final class Publisher {
 			'link'    => (string) $job['link'],
 			'images'  => $images,
 			'videos'  => $videos,
+			'fields'  => (array) ( $job['fields'] ?? array() ),
 		);
 	}
 }

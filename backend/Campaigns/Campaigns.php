@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Campaigns;
 
+use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Database\Migrations;
 use SocialIntegrations\Hooks;
@@ -74,6 +75,10 @@ final class Campaigns {
 			'accounts'     => array_values( array_filter( array_map( 'sanitize_key', (array) ( $body['accounts'] ?? array() ) ) ) ),
 			'media'        => self::media( $body['media'] ?? array() ),
 			'link'         => esc_url_raw( (string) ( $body['link'] ?? ( $post_id ? get_permalink( $post_id ) : '' ) ) ),
+			// What the user set, with '*' values, so the composer opens the campaign as it was.
+			'fields'       => PostFields::clean( $body['fields'] ?? array() ),
+			// The final values of each network, which the composer builds from the post.
+			'field_values' => PostFields::clean( $body['field_values'] ?? array() ),
 			'scheduled_at' => empty( $body['scheduled_at'] ) ? '' : gmdate( 'c', (int) strtotime( (string) $body['scheduled_at'] ) ),
 			// A user who cannot publish saves drafts only.
 			'draft'        => ! empty( $body['draft'] ) || ! current_user_can( Capabilities::PUBLISH ),
@@ -345,6 +350,7 @@ final class Campaigns {
 					'caption'      => $data['captions'][ $account['network'] ] ?? $data['caption'],
 					'media'        => $data['media'],
 					'link'         => $data['link'],
+					'fields'       => PostFields::for_network( $account['network'], isset( $data['field_values'][ $account['network'] ] ) ? $data['field_values'] : $data['fields'] ),
 					'status'       => $data['draft'] ? 'draft' : 'scheduled',
 					'scheduled_at' => gmdate( 'Y-m-d H:i:s', $when ),
 				)

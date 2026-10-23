@@ -165,7 +165,7 @@ final class ContentController extends RestController {
 	/**
 	 * The share a template, not saved yet, builds for one item.
 	 *
-	 * Body: { template: { caption, captions, media, custom_media } }, as an auto-post campaign holds them.
+	 * Body: { template: { caption, captions, media, custom_media, link, fields } }, as an auto-post campaign holds them.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error

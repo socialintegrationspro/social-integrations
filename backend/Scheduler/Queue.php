@@ -22,7 +22,8 @@ final class Queue {
 	/**
 	 * Adds one share for one account.
 	 *
-	 * @param array $data ['post_id', 'network', 'account_id', 'caption', 'media', 'link', 'status', 'scheduled_at' (UTC 'Y-m-d H:i:s'),
+	 * @param array $data ['post_id', 'network', 'account_id', 'caption', 'media', 'link', 'fields' (filled post fields of
+	 *                    the network: name => value), 'status', 'scheduled_at' (UTC 'Y-m-d H:i:s'),
 	 *                    'campaign_key' ("{type}-{id}" of the campaign that adds it), 'batch_id' (see batch())].
 	 * @return int Row ID.
 	 */
@@ -41,13 +42,14 @@ final class Queue {
 				'caption'      => (string) ( $data['caption'] ?? '' ),
 				'media'        => wp_json_encode( array_values( (array) ( $data['media'] ?? array() ) ) ),
 				'link'         => esc_url_raw( (string) ( $data['link'] ?? '' ) ),
+				'fields'       => wp_json_encode( (object) ( $data['fields'] ?? array() ) ),
 				'status'       => in_array( $data['status'] ?? '', self::STATUSES, true ) ? $data['status'] : 'scheduled',
 				'scheduled_at' => (string) ( $data['scheduled_at'] ?? $now ),
 				'created_by'   => get_current_user_id(),
 				'created_at'   => $now,
 				'updated_at'   => $now,
 			),
-			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
 		);
 		return (int) $wpdb->insert_id;
 	}
@@ -133,6 +135,9 @@ final class Queue {
 		global $wpdb;
 		if ( isset( $fields['media'] ) && is_array( $fields['media'] ) ) {
 			$fields['media'] = wp_json_encode( array_values( $fields['media'] ) );
+		}
+		if ( isset( $fields['fields'] ) && is_array( $fields['fields'] ) ) {
+			$fields['fields'] = wp_json_encode( (object) $fields['fields'] );
 		}
 		$fields['updated_at'] = current_time( 'mysql', true );
 		$where                = null === $status ? array( 'id' => $id ) : array(
@@ -530,6 +535,8 @@ final class Queue {
 		$row['attempts']    = (int) $row['attempts'];
 		$media              = json_decode( (string) $row['media'], true );
 		$row['media']       = is_array( $media ) ? $media : array();
+		$values             = json_decode( (string) ( $row['fields'] ?? '' ), true );
+		$row['fields']      = is_array( $values ) ? $values : array();
 		return $row;
 	}
 }

@@ -60,6 +60,68 @@ class LinkedIn extends AbstractNetwork {
 	}
 
 	/**
+	 * Post format, link card, visibility and first comment.
+	 */
+	public function post_fields(): array {
+		return array(
+			$this->format_field(),
+			$this->title_field( 400 ),
+			$this->description_field( 4000 ),
+			$this->visibility_field(),
+			$this->first_comment_field(),
+		);
+	}
+
+	/**
+	 * Field: who can see the post.
+	 */
+	protected function visibility_field(): array {
+		return array(
+			'name'    => 'visibility',
+			'label'   => __( 'Who can see the post', 'social-integrations' ),
+			'type'    => 'select',
+			'default' => 'PUBLIC',
+			'options' => array(
+				array(
+					'value' => 'PUBLIC',
+					'label' => __( 'Anyone', 'social-integrations' ),
+				),
+				array(
+					'value' => 'CONNECTIONS',
+					'label' => __( 'Connections only', 'social-integrations' ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Adds a comment below the post, as the author of the post.
+	 *
+	 * @param array  $credentials ['access_token', 'member_id'].
+	 * @param array  $post        What publish() returned.
+	 * @param string $text        Comment text.
+	 * @throws NetworkException When LinkedIn refuses the comment.
+	 */
+	public function comment( array $credentials, array $post, string $text ): array {
+		$urn  = (string) $post['remote_id'];
+		$data = $this->request(
+			'POST',
+			self::REST . '/socialActions/' . rawurlencode( $urn ) . '/comments',
+			array(
+				'headers' => $this->rest_headers( (string) ( $credentials['access_token'] ?? '' ), 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'actor'   => $this->author_urn( $credentials ),
+						'object'  => $urn,
+						'message' => array( 'text' => $text ),
+					)
+				),
+			)
+		);
+		return array( 'remote_id' => (string) ( $data['id'] ?? $this->last_header( 'x-restli-id' ) ) );
+	}
+
+	/**
 	 * App fields, with LinkedIn's names for them.
 	 */
 	public function app_fields(): array {
@@ -200,7 +262,7 @@ class LinkedIn extends AbstractNetwork {
 		$post    = array(
 			'author'                    => $author,
 			'commentary'                => self::little_text( (string) ( $payload['message'] ?? '' ) ),
-			'visibility'                => 'PUBLIC',
+			'visibility'                => $this->field( $payload, 'visibility' ),
 			'distribution'              => array(
 				'feedDistribution'               => 'MAIN_FEED',
 				'targetEntities'                 => array(),
@@ -210,6 +272,13 @@ class LinkedIn extends AbstractNetwork {
 			'isReshareDisabledByAuthor' => false,
 		);
 		$content = $this->post_content( $token, $author, (string) ( $payload['link'] ?? '' ), (array) ( $payload['images'] ?? array() ) );
+		// The link card title and description from the post fields replace the ones from the post.
+		foreach ( array( 'title', 'description' ) as $name ) {
+			$value = $this->field( $payload, $name );
+			if ( isset( $content['article'] ) && '' !== $value ) {
+				$content['article'][ $name ] = $value;
+			}
+		}
 		if ( $content ) {
 			$post['content'] = $content;
 		}
