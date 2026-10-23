@@ -153,7 +153,7 @@ final class EditorController extends RestController {
 
 		$caption = sanitize_textarea_field( (string) $request['caption'] );
 		$meta    = static function ( $value, $object_id, $meta_key ) use ( $post, $caption ) {
-			return (int) $object_id === $post->ID && '_sint_caption' === $meta_key ? array( $caption ) : $value;
+			return (int) $object_id === $post->ID && AutoShare::META_CAPTION === $meta_key ? array( $caption ) : $value;
 		};
 		add_filter( 'get_post_metadata', $meta, 10, 3 );
 

@@ -102,17 +102,15 @@ class Threads extends AbstractNetwork {
 	 * @param string $state        Anti-forgery state.
 	 */
 	public function authorization_url( array $app, string $redirect_uri, string $state ): string {
-		return self::AUTHORIZE . '?' . http_build_query(
+		return self::build_url(
+			self::AUTHORIZE,
 			array(
 				'client_id'     => (string) ( $app['client_id'] ?? '' ),
 				'redirect_uri'  => $redirect_uri,
 				'scope'         => 'threads_basic,threads_content_publish',
 				'response_type' => 'code',
 				'state'         => $state,
-			),
-			'',
-			'&',
-			PHP_QUERY_RFC3986
+			)
 		);
 	}
 
@@ -142,7 +140,7 @@ class Threads extends AbstractNetwork {
 			throw new NetworkException( 'oauth', esc_html__( 'Threads did not return an access token. Try connecting again.', 'social-integrations' ) );
 		}
 
-		$long = $this->get(
+		$long = $this->http_get(
 			self::ROOT . '/access_token',
 			array(
 				'grant_type'    => 'th_exchange_token',
@@ -155,10 +153,7 @@ class Threads extends AbstractNetwork {
 			'access_token' => ! empty( $long['access_token'] ) ? (string) $long['access_token'] : (string) $short['access_token'],
 			'user_id'      => (string) ( $short['user_id'] ?? '' ),
 		);
-		if ( ! empty( $long['expires_in'] ) ) {
-			$credentials['expires_at'] = time() + (int) $long['expires_in'];
-		}
-		return $credentials;
+		return $this->with_expiry( $credentials, $long );
 	}
 
 	/**
@@ -172,7 +167,7 @@ class Threads extends AbstractNetwork {
 		if ( empty( $credentials['access_token'] ) ) {
 			return null;
 		}
-		$data = $this->get(
+		$data = $this->http_get(
 			self::ROOT . '/refresh_access_token',
 			array(
 				'grant_type'   => 'th_refresh_token',
@@ -184,10 +179,7 @@ class Threads extends AbstractNetwork {
 		}
 		$fresh                 = $credentials;
 		$fresh['access_token'] = (string) $data['access_token'];
-		if ( ! empty( $data['expires_in'] ) ) {
-			$fresh['expires_at'] = time() + (int) $data['expires_in'];
-		}
-		return $fresh;
+		return $this->with_expiry( $fresh, $data );
 	}
 
 	/**
@@ -196,7 +188,7 @@ class Threads extends AbstractNetwork {
 	 * @param array $credentials Credentials.
 	 */
 	public function fetch_profile( array $credentials ): array {
-		$data = $this->get(
+		$data = $this->http_get(
 			self::API . '/me',
 			array(
 				'fields'       => 'id,username,name,threads_profile_picture_url',
@@ -353,7 +345,7 @@ class Threads extends AbstractNetwork {
 	 */
 	private function permalink( string $post_id, string $token ): string {
 		try {
-			$node = $this->get(
+			$node = $this->http_get(
 				self::API . '/' . rawurlencode( $post_id ),
 				array(
 					'fields'       => 'permalink',
@@ -416,7 +408,7 @@ class Threads extends AbstractNetwork {
 	private function wait_for_container( string $id, string $token, int $max_seconds ): void {
 		$deadline = time() + $max_seconds;
 		do {
-			$node   = $this->get(
+			$node   = $this->http_get(
 				self::API . '/' . rawurlencode( $id ),
 				array(
 					'fields'       => 'status,error_message',
@@ -435,16 +427,6 @@ class Threads extends AbstractNetwork {
 		} while ( time() < $deadline );
 
 		throw new NetworkException( 'timeout', esc_html__( 'Threads is taking too long to process the media. Try again in a few minutes.', 'social-integrations' ) );
-	}
-
-	/**
-	 * GET with query arguments.
-	 *
-	 * @param string $url   URL.
-	 * @param array  $query Query arguments.
-	 */
-	private function get( string $url, array $query ): array {
-		return $this->request( 'GET', $url . '?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
 	}
 
 	/**

@@ -248,6 +248,41 @@ final class Queue {
 	 */
 	public static function log_entries( array $args ): array {
 		global $wpdb;
+		$sql = self::log_entries_sql( $args );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$total   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT batch_id) FROM ({$sql}) s" );
+		$per     = max( 1, (int) ( $args['per_page'] ?? 10 ) );
+		$offset  = ( max( 1, (int) ( $args['page'] ?? 1 ) ) - 1 ) * $per;
+		$batches = $wpdb->get_col( $wpdb->prepare( "SELECT batch_id FROM ({$sql}) s GROUP BY batch_id ORDER BY MAX(id) DESC LIMIT %d OFFSET %d", $per, $offset ) );
+		$entries = array();
+		if ( $batches ) {
+			$in = implode( ',', array_map( array( $wpdb, 'prepare' ), array_fill( 0, count( $batches ), '%s' ), $batches ) );
+			foreach ( (array) $wpdb->get_results( "SELECT * FROM ({$sql}) s WHERE batch_id IN ({$in}) ORDER BY id DESC", ARRAY_A ) as $row ) {
+				$entries[ $row['batch_id'] ][] = $row;
+			}
+		}
+		// phpcs:enable
+		// Keep the order of the page: the newest entry first.
+		$ordered = array();
+		foreach ( $batches as $batch ) {
+			$ordered[ $batch ] = $entries[ $batch ] ?? array();
+		}
+		return array(
+			'total'   => $total,
+			'entries' => $ordered,
+		);
+	}
+
+	/**
+	 * The SQL for the share log rows that match the filters: one row for each share,
+	 * which is its newest log row, with the number of times it was tried.
+	 *
+	 * @param array $args The filters of log_entries(): 'campaign', 'status', 'search', 'from', 'to'.
+	 * @return string Prepared SQL.
+	 */
+	private static function log_entries_sql( array $args ): string {
+		global $wpdb;
 		$logs  = Migrations::logs_table();
 		$queue = Migrations::queue_table();
 		// A log row without a queue row stands alone, as its own share and batch.
@@ -284,29 +319,7 @@ final class Queue {
 		if ( $params ) {
 			$sql = $wpdb->prepare( $sql, $params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-		$total   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT batch_id) FROM ({$sql}) s" );
-		$per     = max( 1, (int) ( $args['per_page'] ?? 10 ) );
-		$offset  = ( max( 1, (int) ( $args['page'] ?? 1 ) ) - 1 ) * $per;
-		$batches = $wpdb->get_col( $wpdb->prepare( "SELECT batch_id FROM ({$sql}) s GROUP BY batch_id ORDER BY MAX(id) DESC LIMIT %d OFFSET %d", $per, $offset ) );
-		$entries = array();
-		if ( $batches ) {
-			$in = implode( ',', array_map( array( $wpdb, 'prepare' ), array_fill( 0, count( $batches ), '%s' ), $batches ) );
-			foreach ( (array) $wpdb->get_results( "SELECT * FROM ({$sql}) s WHERE batch_id IN ({$in}) ORDER BY id DESC", ARRAY_A ) as $row ) {
-				$entries[ $row['batch_id'] ][] = $row;
-			}
-		}
-		// phpcs:enable
-		// Keep the order of the page: the newest entry first.
-		$ordered = array();
-		foreach ( $batches as $batch ) {
-			$ordered[ $batch ] = $entries[ $batch ] ?? array();
-		}
-		return array(
-			'total'   => $total,
-			'entries' => $ordered,
-		);
+		return (string) $sql;
 	}
 
 	/**

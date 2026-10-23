@@ -50,7 +50,7 @@ final class Claude extends AbstractProvider {
 	 * @throws AIException When Claude declines or returns no text.
 	 */
 	public function write( string $system, string $prompt, string $key, string $model ): string {
-		$model   = '' !== $model ? $model : self::MODEL;
+		$model   = $this->model( $model );
 		$headers = array(
 			'x-api-key'         => $key,
 			'anthropic-version' => '2023-06-01',

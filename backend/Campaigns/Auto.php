@@ -94,15 +94,7 @@ final class Auto {
 			}
 			$wpdb->update( Migrations::campaigns_table(), $row, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		} else {
-			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-				Migrations::campaigns_table(),
-				$row + array(
-					'type'       => 'auto',
-					'created_by' => get_current_user_id(),
-					'created_at' => $now,
-				)
-			);
-			$id = (int) $wpdb->insert_id;
+			$id = Campaigns::insert( 'auto', $row['name'], $data );
 		}
 		return Campaigns::get( $id );
 	}

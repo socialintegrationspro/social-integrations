@@ -44,7 +44,7 @@ final class Gemini extends AbstractProvider {
 	 * @param string $model  Model.
 	 */
 	public function write( string $system, string $prompt, string $key, string $model ): string {
-		$model = '' !== $model ? $model : $this->default_model();
+		$model = $this->model( $model );
 		$data  = $this->post(
 			'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode( $model ) . ':generateContent',
 			array( 'x-goog-api-key' => $key ),

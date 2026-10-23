@@ -112,19 +112,65 @@ class Telegram extends AbstractNetwork {
 		if ( '' === $token || '' === $chat ) {
 			throw new NetworkException( 'invalid', esc_html__( 'Enter the bot token and the channel or group.', 'social-integrations' ) );
 		}
+
+		$me   = $this->check_token( $token );
+		$info = $this->check_chat( $token, $chat, $me );
+
+		$chat_id  = isset( $info['id'] ) ? (string) $info['id'] : $chat;
+		$username = (string) ( $info['username'] ?? '' );
+		$name     = (string) ( $info['title'] ?? '' );
+		if ( '' === $name ) {
+			$name = trim( (string) ( $info['first_name'] ?? '' ) . ' ' . (string) ( $info['last_name'] ?? '' ) );
+		}
+
+		return array(
+			'credentials' => array(
+				'bot_token' => $token,
+				'chat_id'   => $chat_id,
+				'username'  => $username,
+			),
+			'profile'     => array(
+				'remote_id'   => $chat_id,
+				'name'        => '' !== $name ? $name : $username,
+				'username'    => $username,
+				'avatar'      => '',
+				'profile_url' => '' !== $username ? 'https://t.me/' . $username : '',
+			),
+		);
+	}
+
+	/**
+	 * Checks the format of the bot token, then asks Telegram for the bot.
+	 *
+	 * @param string $token Bot token.
+	 * @return array The bot, from getMe.
+	 * @throws NetworkException When Telegram does not accept the token.
+	 */
+	private function check_token( string $token ): array {
 		if ( ! preg_match( '/^\d+:[A-Za-z0-9_-]+$/', $token ) ) {
 			throw new NetworkException( 'invalid', esc_html__( 'This does not look like a bot token. Copy it again from @BotFather.', 'social-integrations' ) );
 		}
 
 		try {
-			$me = $this->call( $token, 'getMe' );
+			return $this->call( $token, 'getMe' );
 		} catch ( NetworkException $e ) {
 			if ( $e->is_expired() || 404 === $e->getCode() ) {
 				throw new NetworkException( 'invalid', esc_html__( 'Telegram did not accept this bot token. Copy it again from @BotFather.', 'social-integrations' ) );
 			}
 			throw $e;
 		}
+	}
 
+	/**
+	 * Finds the chat. For a channel, also checks that the bot can post in it.
+	 *
+	 * @param string $token Bot token.
+	 * @param string $chat  Chat ID or @username.
+	 * @param array  $me    The bot, from getMe.
+	 * @return array The chat, from getChat.
+	 * @throws NetworkException When the bot cannot find the chat or cannot post in it.
+	 */
+	private function check_chat( string $token, string $chat, array $me ): array {
 		try {
 			$info = $this->call( $token, 'getChat', array( 'chat_id' => $chat ) );
 		} catch ( NetworkException $e ) {
@@ -153,27 +199,7 @@ class Telegram extends AbstractNetwork {
 			}
 		}
 
-		$chat_id  = isset( $info['id'] ) ? (string) $info['id'] : $chat;
-		$username = (string) ( $info['username'] ?? '' );
-		$name     = (string) ( $info['title'] ?? '' );
-		if ( '' === $name ) {
-			$name = trim( (string) ( $info['first_name'] ?? '' ) . ' ' . (string) ( $info['last_name'] ?? '' ) );
-		}
-
-		return array(
-			'credentials' => array(
-				'bot_token' => $token,
-				'chat_id'   => $chat_id,
-				'username'  => $username,
-			),
-			'profile'     => array(
-				'remote_id'   => $chat_id,
-				'name'        => '' !== $name ? $name : $username,
-				'username'    => $username,
-				'avatar'      => '',
-				'profile_url' => '' !== $username ? 'https://t.me/' . $username : '',
-			),
-		);
+		return $info;
 	}
 
 	/**

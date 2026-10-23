@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\Support\Cron;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\AbstractNetwork;
@@ -48,14 +49,7 @@ final class Publisher {
 	public function register(): void {
 		add_filter( 'cron_schedules', array( $this, 'add_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 		add_action( self::CRON_HOOK, array( $this, 'run' ) );
-		add_action(
-			'init',
-			static function () {
-				if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-					wp_schedule_event( time() + 60, self::CRON_SCHEDULE, self::CRON_HOOK );
-				}
-			}
-		);
+		Cron::ensure( self::CRON_HOOK, self::CRON_SCHEDULE, 60 );
 	}
 
 	/**
@@ -145,31 +139,8 @@ final class Publisher {
 				'remote_id'  => (string) ( $answer['remote_id'] ?? '' ),
 				'remote_url' => (string) ( $answer['remote_url'] ?? '' ),
 			);
-		} catch ( NetworkException $e ) {
-			if ( $e->is_expired() && $account ) {
-				Accounts::set_status( (string) $job['account_id'], 'expired' );
-			}
-			$result  = array(
-				'status'  => 'failed',
-				'message' => Errors::text( $e ),
-			);
-			$details = array(
-				'code'   => $e->error_code(),
-				'status' => (int) $e->getCode(),
-			);
 		} catch ( \Throwable $e ) {
-			$result  = array(
-				'status'  => 'failed',
-				'message' => __( 'The share stopped because of an unexpected error.', 'social-integrations' ),
-			);
-			$details = array(
-				'code'      => 'exception',
-				'exception' => array(
-					'class'   => get_class( $e ),
-					'message' => Errors::text( $e ),
-					'file'    => str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( $e->getFile() ) ) . ':' . $e->getLine(),
-				),
-			);
+			list( $result, $details ) = $this->failure( $e, (string) $job['account_id'], (bool) $account );
 		}
 		if ( $network ) {
 			$details['requests'] = $network->take_trace();
@@ -180,6 +151,50 @@ final class Publisher {
 		Queue::log( $job, $result );
 		do_action( Hooks::SHARE_COMPLETED, $result, $job );
 		return $result;
+	}
+
+	/**
+	 * The result and the log details for a share that failed.
+	 *
+	 * A network error gives its message to the user. When the sign-in expired, the
+	 * account gets the 'expired' status. Any other error gives a general message, and
+	 * the details keep the exception for a developer.
+	 *
+	 * @param \Throwable $e           The error.
+	 * @param string     $account_id  Account ID.
+	 * @param bool       $has_account True when the account exists.
+	 * @return array [ result ['status', 'message'], details ].
+	 */
+	private function failure( \Throwable $e, string $account_id, bool $has_account ): array {
+		if ( $e instanceof NetworkException ) {
+			if ( $e->is_expired() && $has_account ) {
+				Accounts::set_status( $account_id, 'expired' );
+			}
+			return array(
+				array(
+					'status'  => 'failed',
+					'message' => Errors::text( $e ),
+				),
+				array(
+					'code'   => $e->error_code(),
+					'status' => (int) $e->getCode(),
+				),
+			);
+		}
+		return array(
+			array(
+				'status'  => 'failed',
+				'message' => __( 'The share stopped because of an unexpected error.', 'social-integrations' ),
+			),
+			array(
+				'code'      => 'exception',
+				'exception' => array(
+					'class'   => get_class( $e ),
+					'message' => Errors::text( $e ),
+					'file'    => str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( $e->getFile() ) ) . ':' . $e->getLine(),
+				),
+			),
+		);
 	}
 
 	/**

@@ -300,6 +300,43 @@ abstract class AbstractNetwork {
 	}
 
 	/**
+	 * Sends a GET request with query arguments and decodes a JSON answer.
+	 *
+	 * @param string $url   URL without a query string.
+	 * @param array  $query Query arguments. When empty, the URL is sent as it is.
+	 * @param array  $args  wp_remote_request() arguments.
+	 * @return array Decoded body.
+	 * @throws NetworkException On a transport error or an HTTP status of 400 or more.
+	 */
+	protected function http_get( string $url, array $query = array(), array $args = array() ): array {
+		return $this->request( 'GET', $query ? self::build_url( $url, $query ) : $url, $args );
+	}
+
+	/**
+	 * Adds query arguments to a URL. The arguments are encoded as RFC 3986.
+	 *
+	 * @param string $base  URL without a query string.
+	 * @param array  $query Query arguments.
+	 */
+	protected static function build_url( string $base, array $query ): string {
+		return $base . '?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 );
+	}
+
+	/**
+	 * Adds 'expires_at' (a Unix time) to the credentials when the token answer has 'expires_in'.
+	 * When 'expires_in' is missing or 0, the credentials do not change.
+	 *
+	 * @param array $credentials Credentials.
+	 * @param array $answer      Decoded token answer.
+	 */
+	protected function with_expiry( array $credentials, array $answer ): array {
+		if ( ! empty( $answer['expires_in'] ) ) {
+			$credentials['expires_at'] = time() + (int) $answer['expires_in'];
+		}
+		return $credentials;
+	}
+
+	/**
 	 * Downloads an image from a URL in the post. wp_safe_remote_get() refuses private and
 	 * local addresses, also after a redirect, so a URL in a post cannot reach the server's
 	 * own network. Only an image up to MAX_IMAGE bytes is returned.

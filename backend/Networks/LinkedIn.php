@@ -88,17 +88,15 @@ class LinkedIn extends AbstractNetwork {
 	 * @param string $state        Anti-forgery state.
 	 */
 	public function authorization_url( array $app, string $redirect_uri, string $state ): string {
-		return self::OAUTH . '/authorization?' . http_build_query(
+		return self::build_url(
+			self::OAUTH . '/authorization',
 			array(
 				'response_type' => 'code',
 				'client_id'     => (string) ( $app['client_id'] ?? '' ),
 				'redirect_uri'  => $redirect_uri,
 				'scope'         => 'openid profile w_member_social',
 				'state'         => $state,
-			),
-			'',
-			'&',
-			PHP_QUERY_RFC3986
+			)
 		);
 	}
 
@@ -346,10 +344,7 @@ class LinkedIn extends AbstractNetwork {
 			throw new NetworkException( 'oauth', esc_html__( 'LinkedIn did not return an access token. Try connecting again.', 'social-integrations' ) );
 		}
 
-		$credentials = array( 'access_token' => (string) $data['access_token'] );
-		if ( ! empty( $data['expires_in'] ) ) {
-			$credentials['expires_at'] = time() + (int) $data['expires_in'];
-		}
+		$credentials = $this->with_expiry( array( 'access_token' => (string) $data['access_token'] ), $data );
 		if ( ! empty( $data['refresh_token'] ) ) {
 			$credentials['refresh_token'] = (string) $data['refresh_token'];
 		}

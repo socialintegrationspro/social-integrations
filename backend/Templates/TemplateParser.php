@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Templates;
 
+use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Hooks;
 
 defined( 'ABSPATH' ) || exit;
@@ -27,7 +28,7 @@ final class TemplateParser {
 	public function tokens( \WP_Post $post, array $parsed ): array {
 		$excerpt = has_excerpt( $post ) ? get_the_excerpt( $post ) : (string) ( $parsed['excerpt'] ?? '' );
 		$tokens  = array(
-			'title'   => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
+			'title'   => PostTypes::title( $post ),
 			'excerpt' => html_entity_decode( wp_strip_all_tags( $excerpt ), ENT_QUOTES, 'UTF-8' ),
 			'url'     => (string) get_permalink( $post ),
 			'tags'    => $this->hashtags( $post ),

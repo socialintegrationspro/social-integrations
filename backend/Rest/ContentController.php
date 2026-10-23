@@ -115,7 +115,7 @@ final class ContentController extends RestController {
 			}
 			$items[] = array(
 				'id'        => $post->ID,
-				'title'     => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
+				'title'     => PostTypes::title( $post ),
 				'type'      => $post->post_type,
 				'status'    => $post->post_status,
 				'date'      => \SocialIntegrations\Support\Dates::iso( $post->post_date_gmt && '0000-00-00 00:00:00' !== $post->post_date_gmt ? $post->post_date_gmt : $post->post_date ),

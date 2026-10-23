@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Content;
 
 use SocialIntegrations\Hooks;
+use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Support\Settings;
 use SocialIntegrations\Templates\TemplateParser;
 
@@ -62,7 +63,7 @@ final class ShareBuilder {
 		$template = $this->template( $post, $account, $context, $base );
 
 		$captions = array();
-		$custom   = (string) get_post_meta( $post->ID, '_sint_caption', true );
+		$custom   = (string) get_post_meta( $post->ID, AutoShare::META_CAPTION, true );
 		if ( '' !== trim( $custom ) ) {
 			// The editor wrote this post's caption; it goes to every network as written.
 			$base = $custom;

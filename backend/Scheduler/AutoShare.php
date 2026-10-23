@@ -22,6 +22,7 @@ final class AutoShare {
 
 	const META_SHARED   = '_sint_auto_shared';
 	const META_DISABLED = '_sint_disabled';
+	const META_CAPTION  = '_sint_caption';
 	const META_ACCOUNTS = '_sint_accounts';
 	const CRON_HOOK     = 'sint_auto_share_post';
 

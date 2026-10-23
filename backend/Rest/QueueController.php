@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Rest;
 
 use SocialIntegrations\Campaigns\Campaigns;
+use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
 
@@ -63,7 +64,7 @@ final class QueueController extends RestController {
 			if ( $post_id && ! isset( $titles[ $post_id ] ) ) {
 				$post               = get_post( $post_id );
 				$titles[ $post_id ] = $post ? array(
-					'title'     => html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ),
+					'title'     => PostTypes::title( $post ),
 					'type'      => $post->post_type,
 					'thumbnail' => (string) get_the_post_thumbnail_url( $post, 'thumbnail' ),
 					'edit_link' => (string) get_edit_post_link( $post, 'raw' ),
@@ -303,7 +304,7 @@ final class QueueController extends RestController {
 			'key'          => $batch,
 			'campaign_key' => (string) $first['campaign_key'],
 			'post_id'      => $post_id,
-			'post_title'   => $post ? html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) : '',
+			'post_title'   => $post ? PostTypes::title( $post ) : '',
 			'edit_url'     => $post ? (string) get_edit_post_link( $post, 'raw' ) : '',
 			'excerpt'      => mb_strlen( $text ) > 80 ? mb_substr( $text, 0, 79 ) . '…' : $text,
 			'at'           => \SocialIntegrations\Support\Dates::iso( $first['created_at'] ),

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-23T07:14:04+00:00\n"
+"POT-Creation-Date: 2026-10-23T07:42:02+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: social-integrations\n"
@@ -53,31 +53,31 @@ msgid "Open"
 msgstr ""
 
 #. translators: 1: provider name, 2: transport error
-#: backend/AI/AbstractProvider.php:43
+#: backend/AI/AbstractProvider.php:52
 #, php-format
 msgid "Could not reach %1$s: %2$s"
 msgstr ""
 
 #. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:63
+#: backend/AI/AbstractProvider.php:72
 #, php-format
 msgid "The %s API key was not accepted. Check it in Settings."
 msgstr ""
 
 #. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:67
+#: backend/AI/AbstractProvider.php:76
 #, php-format
 msgid "%s is busy or the account has reached its limit. Try again in a minute."
 msgstr ""
 
 #. translators: 1: provider name, 2: reason from the provider
-#: backend/AI/AbstractProvider.php:71
+#: backend/AI/AbstractProvider.php:80
 #, php-format
 msgid "%1$s could not write the caption. %2$s"
 msgstr ""
 
 #. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:84
+#: backend/AI/AbstractProvider.php:93
 #, php-format
 msgid "%s returned no caption. Try again."
 msgstr ""
@@ -172,15 +172,15 @@ msgid "Select at least one account."
 msgstr ""
 
 #: backend/Campaigns/Campaigns.php:50
-#: backend/Rest/QueueController.php:119
+#: backend/Rest/QueueController.php:120
 msgid "Enter a valid date and time."
 msgstr ""
 
-#: backend/Campaigns/Campaigns.php:234
+#: backend/Campaigns/Campaigns.php:246
 msgid "(no caption)"
 msgstr ""
 
-#: backend/Content/PostTypes.php:89
+#: backend/Content/PostTypes.php:98
 msgid "Custom"
 msgstr ""
 
@@ -201,21 +201,21 @@ msgid "This network does not use sign-in."
 msgstr ""
 
 #. translators: %s: network name
-#: backend/Networks/AbstractNetwork.php:361
+#: backend/Networks/AbstractNetwork.php:398
 #, php-format
 msgid "An image of the post could not be read, so it was not sent to %s."
 msgstr ""
 
 #. translators: %s: network name
-#: backend/Networks/AbstractNetwork.php:422
-#: backend/Scheduler/Publisher.php:134
+#: backend/Networks/AbstractNetwork.php:459
+#: backend/Scheduler/Publisher.php:128
 #: build/editor/editor.js:1
 #, php-format,js-format
 msgid "%s sign-in expired. Reconnect the account."
 msgstr ""
 
 #. translators: 1: network name, 2: reason from the network
-#: backend/Networks/AbstractNetwork.php:433
+#: backend/Networks/AbstractNetwork.php:470
 #, php-format
 msgid "%1$s did not accept the post. %2$s"
 msgstr ""
@@ -273,15 +273,15 @@ msgstr ""
 msgid "Facebook Page"
 msgstr ""
 
-#: backend/Networks/Facebook.php:123
+#: backend/Networks/Facebook.php:121
 msgid "Facebook did not return an access token. Try connecting again."
 msgstr ""
 
-#: backend/Networks/Facebook.php:246
+#: backend/Networks/Facebook.php:242
 msgid "The Facebook Page is not connected. Reconnect the account."
 msgstr ""
 
-#: backend/Networks/Facebook.php:279
+#: backend/Networks/Facebook.php:275
 msgid "Facebook did not confirm the post. Check the Page before trying again."
 msgstr ""
 
@@ -297,19 +297,19 @@ msgstr ""
 msgid "Client secret"
 msgstr ""
 
-#: backend/Networks/LinkedIn.php:191
+#: backend/Networks/LinkedIn.php:189
 msgid "The LinkedIn account is not connected. Reconnect the account."
 msgstr ""
 
-#: backend/Networks/LinkedIn.php:217
+#: backend/Networks/LinkedIn.php:215
 msgid "LinkedIn did not confirm the post. Check the profile before trying again."
 msgstr ""
 
-#: backend/Networks/LinkedIn.php:310
+#: backend/Networks/LinkedIn.php:308
 msgid "LinkedIn did not accept the image upload. Try again later."
 msgstr ""
 
-#: backend/Networks/LinkedIn.php:346
+#: backend/Networks/LinkedIn.php:344
 msgid "LinkedIn did not return an access token. Try connecting again."
 msgstr ""
 
@@ -337,27 +337,27 @@ msgstr ""
 msgid "Enter the bot token and the channel or group."
 msgstr ""
 
-#: backend/Networks/Telegram.php:116
+#: backend/Networks/Telegram.php:151
 msgid "This does not look like a bot token. Copy it again from @BotFather."
 msgstr ""
 
-#: backend/Networks/Telegram.php:123
+#: backend/Networks/Telegram.php:158
 msgid "Telegram did not accept this bot token. Copy it again from @BotFather."
 msgstr ""
 
-#: backend/Networks/Telegram.php:134
+#: backend/Networks/Telegram.php:180
 msgid "The bot cannot find this channel or group. Add the bot to it as an admin and check the @username or chat ID."
 msgstr ""
 
-#: backend/Networks/Telegram.php:152
+#: backend/Networks/Telegram.php:198
 msgid "The bot is not allowed to post in this channel. Make it an admin with permission to post messages."
 msgstr ""
 
-#: backend/Networks/Telegram.php:194
+#: backend/Networks/Telegram.php:220
 msgid "The Telegram bot is not connected. Reconnect the account."
 msgstr ""
 
-#: backend/Networks/Telegram.php:224
+#: backend/Networks/Telegram.php:250
 msgid "Telegram did not confirm the message. Check the chat before trying again."
 msgstr ""
 
@@ -373,29 +373,29 @@ msgstr ""
 msgid "Threads app secret"
 msgstr ""
 
-#: backend/Networks/Threads.php:142
+#: backend/Networks/Threads.php:140
 msgid "Threads did not return an access token. Try connecting again."
 msgstr ""
 
-#: backend/Networks/Threads.php:233
+#: backend/Networks/Threads.php:225
 msgid "The Threads account is not connected. Reconnect the account."
 msgstr ""
 
-#: backend/Networks/Threads.php:254
+#: backend/Networks/Threads.php:246
 msgid "Threads did not confirm the post. Check the profile before trying again."
 msgstr ""
 
-#: backend/Networks/Threads.php:403
+#: backend/Networks/Threads.php:395
 msgid "Threads did not accept the post content."
 msgstr ""
 
 #. translators: %s: reason from Threads
-#: backend/Networks/Threads.php:432
+#: backend/Networks/Threads.php:424
 #, php-format
 msgid "Threads could not process the media. %s"
 msgstr ""
 
-#: backend/Networks/Threads.php:437
+#: backend/Networks/Threads.php:429
 msgid "Threads is taking too long to process the media. Try again in a few minutes."
 msgstr ""
 
@@ -433,42 +433,42 @@ msgstr ""
 msgid "Enter a name for the campaign."
 msgstr ""
 
-#: backend/Rest/QueueController.php:113
+#: backend/Rest/QueueController.php:114
 msgid "This share has already been sent."
 msgstr ""
 
-#: backend/Rest/QueueController.php:135
-#: backend/Rest/QueueController.php:144
-#: backend/Rest/QueueController.php:165
-#: backend/Rest/QueueController.php:208
+#: backend/Rest/QueueController.php:136
+#: backend/Rest/QueueController.php:145
+#: backend/Rest/QueueController.php:166
+#: backend/Rest/QueueController.php:209
 msgid "This share is being sent now."
 msgstr ""
 
-#: backend/Rest/QueueController.php:179
+#: backend/Rest/QueueController.php:180
 msgid "This share does not exist."
 msgstr ""
 
-#: backend/Rest/QueueController.php:204
+#: backend/Rest/QueueController.php:205
 msgid "Only a failed share can be sent again."
 msgstr ""
 
-#: backend/Rest/QueueController.php:338
+#: backend/Rest/QueueController.php:339
 msgid "This log row does not exist."
 msgstr ""
 
-#: backend/Rest/QueueController.php:357
+#: backend/Rest/QueueController.php:358
 msgid "Select at least one entry."
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:69
+#: backend/Scheduler/Publisher.php:63
 msgid "Every minute"
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:130
+#: backend/Scheduler/Publisher.php:124
 msgid "The account is no longer connected."
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:163
+#: backend/Scheduler/Publisher.php:187
 msgid "The share stopped because of an unexpected error."
 msgstr ""
 

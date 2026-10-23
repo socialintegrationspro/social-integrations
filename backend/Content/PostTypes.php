@@ -66,6 +66,15 @@ final class PostTypes {
 	}
 
 	/**
+	 * The title of a post as plain text, with HTML entities decoded.
+	 *
+	 * @param int|\WP_Post $post Post ID or post.
+	 */
+	public static function title( $post ): string {
+		return html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' );
+	}
+
+	/**
 	 * Who registered the post type, as a short label.
 	 *
 	 * @param \WP_Post_Type $post_type Post type.

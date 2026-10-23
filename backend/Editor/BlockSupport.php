@@ -58,7 +58,7 @@ final class BlockSupport {
 			);
 			register_post_meta(
 				$type,
-				'_sint_caption',
+				AutoShare::META_CAPTION,
 				array(
 					'type'              => 'string',
 					'single'            => true,

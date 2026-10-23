@@ -87,17 +87,15 @@ class Facebook extends AbstractNetwork {
 	 * @param string $state        Anti-forgery state.
 	 */
 	public function authorization_url( array $app, string $redirect_uri, string $state ): string {
-		return self::DIALOG . '?' . http_build_query(
+		return self::build_url(
+			self::DIALOG,
 			array(
 				'client_id'     => (string) ( $app['client_id'] ?? '' ),
 				'redirect_uri'  => $redirect_uri,
 				'scope'         => implode( ',', $this->scopes() ),
 				'state'         => $state,
 				'response_type' => 'code',
-			),
-			'',
-			'&',
-			PHP_QUERY_RFC3986
+			)
 		);
 	}
 
@@ -138,9 +136,7 @@ class Facebook extends AbstractNetwork {
 			);
 			if ( ! empty( $long['access_token'] ) ) {
 				$credentials['access_token'] = (string) $long['access_token'];
-				if ( ! empty( $long['expires_in'] ) ) {
-					$credentials['expires_at'] = time() + (int) $long['expires_in'];
-				}
+				$credentials                 = $this->with_expiry( $credentials, $long );
 			}
 		} catch ( NetworkException $e ) {
 			// The short-lived token still lists the Pages; keep it.
@@ -330,8 +326,6 @@ class Facebook extends AbstractNetwork {
 		return parent::error_code( $status, $body );
 	}
 
-
-
 	/**
 	 * Adds Pages from a Graph list to $pages, keyed by ID. Pages without a token are skipped.
 	 *
@@ -376,8 +370,8 @@ class Facebook extends AbstractNetwork {
 	 * @param string $path  Path.
 	 * @param array  $query Query arguments.
 	 */
-	private function graph_get( string $path, array $query ): array {
-		return $this->request( 'GET', self::GRAPH . $path . '?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
+	protected function graph_get( string $path, array $query ): array {
+		return $this->http_get( self::GRAPH . $path, $query );
 	}
 
 	/**
@@ -386,7 +380,7 @@ class Facebook extends AbstractNetwork {
 	 * @param string $path Path.
 	 * @param array  $body Form fields.
 	 */
-	private function graph_post( string $path, array $body ): array {
+	protected function graph_post( string $path, array $body ): array {
 		return $this->request( 'POST', self::GRAPH . $path, array( 'body' => $body ) );
 	}
 }

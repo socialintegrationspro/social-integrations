@@ -48,7 +48,7 @@ final class OpenAI extends AbstractProvider {
 			'https://api.openai.com/v1/chat/completions',
 			array( 'Authorization' => 'Bearer ' . $key ),
 			array(
-				'model'    => '' !== $model ? $model : $this->default_model(),
+				'model'    => $this->model( $model ),
 				'messages' => array(
 					array(
 						'role'    => 'system',

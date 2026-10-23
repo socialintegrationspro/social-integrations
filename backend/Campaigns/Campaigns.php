@@ -83,7 +83,7 @@ final class Campaigns {
 	 */
 	private static function name( array $data ): string {
 		if ( $data['post_id'] ) {
-			return html_entity_decode( get_the_title( $data['post_id'] ), ENT_QUOTES, 'UTF-8' );
+			return PostTypes::title( $data['post_id'] );
 		}
 		$text = trim( preg_replace( '/\s+/', ' ', $data['caption'] ) );
 		return mb_strlen( $text ) > 60 ? mb_substr( $text, 0, 59 ) . '…' : $text;
@@ -96,22 +96,34 @@ final class Campaigns {
 	 * @return array ['id', 'created', 'results'?].
 	 */
 	public static function create( array $body ): array {
-		global $wpdb;
 		$data = self::data( $body );
-		$now  = current_time( 'mysql', true );
+		$id   = self::insert( 'single', mb_substr( self::name( $data ), 0, 191 ), $data );
+		return array( 'id' => $id ) + self::share( $data, $id );
+	}
+
+	/**
+	 * Adds a campaign row for the current user.
+	 *
+	 * @param string $type Campaign type, for example 'single' or 'auto'.
+	 * @param string $name Campaign name.
+	 * @param array  $data Campaign data, stored as JSON.
+	 * @return int The ID of the new campaign.
+	 */
+	public static function insert( string $type, string $name, array $data ): int {
+		global $wpdb;
+		$now = current_time( 'mysql', true );
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			Migrations::campaigns_table(),
 			array(
-				'type'       => 'single',
-				'name'       => mb_substr( self::name( $data ), 0, 191 ),
+				'type'       => $type,
+				'name'       => $name,
 				'data'       => wp_json_encode( $data ),
 				'created_by' => get_current_user_id(),
 				'created_at' => $now,
 				'updated_at' => $now,
 			)
 		);
-		$id = (int) $wpdb->insert_id;
-		return array( 'id' => $id ) + self::share( $data, $id );
+		return (int) $wpdb->insert_id;
 	}
 
 	/**

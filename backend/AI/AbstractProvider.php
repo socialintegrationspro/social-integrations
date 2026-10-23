@@ -22,6 +22,15 @@ abstract class AbstractProvider implements ProviderInterface {
 	}
 
 	/**
+	 * The model to use: the given model, or the default model when it is empty.
+	 *
+	 * @param string $model Model from Settings.
+	 */
+	protected function model( string $model ): string {
+		return '' !== $model ? $model : $this->default_model();
+	}
+
+	/**
 	 * POSTs JSON and returns the decoded answer.
 	 *
 	 * @param string $url     URL.
