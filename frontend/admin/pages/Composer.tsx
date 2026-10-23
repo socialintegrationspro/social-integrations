@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
-import { PostFields, resolveFields } from '../components/PostFields'
+import { MediaWarning, PostFields, resolveFields } from '../components/PostFields'
 import { api } from '../lib/api'
 import { can, caps, config } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
@@ -147,12 +147,23 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const closeNow = useRef(() => {})
   // Where the focus was when the question opened; Go back returns it there, so Esc works again.
   const focusBack = useRef<HTMLElement | null>(null)
+  // A screen to open after the composer closes, such as the sign-in of an expired account.
+  const leaveTo = useRef('')
+  const finish = () => {
+    onClose()
+    if (leaveTo.current) window.location.hash = '#/' + leaveTo.current
+  }
   closeNow.current = () => {
-    if (!touched || busy || Mode) return onClose()
+    if (!touched || busy || Mode) return finish()
     focusBack.current = document.activeElement as HTMLElement | null
     setAskClose(true)
   }
+  const leave = (to: string) => {
+    leaveTo.current = to
+    closeNow.current()
+  }
   const goBack = () => {
+    leaveTo.current = ''
     setAskClose(false)
     requestAnimationFrame(() => (focusBack.current?.isConnected ? focusBack.current : document.getElementById('sint-caption'))?.focus())
   }
@@ -350,7 +361,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           <span id="sint-discard-text">{__('You have changes that are not saved.', 'social-integrations')}</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
             <button type="button" className="sint-btn ghost" ref={(el) => el?.focus()} onClick={goBack}>{__('Go back', 'social-integrations')}</button>
-            <button type="button" className="sint-btn danger" onClick={onClose}>{__('Discard changes', 'social-integrations')}</button>
+            <button type="button" className="sint-btn danger" onClick={finish}>{__('Discard changes', 'social-integrations')}</button>
           </span>
         </div>
       ) : (
@@ -372,7 +383,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       }
     >
       {mode !== 'auto' && (
-        <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onClose={requestClose} />
+        <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} />
       )}
 
       {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : (
@@ -431,6 +442,8 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             {(media.length > 0 || !!postId) && (
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
             )}
+
+            <MediaWarning nets={tab === 'all' ? nets : [tab]} media={chosenMedia} />
 
             <PostFields nets={nets} tab={tab} value={fields} onChange={(f) => { setTouched(true); setFields(f) }} base={fieldBase} mediaHidesCard={cardHidden} />
 

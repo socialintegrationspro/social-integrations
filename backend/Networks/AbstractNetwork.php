@@ -139,6 +139,14 @@ abstract class AbstractNetwork {
 	}
 
 	/**
+	 * The media that a post needs on this network: '' (none), 'media' (an image or a video)
+	 * or 'video'. The admin app tells the user before a share that will fail without it.
+	 */
+	public function media_required(): string {
+		return '';
+	}
+
+	/**
 	 * Fields of a post that the network takes in addition to the caption, the link and the media.
 	 *
 	 * Each field: [ 'name', 'label', 'type' => 'text'|'textarea'|'select'|'toggle', 'default',
@@ -431,6 +439,7 @@ abstract class AbstractNetwork {
 			'url_length'     => $this->url_length(),
 			'max_images'     => $this->max_images(),
 			'supports_video' => $this->supports_video(),
+			'media_required' => $this->media_required(),
 			'post_fields'    => $this->post_fields(),
 			'connect_fields' => $this->connect_fields(),
 			'app_fields'     => $this->app_fields(),

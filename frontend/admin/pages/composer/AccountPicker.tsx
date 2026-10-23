@@ -12,23 +12,29 @@ interface Props {
   setSelected: (update: (ids: string[]) => string[]) => void
   /** An edited share keeps its account. */
   locked: boolean
-  onClose: () => void
+  /** Leaves the composer for another screen, such as 'accounts'. The composer asks first when there are unsaved changes. */
+  onLeave: (to: string) => void
 }
 
 /** The "Share to" row: one button for each account, plus Select all and expired sign-ins. */
-export function AccountPicker({ accounts, connected, selected, setSelected, locked, onClose }: Props) {
+export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave }: Props) {
   const { network } = useStore()
   const all = selected.length === connected.length
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
+    <div className="sint-share-to">
       <span className="sint-label">{__('Share to', 'social-integrations')}</span>
-      {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts" onClick={onClose}>{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
-      {accounts.map((a) => {
-        const on = selected.includes(a.id)
-        const expired = a.status === 'expired'
-        return <AccountToggle key={a.id} account={a} network={network(a.network)} on={on && !expired} disabled={expired || locked} onToggle={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} />
-      })}
+      {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts" onClick={(e) => { e.preventDefault(); onLeave('accounts') }}>{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
+      {/* One row of accounts; on a phone it scrolls sideways instead of filling the screen. */}
+      {accounts.length > 0 && (
+        <span className="sint-share-to-list">
+          {accounts.map((a) => {
+            const on = selected.includes(a.id)
+            const expired = a.status === 'expired'
+            return <AccountToggle key={a.id} account={a} network={network(a.network)} on={on && !expired} disabled={expired || locked} onToggle={() => setSelected((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} />
+          })}
+        </span>
+      )}
       {!locked && connected.length > 1 && (
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
           {sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
@@ -44,7 +50,7 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
           {can(caps.manageAccounts) && (
             <>
               {' · '}
-              <a href="#/accounts" onClick={onClose} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
+              <a href={`#/accounts?reconnect=${encodeURIComponent(a.id)}`} onClick={(e) => { e.preventDefault(); onLeave(`accounts?reconnect=${encodeURIComponent(a.id)}`) }} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
             </>
           )}
         </span>

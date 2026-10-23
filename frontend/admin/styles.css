@@ -939,3 +939,12 @@ body.folded .sint-overlay { left: 36px; }
   .sint-root .sint-foot-actions { margin-left: 0; width: 100%; }
   .sint-root .sint-foot-actions > .sint-btn { flex: 1; justify-content: center; }
 }
+
+/* "Share to": the label, one row of account buttons, the count and the expired sign-ins. */
+.sint-root .sint-share-to { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.sint-root .sint-share-to-list { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
+@media (max-width: 600px) {
+  .sint-root .sint-share-to { gap: 10px; padding: 12px 16px; }
+  .sint-root .sint-share-to-list { flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; overscroll-behavior-x: contain; }
+  .sint-root .sint-share-to-list > * { flex: none; }
+}

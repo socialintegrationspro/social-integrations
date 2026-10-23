@@ -2,7 +2,7 @@ import { __, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
 import { useStore } from '../lib/store'
 import type { FieldMap, MediaItem, MediaSource } from '../lib/types'
-import { PostFields } from './PostFields'
+import { MediaWarning, PostFields } from './PostFields'
 import { Icon, NetBadge, useToast } from './ui'
 
 /** What a campaign shares for each post: captions, link and post fields with tokens, and where the media comes from. */
@@ -97,6 +97,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
           {SOURCES().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </label>
+      {value.media === 'none' && <MediaWarning nets={all ? nets : [tab]} media={[]} template />}
       {value.media === 'custom' && (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {value.custom_media.map((m, i) => (

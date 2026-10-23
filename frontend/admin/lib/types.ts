@@ -8,6 +8,8 @@ export interface Network {
   url_length: number
   max_images: number
   supports_video: boolean
+  /** The media that a post needs: '' (none), 'media' (an image or a video) or 'video'. */
+  media_required?: '' | 'media' | 'video'
   /** Fields of a post in addition to the caption, the link and the media. */
   post_fields: PostField[]
   connect_fields: Field[]

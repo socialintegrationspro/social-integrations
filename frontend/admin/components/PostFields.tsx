@@ -46,6 +46,29 @@ export function resolveFields(map: FieldMap, nets: string[], network: (key: stri
   return out
 }
 
+/** Networks that do not get the media they need, with the selected media. */
+export function missingMedia(nets: string[], network: (key: string) => Network | undefined, media: { type?: string }[]): { media: string[]; video: string[] } {
+  const hasVideo = media.some((m) => m.type === 'video')
+  return {
+    media: nets.filter((n) => network(n)?.media_required === 'media' && media.length === 0),
+    video: nets.filter((n) => network(n)?.media_required === 'video' && !hasVideo),
+  }
+}
+
+/** The warning for networks that need media, or null when every network gets what it needs. */
+export function MediaWarning({ nets, media, template }: { nets: string[]; media: { type?: string }[]; template?: boolean }) {
+  const { network } = useStore()
+  const miss = missingMedia(nets, network, media)
+  const names = (list: string[]) => list.map((n) => network(n)?.label ?? n).join(', ')
+  if (!miss.media.length && !miss.video.length) return null
+  return (
+    <div className="sint-post-field-note" role="note">
+      {miss.media.length > 0 && <div>{sprintf(template ? __('These networks need an image or a video: %s. With no media, the plugin cannot share to them.', 'social-integrations') : __('These networks need an image or a video: %s. Add media, or the share to them fails.', 'social-integrations'), names(miss.media))}</div>}
+      {miss.video.length > 0 && <div>{sprintf(template ? __('These networks need a video: %s. The plugin cannot share a post without a video to them.', 'social-integrations') : __('These networks need a video: %s. Add a video, or the share to them fails.', 'social-integrations'), names(miss.video))}</div>}
+    </div>
+  )
+}
+
 /** A map without empty network entries, for a stable request body. */
 const withValue = (map: FieldMap, key: string, name: string, value: string | undefined): FieldMap => {
   const values = { ...(map[key] ?? {}) }
