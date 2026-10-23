@@ -23,3 +23,4 @@ delete_post_meta_by_key( '_sint_caption' );
 delete_post_meta_by_key( '_sint_accounts' );
 
 wp_clear_scheduled_hook( 'sint_run_queue' );
+wp_clear_scheduled_hook( 'sint_prune_logs' );

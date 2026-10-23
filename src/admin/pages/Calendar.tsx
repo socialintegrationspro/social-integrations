@@ -5,7 +5,7 @@ import { api, query } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate, fmtTime, siteParts } from '../lib/format'
 import { applyFilters } from '../lib/hooks'
-import { __ } from '../lib/i18n'
+import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { QueueItem } from '../lib/types'
 import type { ComposerSeed } from './Composer'
@@ -173,10 +173,9 @@ export function CalendarPage({ openComposer }: PageProps) {
               {item.media.length}
             </span>
           )}
-        </div>
-        <div className="m">
-          {item.post && <span className="sint-type-dot" style={{ background: typeColor(types, item.post.type) }} />}
-          {item.post ? postTypes.find((t) => t.name === item.post!.type)?.singular ?? item.post.type : __('Social only')}
+          {item.post && (
+            <span className="sint-type-dot" style={{ background: typeColor(types, item.post.type) }} title={postTypes.find((t) => t.name === item.post!.type)?.singular ?? item.post.type} />
+          )}
         </div>
         {item.status === 'failed' && item.message && <div className="e">{item.message}</div>}
         <div className="sint-pc-act">{actions(item, 30)}</div>
@@ -237,7 +236,7 @@ export function CalendarPage({ openComposer }: PageProps) {
 
         <section className="sint-cal-main">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--field-border)', borderRadius: 12, background: 'var(--field)' }}>
               <button type="button" className="sint-icon-btn" style={{ border: 0, background: 'transparent', height: 42 }} aria-label={__('Previous')} onClick={() => setOffset((o) => o - 1)}>
                 <Icon name="left" size={16} stroke={2} />
               </button>
@@ -266,10 +265,10 @@ export function CalendarPage({ openComposer }: PageProps) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {visible.map((item) => (
-                  <div key={item.id} className="sint-pc-row" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px', background: 'var(--raised)', borderRadius: 14 }}>
-                    <div style={{ width: 120, color: 'var(--muted)', fontSize: 13 }}>{fmtDate(item.scheduled_at)} · {fmtTime(item.scheduled_at)}</div>
+                  <div key={item.id} className="sint-pc-row sint-list-row">
+                    <div className="sint-list-when">{fmtDate(item.scheduled_at)} · {fmtTime(item.scheduled_at)}</div>
                     {account(item) ? <AccountAvatar account={account(item)!} network={network(item.network)} /> : <NetBadge network={item.network} color={network(item.network)?.color} size={24} />}
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div className="sint-list-body">
                       <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title(item)}</div>
                       <div style={{ fontSize: 12, color: item.status === 'failed' && item.message ? 'var(--bad-text)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.status === 'failed' && item.message ? item.message : [account(item)?.name, snippet(item)].filter(Boolean).join(' · ')}
@@ -332,10 +331,26 @@ function Row({ hour, days, items, todayKey, now, card }: { hour: number; days: D
         return (
           <div key={key} className={`cell${past ? ' past' : isToday ? ' today' : ''}`}>
             {nowHere && <div className="now" style={{ top: `${(((now.h - hour) * 60 + now.min) / 180) * 100}%` }} aria-hidden="true" />}
-            {inCell.map(card)}
+            <CellCards items={inCell} card={card} />
           </div>
         )
       })}
+    </>
+  )
+}
+
+// A busy cell shows the first few shares and a button for the rest, so one day does not stretch the week.
+const CELL_MAX = 3
+
+function CellCards({ items, card }: { items: QueueItem[]; card: (i: QueueItem) => JSX.Element }) {
+  const [all, setAll] = useState(false)
+  if (all || items.length <= CELL_MAX + 1) return <>{items.map(card)}</>
+  return (
+    <>
+      {items.slice(0, CELL_MAX).map(card)}
+      <button type="button" className="sint-more" onClick={() => setAll(true)}>
+        {sprintf(__('%d more'), items.length - CELL_MAX)}
+      </button>
     </>
   )
 }

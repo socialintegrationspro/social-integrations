@@ -21,6 +21,8 @@ use SocialIntegrations\Rest\QueueController;
 use SocialIntegrations\Rest\SettingsController;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Publisher;
+use SocialIntegrations\Scheduler\Queue;
+use SocialIntegrations\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -28,6 +30,11 @@ defined( 'ABSPATH' ) || exit;
  * Wires the services together.
  */
 final class Plugin {
+
+	/**
+	 * Daily cron hook that deletes old share log rows.
+	 */
+	const PRUNE_HOOK = 'sint_prune_logs';
 
 	/**
 	 * The booted instance.
@@ -79,10 +86,28 @@ final class Plugin {
 		( new AutoShare() )->register();
 		( new Publisher( $this->networks ) )->register();
 
+		// Once a day, delete share log rows older than the Settings choice.
+		add_action( self::PRUNE_HOOK, array( $this, 'prune_logs' ) );
+		add_action(
+			'init',
+			static function () {
+				if ( ! wp_next_scheduled( self::PRUNE_HOOK ) ) {
+					wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::PRUNE_HOOK );
+				}
+			}
+		);
+
 		if ( is_admin() ) {
 			( new Menu() )->register();
 			( new Assets() )->register();
 		}
+	}
+
+	/**
+	 * Cron callback: deletes share log rows older than the "Keep the share log" setting.
+	 */
+	public function prune_logs(): void {
+		Queue::prune_logs( (int) Settings::get( 'log_days', 0 ) );
 	}
 
 	/**

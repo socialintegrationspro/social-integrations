@@ -106,17 +106,66 @@ export interface QueueItem {
   remote_url: string
 }
 
-export interface LogItem {
-  id: string
-  queue_id: string
-  post_id: string
+/** One account's share in a log entry: its newest try. */
+export interface LogShare {
+  id: number
+  queue_id: number
   network: string
   account_id: string
   status: 'published' | 'failed'
   message: string
   remote_url: string
   created_at: string
+  tries: number
+}
+
+/** One post that one campaign shared to its accounts, from one batch. */
+export interface LogEntry {
+  key: string
+  /** "{type}-{id}", or '' for shares from before campaigns. */
+  campaign_key: string
+  post_id: number
   post_title: string
+  edit_url: string
+  /** The start of the caption, for shares without a post. */
+  excerpt: string
+  at: string
+  shares: LogShare[]
+}
+
+/** One request that a share made, without secrets. */
+export interface LogRequest {
+  method: string
+  url: string
+  /** 0 when the request did not reach the server. */
+  status: number
+  ms: number
+  response?: unknown
+  error?: string
+}
+
+/** One try of a share, with what the network answered. */
+export interface LogTry {
+  id: number
+  status: 'published' | 'failed'
+  message: string
+  remote_url: string
+  created_at: string
+  /** null for tries that were sent before the plugin saved details. */
+  details: {
+    code?: string
+    status?: number
+    exception?: { class: string; message: string; file: string }
+    requests?: LogRequest[]
+  } | null
+}
+
+export interface LogPage {
+  total: number
+  /** Entries with a failed share, with the same filters apart from the result. */
+  failed: number
+  items: LogEntry[]
+  campaigns: { key: string; name: string; type: string }[]
 }
 
 export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
@@ -128,6 +177,7 @@ export interface Settings {
   block_fallback: BlockUse
   allow_block_override: boolean
   max_images: number
+  log_days: number
   ai: { provider: string; tone: string; model: string }
   ai_providers: AIProvider[]
 }

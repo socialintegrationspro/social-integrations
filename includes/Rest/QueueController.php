@@ -43,6 +43,8 @@ final class QueueController extends RestController {
 		$this->route( '/queue/(?P<id>\d+)', \WP_REST_Server::DELETABLE, array( $this, 'delete' ) );
 		$this->route( '/queue/(?P<id>\d+)/retry', \WP_REST_Server::CREATABLE, array( $this, 'retry' ) );
 		$this->route( '/logs', \WP_REST_Server::READABLE, array( $this, 'logs' ) );
+		$this->route( '/logs/(?P<id>\d+)/tries', \WP_REST_Server::READABLE, array( $this, 'log_tries' ) );
+		$this->route( '/logs/delete', \WP_REST_Server::CREATABLE, array( $this, 'delete_logs' ) );
 	}
 
 	/**
@@ -193,16 +195,120 @@ final class QueueController extends RestController {
 	}
 
 	/**
-	 * Share log.
+	 * One page of the share log. Query: page, per_page (10, 20 or 30), campaign (a campaign
+	 * key), status ('failed' or empty), search, from and to (site dates, 'Y-m-d').
+	 *
+	 * Response: { total, failed (entries with a failed share), items: entries, campaigns: [ { key, name, type } ] }. An entry is the
+	 * shares of one batch: one post that one campaign shared to its accounts.
+	 *
+	 * @param \WP_REST_Request $request Request.
 	 */
-	public function logs(): \WP_REST_Response {
-		$rows = Queue::logs( array(), 200 );
-		foreach ( $rows as &$row ) {
-			$post              = $row['post_id'] ? get_post( (int) $row['post_id'] ) : null;
-			$row['post_title'] = $post ? html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) : '';
-			$row['created_at'] = \SocialIntegrations\Support\Dates::iso( $row['created_at'] );
+	public function logs( \WP_REST_Request $request ): \WP_REST_Response {
+		$day  = static function ( $value, string $add = '' ): string {
+			$value = (string) $value;
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ) {
+				return '';
+			}
+			// Site dates become UTC; 'to' covers the whole day.
+			return get_gmt_from_date( $add ? gmdate( 'Y-m-d', (int) strtotime( $value . ' ' . $add ) ) . ' 00:00:00' : $value . ' 00:00:00' );
+		};
+		$args = array(
+			'page'     => max( 1, (int) $request['page'] ),
+			'per_page' => in_array( (int) $request['per_page'], array( 10, 20, 30 ), true ) ? (int) $request['per_page'] : 10,
+			'campaign' => sanitize_text_field( (string) $request['campaign'] ),
+			'status'   => 'failed' === $request['status'] ? 'failed' : '',
+			'search'   => sanitize_text_field( (string) $request['search'] ),
+			'from'     => $day( $request['from'] ),
+			'to'       => $day( $request['to'], '+1 day' ),
+		);
+		$page = Queue::log_entries( $args );
+		// How many entries have a failed share, with the same other filters, for the Failed button.
+		$failed = 'failed' === $args['status'] ? $page['total'] : Queue::log_entries( array( 'status' => 'failed', 'page' => 1, 'per_page' => 1 ) + $args )['total'];
+
+		// Names of every campaign, from the Campaigns screen list, so other plugins' types have theirs.
+		$campaigns = array();
+		foreach ( Campaigns::all() as $campaign ) {
+			$campaigns[ $campaign['type'] . '-' . $campaign['id'] ] = array(
+				'key'  => $campaign['type'] . '-' . $campaign['id'],
+				'name' => (string) $campaign['name'],
+				'type' => (string) $campaign['type'],
+			);
 		}
-		unset( $row );
-		return rest_ensure_response( $rows );
+
+		$items = array();
+		foreach ( $page['entries'] as $batch => $shares ) {
+			$first   = $shares[0];
+			$post_id = (int) $first['post_id'];
+			$post    = $post_id ? get_post( $post_id ) : null;
+			$key     = (string) $first['campaign_key'];
+			$text    = trim( (string) preg_replace( '/\s+/', ' ', (string) $first['caption'] ) );
+			$items[] = array(
+				'key'          => (string) $batch,
+				'campaign_key' => $key,
+				'post_id'      => $post_id,
+				'post_title'   => $post ? html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) : '',
+				'edit_url'     => $post ? (string) get_edit_post_link( $post, 'raw' ) : '',
+				'excerpt'      => mb_strlen( $text ) > 80 ? mb_substr( $text, 0, 79 ) . '…' : $text,
+				'at'           => \SocialIntegrations\Support\Dates::iso( $first['created_at'] ),
+				'shares'       => array_map(
+					static function ( array $row ): array {
+						return array(
+							'id'         => (int) $row['id'],
+							'queue_id'   => (int) $row['queue_id'],
+							'network'    => (string) $row['network'],
+							'account_id' => (string) $row['account_id'],
+							'status'     => (string) $row['status'],
+							'message'    => (string) $row['message'],
+							'remote_url' => (string) $row['remote_url'],
+							'created_at' => \SocialIntegrations\Support\Dates::iso( $row['created_at'] ),
+							'tries'      => (int) $row['tries'],
+						);
+					},
+					$shares
+				),
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'total'     => $page['total'],
+				'failed'    => $failed,
+				'items'     => $items,
+				'campaigns' => array_values( $campaigns ),
+			)
+		);
+	}
+
+	/**
+	 * Every try of one share, with what the network answered, for developers.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function log_tries( \WP_REST_Request $request ) {
+		$tries = Queue::log_tries( (int) $request['id'] );
+		if ( null === $tries ) {
+			return $this->error( 'not_found', __( 'This log row does not exist.', 'social-integrations' ), 404 );
+		}
+		foreach ( $tries as &$try ) {
+			$try['created_at'] = \SocialIntegrations\Support\Dates::iso( $try['created_at'] );
+		}
+		unset( $try );
+		return rest_ensure_response( $tries );
+	}
+
+	/**
+	 * Deletes share log entries. Body: { keys: string[] } (entry keys, at most 100).
+	 * The shares stay in the calendar; only their log rows go.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function delete_logs( \WP_REST_Request $request ) {
+		$keys = array_slice( array_map( 'strval', (array) ( $request->get_json_params()['keys'] ?? array() ) ), 0, 100 );
+		if ( ! $keys ) {
+			return $this->error( 'no_keys', __( 'Select at least one entry.', 'social-integrations' ), 400 );
+		}
+		return rest_ensure_response( array( 'deleted' => Queue::delete_log_entries( $keys ) ) );
 	}
 }

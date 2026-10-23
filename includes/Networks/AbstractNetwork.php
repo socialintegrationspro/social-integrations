@@ -7,6 +7,8 @@
 
 namespace SocialIntegrations\Networks;
 
+use SocialIntegrations\Support\Redact;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -21,6 +23,28 @@ defined( 'ABSPATH' ) || exit;
  * Credentials arrays are stored encrypted and are never sent to the browser.
  */
 abstract class AbstractNetwork {
+
+	/**
+	 * Most requests kept in one trace.
+	 */
+	const TRACE_MAX = 10;
+
+	/**
+	 * Requests since the last take_trace(), without secrets, for the share log.
+	 *
+	 * @var array[]
+	 */
+	private $trace = array();
+
+	/**
+	 * Returns the requests made since the last call, and starts a new trace. Each request:
+	 * [ 'method', 'url', 'status' (0 on a transport error), 'ms', 'response', 'error'? ].
+	 */
+	public function take_trace(): array {
+		$trace       = $this->trace;
+		$this->trace = array();
+		return $trace;
+	}
 
 	/**
 	 * Unique key, for example 'facebook'.
@@ -229,19 +253,39 @@ abstract class AbstractNetwork {
 		$args['method']  = $method;
 		$args['timeout'] = $args['timeout'] ?? 30;
 
+		$start    = microtime( true );
 		$response = wp_remote_request( $url, $args );
+		$step     = array(
+			'method' => $method,
+			'url'    => Redact::url( $url ),
+			'ms'     => (int) round( ( microtime( true ) - $start ) * 1000 ),
+		);
 		if ( is_wp_error( $response ) ) {
+			$this->trace( $step + array( 'status' => 0, 'error' => $response->get_error_code() . ': ' . $response->get_error_message() ) );
 			throw new NetworkException( 'http', $response->get_error_message() );
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
-		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		$raw  = (string) wp_remote_retrieve_body( $response );
+		$this->trace( $step + array( 'status' => $code, 'response' => Redact::body( $raw ) ) );
+		$body = json_decode( $raw, true );
 		$body = is_array( $body ) ? $body : array();
 
 		if ( $code >= 400 ) {
 			throw new NetworkException( $this->error_code( $code, $body ), $this->error_message( $code, $body ), $code, $body );
 		}
 		return $body;
+	}
+
+	/**
+	 * Adds one request to the trace.
+	 *
+	 * @param array $step Request summary.
+	 */
+	private function trace( array $step ): void {
+		if ( count( $this->trace ) < self::TRACE_MAX ) {
+			$this->trace[] = $step;
+		}
 	}
 
 	/**

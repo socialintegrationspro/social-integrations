@@ -82,7 +82,11 @@ final class CampaignsController extends RestController {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function save_auto( \WP_REST_Request $request ) {
-		$campaign = Auto::save( (array) $request->get_json_params(), (int) $request['id'] );
+		$body = (array) $request->get_json_params();
+		if ( '' === trim( sanitize_text_field( (string) ( $body['name'] ?? '' ) ) ) ) {
+			return $this->error( 'name_required', __( 'Enter a name for the campaign.', 'social-integrations' ), 400 );
+		}
+		$campaign = Auto::save( $body, (int) $request['id'] );
 		return $campaign ? rest_ensure_response( $campaign ) : $this->error( 'not_found', __( 'This campaign does not exist.', 'social-integrations' ), 404 );
 	}
 

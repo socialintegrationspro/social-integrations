@@ -262,6 +262,7 @@ final class Campaigns {
 	 */
 	private static function share( array $data, int $id ): array {
 		$when    = '' === $data['scheduled_at'] ? time() : (int) strtotime( $data['scheduled_at'] );
+		$batch   = Queue::batch();
 		$created = array();
 		foreach ( $data['accounts'] as $account_id ) {
 			$account = Accounts::get( $account_id );
@@ -272,6 +273,8 @@ final class Campaigns {
 				array(
 					'post_id'      => $data['post_id'],
 					'campaign_id'  => $id,
+					'campaign_key' => 'single-' . $id,
+					'batch_id'     => $batch,
 					'network'      => $account['network'],
 					'account_id'   => $account_id,
 					'caption'      => $data['captions'][ $account['network'] ] ?? $data['caption'],

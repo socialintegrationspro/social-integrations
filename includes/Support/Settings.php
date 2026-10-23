@@ -24,6 +24,11 @@ final class Settings {
 	const BLOCK_USES = array( 'text', 'excerpt', 'media', 'link', 'skip', 'remove' );
 
 	/**
+	 * Days to keep share log rows. 0 keeps every row.
+	 */
+	const LOG_DAYS = array( 0, 30, 90, 180, 365 );
+
+	/**
 	 * Default settings.
 	 */
 	public static function defaults(): array {
@@ -45,6 +50,7 @@ final class Settings {
 			'block_fallback'       => 'text',
 			'allow_block_override' => true,
 			'max_images'           => 4,
+			'log_days'             => 0,
 			'ai'                   => array(
 				'provider' => '',
 				'tone'     => 'friendly',
@@ -101,6 +107,9 @@ final class Settings {
 		}
 		if ( isset( $input['max_images'] ) ) {
 			$current['max_images'] = max( 1, min( 10, (int) $input['max_images'] ) );
+		}
+		if ( isset( $input['log_days'] ) && in_array( (int) $input['log_days'], self::LOG_DAYS, true ) ) {
+			$current['log_days'] = (int) $input['log_days'];
 		}
 		if ( isset( $input['ai'] ) && is_array( $input['ai'] ) ) {
 			$current['ai'] = array(

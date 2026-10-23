@@ -65,6 +65,8 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
   const [saving, setSaving] = useState(false)
+  const [nameError, setNameError] = useState(false)
+  const nameRef = useRef<HTMLInputElement>(null)
   const savers = useRef<Record<string, (id: number) => Promise<unknown>>>({})
 
   useEffect(() => {
@@ -127,15 +129,16 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     const opened = pickMedia((items) => set({ custom_media: [...c.custom_media, ...items.filter((x) => !c.custom_media.some((y) => y.id === x.id))] }))
     if (!opened) toast(__('The media library did not load. Reload the page and try again.'), true)
   }
-  const toggleType = (name: string) => {
-    const on = c.post_types.includes(name)
-    if (on && c.post_types.length === 1) return
-    set({ post_types: on ? c.post_types.filter((t) => t !== name) : [...c.post_types, name] })
-  }
+
   const shownCaption = preview ? (current !== 'all' && !Array.isArray(preview.captions) && preview.captions[current]) || preview.caption : ''
   const delayText = c.delay.value === 0 ? __('Right after publishing') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after publishing') : c.delay.unit === 'hours' ? __('%d hours after publishing') : __('%d days after publishing'), c.delay.value)
 
   const save = async () => {
+    if (!c?.name.trim()) {
+      setNameError(true)
+      nameRef.current?.focus()
+      return
+    }
     setSaving(true)
     try {
       const r = await api.post<AutoCampaign>(editing ? `campaigns/auto/${editing}` : 'campaigns/auto', c)
@@ -173,24 +176,12 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
       <div className="sint-autopost">
         <aside className="col">
           <div className="sint-label">{__('Which posts')}</div>
-          <div className="sint-field">
-            <span>{__('Post types')}</span>
-            <select className="sint-select" value="" aria-label={__('Add a post type')} disabled={c.post_types.length === postTypes.length} onChange={(e) => e.target.value && toggleType(e.target.value)}>
-              <option value="">{c.post_types.length === postTypes.length ? __('All post types') : __('Add a post type…')}</option>
-              {postTypes.filter((t) => !c.post_types.includes(t.name)).map((t) => <option key={t.name} value={t.name}>{t.label}</option>)}
+          <label className="sint-field">
+            <span>{__('Post type')}</span>
+            <select className="sint-select" value={c.post_types[0] ?? 'post'} onChange={(e) => set({ post_types: [e.target.value] })}>
+              {postTypes.map((t) => <option key={t.name} value={t.name}>{t.label}</option>)}
             </select>
-            <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {c.post_types.map((name) => {
-                const label = postTypes.find((t) => t.name === name)?.label ?? name
-                const last = c.post_types.length === 1
-                return (
-                  <button key={name} type="button" className="sint-chip on" disabled={last} title={last ? __('A campaign needs at least one post type.') : undefined} aria-label={sprintf(__('Remove %s'), label)} onClick={() => toggleType(name)}>
-                    {label}{!last && ' ×'}
-                  </button>
-                )
-              })}
-            </span>
-          </div>
+          </label>
           {renderExtras('posts')}
         </aside>
 
@@ -280,8 +271,9 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           </div>
           {renderExtras('when')}
           <label className="sint-field">
-            <span>{__('Name (optional)')}</span>
-            <input className="sint-input" value={c.name} maxLength={191} placeholder={__('For example: Blog to LinkedIn')} onChange={(e) => set({ name: e.target.value })} />
+            <span>{__('Name')}</span>
+            <input ref={nameRef} className={`sint-input${nameError ? ' invalid' : ''}`} value={c.name} maxLength={191} required aria-invalid={nameError} aria-describedby={nameError ? 'sint-auto-name-error' : undefined} placeholder={__('For example: Blog to LinkedIn')} onChange={(e) => { set({ name: e.target.value }); if (e.target.value.trim()) setNameError(false) }} />
+            {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.')}</small>}
           </label>
           <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('A post shares on its first publish, not on updates. If it matches several campaigns, each account gets it once. Editors can change the caption or accounts for one post in the editor sidebar.')}</small>
           <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Saving…') : editing ? __('Save campaign') : __('Create campaign')}</button>

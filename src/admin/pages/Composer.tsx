@@ -439,7 +439,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             ))}
           </div>
 
-          <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, display: 'flex', flexDirection: 'column' }}>
+          <div className="sint-editor">
             <label className="sint-sr" htmlFor="sint-caption">{__('Caption')}</label>
             <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSend) save(false) }} placeholder={__('Write a caption, or select an item from your site.')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', borderTop: '1px solid var(--line)', flexWrap: 'wrap' }}>

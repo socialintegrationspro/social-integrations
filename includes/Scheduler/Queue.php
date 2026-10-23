@@ -22,7 +22,8 @@ final class Queue {
 	/**
 	 * Adds one share for one account.
 	 *
-	 * @param array $data ['post_id', 'network', 'account_id', 'caption', 'media', 'link', 'status', 'scheduled_at' (UTC 'Y-m-d H:i:s')].
+	 * @param array $data ['post_id', 'network', 'account_id', 'caption', 'media', 'link', 'status', 'scheduled_at' (UTC 'Y-m-d H:i:s'),
+	 *                    'campaign_key' ("{type}-{id}" of the campaign that adds it), 'batch_id' (see batch())].
 	 * @return int Row ID.
 	 */
 	public static function add( array $data ): int {
@@ -33,6 +34,8 @@ final class Queue {
 			array(
 				'post_id'      => (int) ( $data['post_id'] ?? 0 ),
 				'campaign_id'  => (int) ( $data['campaign_id'] ?? 0 ),
+				'campaign_key' => substr( preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) ( $data['campaign_key'] ?? '' ) ) ), 0, 64 ),
+				'batch_id'     => preg_match( '/^[a-f0-9]{32}$/', (string) ( $data['batch_id'] ?? '' ) ) ? $data['batch_id'] : self::batch(),
 				'network'      => sanitize_key( (string) $data['network'] ),
 				'account_id'   => sanitize_key( (string) $data['account_id'] ),
 				'caption'      => (string) ( $data['caption'] ?? '' ),
@@ -44,9 +47,17 @@ final class Queue {
 				'created_at'   => $now,
 				'updated_at'   => $now,
 			),
-			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
 		);
 		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * A new batch ID. Shares of one post that are added together get the same batch, so the
+	 * share log shows them as one entry.
+	 */
+	public static function batch(): string {
+		return str_replace( '-', '', wp_generate_uuid4() );
 	}
 
 	/**
@@ -154,9 +165,44 @@ final class Queue {
 				'message'    => (string) ( $result['message'] ?? '' ),
 				'remote_id'  => (string) ( $result['remote_id'] ?? '' ),
 				'remote_url' => esc_url_raw( (string) ( $result['remote_url'] ?? '' ) ),
+				'details'    => empty( $result['details'] ) ? null : wp_json_encode( $result['details'] ),
 				'created_at' => current_time( 'mysql', true ),
 			)
 		);
+	}
+
+	/**
+	 * Every try of the share that one log row belongs to, the oldest first, with what the
+	 * network answered. A log row without a queue row is its only try.
+	 *
+	 * @param int $log_id Log row ID.
+	 * @return array[]|null Null when the row does not exist.
+	 */
+	public static function log_tries( int $log_id ): ?array {
+		global $wpdb;
+		$table = Migrations::logs_table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT id, queue_id FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
+		if ( ! $row ) {
+			return null;
+		}
+		$rows = (int) $row['queue_id']
+			? $wpdb->get_results( $wpdb->prepare( "SELECT id, status, message, remote_url, details, created_at FROM {$table} WHERE queue_id = %d ORDER BY id ASC", (int) $row['queue_id'] ), ARRAY_A )
+			: $wpdb->get_results( $wpdb->prepare( "SELECT id, status, message, remote_url, details, created_at FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
+		// phpcs:enable
+		$tries = array();
+		foreach ( (array) $rows as $try ) {
+			$details = json_decode( (string) $try['details'], true );
+			$tries[] = array(
+				'id'         => (int) $try['id'],
+				'status'     => (string) $try['status'],
+				'message'    => (string) $try['message'],
+				'remote_url' => (string) $try['remote_url'],
+				'created_at' => $try['created_at'],
+				'details'    => is_array( $details ) ? $details : null,
+			);
+		}
+		return $tries;
 	}
 
 	/**
@@ -175,6 +221,125 @@ final class Queue {
 			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
 		return (array) $rows;
+	}
+
+	/**
+	 * One page of the share log, as entries: the shares of one batch, newest entry first.
+	 * Each share is its newest log row, with the number of times it was tried.
+	 *
+	 * @param array $args [ 'page' => int, 'per_page' => int, 'campaign' => campaign key,
+	 *                    'status' => '' | 'failed', 'search' => string, 'from' / 'to' => UTC 'Y-m-d H:i:s' ].
+	 * @return array [ 'total' => int, 'entries' => [ batch_id => share rows ] ].
+	 */
+	public static function log_entries( array $args ): array {
+		global $wpdb;
+		$logs  = Migrations::logs_table();
+		$queue = Migrations::queue_table();
+		// A log row without a queue row stands alone, as its own share and batch.
+		$shares = "SELECT l.id, l.queue_id, l.post_id, l.network, l.account_id, l.status, l.message, l.remote_url, l.created_at, t.tries,
+				COALESCE(NULLIF(q.batch_id, ''), CONCAT('l', l.id)) AS batch_id, COALESCE(q.campaign_key, '') AS campaign_key, COALESCE(q.caption, '') AS caption
+			FROM {$logs} l
+			JOIN (SELECT MAX(id) AS id, COUNT(*) AS tries FROM {$logs} GROUP BY IF(queue_id > 0, CONCAT('q', queue_id), CONCAT('l', id))) t ON t.id = l.id
+			LEFT JOIN {$queue} q ON q.id = l.queue_id
+			LEFT JOIN {$wpdb->posts} p ON p.ID = l.post_id";
+		$where  = array();
+		$params = array();
+		if ( '' !== ( $args['campaign'] ?? '' ) ) {
+			$where[]  = "COALESCE(q.campaign_key, '') = %s";
+			$params[] = $args['campaign'];
+		}
+		if ( 'failed' === ( $args['status'] ?? '' ) ) {
+			$where[] = "l.status = 'failed'";
+		}
+		if ( '' !== ( $args['search'] ?? '' ) ) {
+			$like     = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+			$where[]  = '(p.post_title LIKE %s OR q.caption LIKE %s)';
+			$params[] = $like;
+			$params[] = $like;
+		}
+		if ( '' !== ( $args['from'] ?? '' ) ) {
+			$where[]  = 'l.created_at >= %s';
+			$params[] = $args['from'];
+		}
+		if ( '' !== ( $args['to'] ?? '' ) ) {
+			$where[]  = 'l.created_at < %s';
+			$params[] = $args['to'];
+		}
+		$sql = $shares . ( $where ? ' WHERE ' . implode( ' AND ', $where ) : '' );
+		if ( $params ) {
+			$sql = $wpdb->prepare( $sql, $params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$total   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT batch_id) FROM ({$sql}) s" );
+		$per     = max( 1, (int) ( $args['per_page'] ?? 10 ) );
+		$offset  = ( max( 1, (int) ( $args['page'] ?? 1 ) ) - 1 ) * $per;
+		$batches = $wpdb->get_col( $wpdb->prepare( "SELECT batch_id FROM ({$sql}) s GROUP BY batch_id ORDER BY MAX(id) DESC LIMIT %d OFFSET %d", $per, $offset ) );
+		$entries = array();
+		if ( $batches ) {
+			$in = implode( ',', array_map( array( $wpdb, 'prepare' ), array_fill( 0, count( $batches ), '%s' ), $batches ) );
+			foreach ( (array) $wpdb->get_results( "SELECT * FROM ({$sql}) s WHERE batch_id IN ({$in}) ORDER BY id DESC", ARRAY_A ) as $row ) {
+				$entries[ $row['batch_id'] ][] = $row;
+			}
+		}
+		// phpcs:enable
+		// Keep the order of the page: the newest entry first.
+		$ordered = array();
+		foreach ( $batches as $batch ) {
+			$ordered[ $batch ] = $entries[ $batch ] ?? array();
+		}
+		return array(
+			'total'   => $total,
+			'entries' => $ordered,
+		);
+	}
+
+	/**
+	 * Deletes share log entries: every log row of their shares. The shares stay in the queue.
+	 *
+	 * @param string[] $keys Entry keys from log_entries(): a batch ID, or 'l' and a log row ID.
+	 * @return int Rows deleted.
+	 */
+	public static function delete_log_entries( array $keys ): int {
+		global $wpdb;
+		$logs    = Migrations::logs_table();
+		$queue   = Migrations::queue_table();
+		$batches = array();
+		$ids     = array();
+		foreach ( $keys as $key ) {
+			$key = (string) $key;
+			if ( preg_match( '/^[a-f0-9]{32}$/', $key ) ) {
+				$batches[] = $key;
+			} elseif ( preg_match( '/^l(\d+)$/', $key, $m ) ) {
+				$ids[] = (int) $m[1];
+			}
+		}
+		$deleted = 0;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( $batches ) {
+			$in       = implode( ',', array_map( static fn( $b ) => "'" . $b . "'", $batches ) );
+			$deleted += (int) $wpdb->query( "DELETE l FROM {$logs} l JOIN {$queue} q ON q.id = l.queue_id WHERE q.batch_id IN ({$in})" );
+		}
+		if ( $ids ) {
+			$deleted += (int) $wpdb->query( "DELETE FROM {$logs} WHERE id IN (" . implode( ',', $ids ) . ')' );
+		}
+		// phpcs:enable
+		return $deleted;
+	}
+
+	/**
+	 * Deletes log rows older than some days.
+	 *
+	 * @param int $days Days to keep.
+	 * @return int Rows deleted.
+	 */
+	public static function prune_logs( int $days ): int {
+		global $wpdb;
+		if ( $days < 1 ) {
+			return 0;
+		}
+		$table = Migrations::logs_table();
+		return (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE created_at < %s", gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**

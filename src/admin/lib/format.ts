@@ -19,6 +19,13 @@ export const fmtDate = (iso: string) =>
 export const fmtDateTime = (iso: string) =>
   new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso))
 
+/** Date and time; the year shows only when it is not this year. */
+export const fmtStamp = (iso: string) => {
+  const d = new Date(iso)
+  const year = siteParts(d).y !== siteParts(new Date()).y
+  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: year ? 'numeric' : undefined, hour: '2-digit', minute: '2-digit', timeZone: tz }).format(d)
+}
+
 /** Parts of a date in the site's time zone. */
 export function siteParts(date: Date) {
   const parts = new Intl.DateTimeFormat('en-CA', {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Header, type PageProps } from '../App'
-import { Empty, Icon, NetBadge, useToast } from '../components/ui'
+import { Empty, Icon, NetBadge, Pagination, usePaged, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
 import { applyFilters } from '../lib/hooks'
@@ -89,6 +89,7 @@ export function CampaignsPage({ openComposer }: PageProps) {
 
   const types = Array.from(new Set((items ?? []).map((c) => c.type)))
   const shown = (items ?? []).filter((c) => filter === 'all' || c.type === filter)
+  const { rows: pageRows, pager } = usePaged(shown, filter)
 
   return (
     <>
@@ -129,7 +130,7 @@ export function CampaignsPage({ openComposer }: PageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.map((c) => {
+                  {pageRows.map((c) => {
                     const status = STATUS[c.status] ?? { label: () => c.status, tone: 'muted' }
                     const on = c.accounts.length ? accounts.filter((a) => c.accounts.includes(a.id)) : []
                     const k = keyOf(c)
@@ -154,10 +155,11 @@ export function CampaignsPage({ openComposer }: PageProps) {
                         <td>{c.last_at ? fmtDateTime(c.last_at) : '—'}{c.sent > 0 && <span style={{ color: 'var(--muted)' }}> · {sprintf(__('%d sent'), c.sent)}</span>}</td>
                         <td>
                           <span className="sint-camp-actions">
-                            {can('edit') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Edit %s'), c.name)} title={__('Edit')} onClick={() => open(c, false)}><Icon name="settings" size={15} /></button>}
-                            {can('duplicate') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Duplicate %s'), c.name)} title={__('Duplicate')} onClick={() => open(c, true)}><Icon name="copy" size={15} /></button>}
                             {can('pause') && <button type="button" className="sint-btn ghost sm" disabled={busy === k} onClick={() => run(c, 'pause', __('Campaign paused.'))}>{__('Pause')}</button>}
                             {can('resume') && <button type="button" className="sint-btn ghost sm" disabled={busy === k} onClick={() => run(c, 'resume', __('Campaign resumed.'))}>{__('Resume')}</button>}
+                            {c.sent > 0 && <a className="sint-pc-tool" href={`#/log?campaign=${encodeURIComponent(k)}`} aria-label={sprintf(__('Share log of %s'), c.name)} title={__('Share log')}><Icon name="log" size={15} /></a>}
+                            {can('edit') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Edit %s'), c.name)} title={__('Edit')} onClick={() => open(c, false)}><Icon name="edit" size={15} /></button>}
+                            {can('duplicate') && <button type="button" className="sint-pc-tool" aria-label={sprintf(__('Duplicate %s'), c.name)} title={__('Duplicate')} onClick={() => open(c, true)}><Icon name="copy" size={15} /></button>}
                             {can('delete') && (
                               <button type="button" className={`sint-pc-tool${armed === k ? ' armed' : ''}`} disabled={busy === k} aria-label={armed === k ? __('Click again to delete') : sprintf(__('Delete %s'), c.name)} title={armed === k ? __('Click again to delete') : __('Delete')} onBlur={() => setArmed('')} onClick={() => remove(c)}>
                                 <Icon name="trash" size={15} />
@@ -170,6 +172,7 @@ export function CampaignsPage({ openComposer }: PageProps) {
                   })}
                 </tbody>
               </table>
+              <Pagination {...pager} />
             </div>
           </>
         )}

@@ -109,11 +109,27 @@ export function SettingsPage(_props: PageProps) {
             </button>
           </div>
         </div>
+        <div className="sint-card">
+          <div className="sint-card-head">
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <h2>{__('Share log')}</h2>
+              <p className="sint-sub" style={{ fontSize: 13 }}>{__('Choose how long the share log keeps its rows. The plugin deletes older rows once a day. Campaigns and the calendar do not change.')}</p>
+            </div>
+            <label className="sint-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <span>{__('Keep the share log')}</span>
+              <select className="sint-select" value={settings.log_days} onChange={(e) => setSettings({ ...settings, log_days: Number(e.target.value) })}>
+                {LOG_DAYS.map((d) => <option key={d} value={d}>{d ? sprintf(__('%d days'), d) : __('Always')}</option>)}
+              </select>
+            </label>
+          </div>
+        </div>
         {sections.map(({ key, component: Section }) => <Section key={key} />)}
       </div>
     </>
   )
 }
+
+const LOG_DAYS = [0, 30, 90, 180, 365]
 
 const TONES = [
   { value: 'friendly', label: () => __('Friendly') },

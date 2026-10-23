@@ -65,6 +65,8 @@ final class Migrations {
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 				post_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				campaign_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				campaign_key varchar(64) NOT NULL DEFAULT '',
+				batch_id varchar(32) NOT NULL DEFAULT '',
 				network varchar(50) NOT NULL,
 				account_id varchar(100) NOT NULL,
 				caption longtext NOT NULL,
@@ -79,7 +81,9 @@ final class Migrations {
 				PRIMARY KEY  (id),
 				KEY status_scheduled (status, scheduled_at),
 				KEY post_id (post_id),
-				KEY campaign_id (campaign_id)
+				KEY campaign_id (campaign_id),
+				KEY campaign_key (campaign_key),
+				KEY batch_id (batch_id)
 			) {$charset};"
 		);
 
@@ -94,6 +98,7 @@ final class Migrations {
 				message text NULL,
 				remote_id varchar(191) NOT NULL DEFAULT '',
 				remote_url varchar(2048) NOT NULL DEFAULT '',
+				details longtext NULL,
 				created_at datetime NOT NULL,
 				PRIMARY KEY  (id),
 				KEY post_id (post_id),
@@ -117,6 +122,13 @@ final class Migrations {
 
 		// Version 3: the per post type sharing rules become auto-post campaigns.
 		\SocialIntegrations\Campaigns\Auto::migrate();
+
+		// Version 4: older shares get a campaign key and a batch. Shares of one campaign and
+		// post that were added in the same minute form one batch; others stand alone.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "UPDATE {$queue} q JOIN {$campaigns} c ON c.id = q.campaign_id SET q.campaign_key = CONCAT(c.type, '-', c.id) WHERE q.campaign_key = ''" );
+		$wpdb->query( "UPDATE {$queue} SET batch_id = MD5(IF(post_id > 0 OR campaign_id > 0, CONCAT(campaign_id, '|', post_id, '|', DATE_FORMAT(created_at, '%Y-%m-%d %H:%i')), CONCAT('q', id))) WHERE batch_id = ''" );
+		// phpcs:enable
 
 		update_option( self::VERSION_OPTION, SINT_DB_VERSION, false );
 	}

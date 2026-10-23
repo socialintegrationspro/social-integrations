@@ -86,6 +86,7 @@ final class AutoShare {
 		foreach ( Auto::matching( $post ) as $campaign ) {
 			$wanted  = $chosen ? $chosen : $campaign['accounts'];
 			$when    = max( time(), $published + Auto::delay( $campaign ) );
+			$batch   = Queue::batch();
 			$created = array();
 			foreach ( Accounts::all() as $account ) {
 				if ( 'connected' !== ( $account['status'] ?? '' ) || isset( $used[ $account['id'] ] ) ) {
@@ -99,6 +100,8 @@ final class AutoShare {
 					array(
 						'post_id'      => $post_id,
 						'campaign_id'  => (int) $campaign['id'],
+						'campaign_key' => 'auto-' . (int) $campaign['id'],
+						'batch_id'     => $batch,
 						'network'      => $account['network'],
 						'account_id'   => $account['id'],
 						'caption'      => $share['caption'],

@@ -73,15 +73,16 @@ export function AccountsPage({ params, go }: PageProps) {
               return (
                 <div key={n.key} className="sint-acc add">
                   <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                    <span className="sint-avatar lg" style={{ background: 'var(--raised)' }}>
-                      <NetBadge network={n.key} color={n.color} size={28} />
-                    </span>
+                    <NetBadge network={n.key} color={n.color} size={52} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15 }}>{n.label}</div>
                       <div style={{ fontSize: 13, color: 'var(--muted)' }}>{__('Not connected')}</div>
                     </div>
                   </div>
-                  <button type="button" className="sint-btn primary" onClick={() => setConnecting(n)}>{sprintf(__('Connect %s'), n.label)}</button>
+                  <button type="button" className="sint-btn" onClick={() => setConnecting(n)}>
+                    <Icon name="plus" size={16} stroke={2.4} />
+                    {sprintf(__('Connect %s'), n.label)}
+                  </button>
                 </div>
               )
             }

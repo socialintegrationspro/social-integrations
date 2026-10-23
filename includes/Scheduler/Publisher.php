@@ -102,6 +102,11 @@ final class Publisher {
 	public function send( array $job ): array {
 		$account = Accounts::get( (string) $job['account_id'] );
 		$network = $this->networks->get( (string) $job['network'] );
+		// What the network answered, without secrets, so a developer can read it in the share log.
+		$details = array();
+		if ( $network ) {
+			$network->take_trace();
+		}
 
 		try {
 			if ( ! $account || ! $network ) {
@@ -127,16 +132,32 @@ final class Publisher {
 			if ( $e->is_expired() && $account ) {
 				Accounts::set_status( (string) $job['account_id'], 'expired' );
 			}
-			$result = array(
+			$result  = array(
 				'status'  => 'failed',
 				'message' => $e->getMessage(),
 			);
+			$details = array(
+				'code'   => $e->error_code(),
+				'status' => (int) $e->getCode(),
+			);
 		} catch ( \Throwable $e ) {
-			$result = array(
+			$result  = array(
 				'status'  => 'failed',
 				'message' => __( 'The share stopped because of an unexpected error.', 'social-integrations' ),
 			);
+			$details = array(
+				'code'      => 'exception',
+				'exception' => array(
+					'class'   => get_class( $e ),
+					'message' => $e->getMessage(),
+					'file'    => str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( $e->getFile() ) ) . ':' . $e->getLine(),
+				),
+			);
 		}
+		if ( $network ) {
+			$details['requests'] = $network->take_trace();
+		}
+		$result['details'] = $details;
 
 		Queue::update( (int) $job['id'], array( 'status' => $result['status'] ) );
 		Queue::log( $job, $result );
