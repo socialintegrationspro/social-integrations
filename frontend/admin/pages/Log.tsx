@@ -393,15 +393,14 @@ export function LogPage({ params, go }: PageProps) {
                             {canDelete && (
                               <button
                                 type="button"
-                                className={`sint-log-del${armed === e.key ? ' armed' : ''}`}
+                                className={`sint-pc-tool sint-log-del${armed === e.key ? ' armed' : ''}`}
                                 disabled={busy === 'delete'}
                                 aria-label={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
                                 title={armed === e.key ? __('Click again to delete', 'social-integrations') : __('Delete the entry', 'social-integrations')}
                                 onClick={() => (armed === e.key ? remove([e.key]) : setArmed(e.key))}
                                 onBlur={() => armed === e.key && setArmed('')}
                               >
-                                <Icon name="trash" size={15} stroke={2} />
-                                {armed === e.key && <span>{__('Click again to delete', 'social-integrations')}</span>}
+                                <Icon name="trash" size={15} />
                               </button>
                             )}
                             <button type="button" className="sint-log-chev" aria-expanded={isOpen} aria-label={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} title={isOpen ? __('Hide accounts', 'social-integrations') : __('Show accounts', 'social-integrations')} onClick={() => toggle(e.key)}>

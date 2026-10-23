@@ -639,9 +639,7 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-bulk-link:hover { background: var(--raised); color: var(--text); }
 .sint-root .sint-bulk-delete { color: var(--bad-text); }
 .sint-root .sint-bulk-delete:hover, .sint-root .sint-bulk-delete.armed { background: var(--bad-soft); }
-.sint-root .sint-log-del { height: 32px; min-width: 32px; padding: 0 8px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: opacity 0.1s; }
-.sint-root .sint-log-del:hover { background: var(--bad-soft); color: var(--bad-text); }
-.sint-root .sint-log-del.armed { background: var(--bad-soft); color: var(--bad-text); }
+.sint-log-del { transition: opacity 0.1s; }
 
 /* Count on a segmented button, such as "Failed 2". */
 .sint-seg-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; background: var(--line); color: var(--text-2); }
