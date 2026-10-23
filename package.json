@@ -8,9 +8,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && tsc -p frontend/editor/tsconfig.json --noEmit && vite build && vite build -c vite.editor.config.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p frontend/editor/tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p frontend/editor/tsconfig.json --noEmit && tsc -p tests/js/tsconfig.json --noEmit",
     "check:self-contained": "node scripts/assert-self-contained.mjs",
-    "dev:editor": "vite build -c vite.editor.config.ts --watch"
+    "dev:editor": "vite build -c vite.editor.config.ts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:php": "vendor/bin/phpunit"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.2.6",
@@ -19,10 +22,15 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^25.0.1",
     "typescript": "^5.9.3",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vitest": "^3.2.7"
   }
 }
