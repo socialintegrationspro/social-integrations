@@ -145,7 +145,17 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [askClose, setAskClose] = useState(false)
   // A stable function: Modal sets the focus again when onClose changes, which would move it away while the user types.
   const closeNow = useRef(() => {})
-  closeNow.current = () => (touched && !busy && !Mode ? setAskClose(true) : onClose())
+  // Where the focus was when the question opened; Go back returns it there, so Esc works again.
+  const focusBack = useRef<HTMLElement | null>(null)
+  closeNow.current = () => {
+    if (!touched || busy || Mode) return onClose()
+    focusBack.current = document.activeElement as HTMLElement | null
+    setAskClose(true)
+  }
+  const goBack = () => {
+    setAskClose(false)
+    requestAnimationFrame(() => (focusBack.current?.isConnected ? focusBack.current : document.getElementById('sint-caption'))?.focus())
+  }
   const requestClose = useCallback(() => closeNow.current(), [])
 
   /** Shows the post's built caption and media. */
@@ -339,7 +349,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         <div className="sint-discard" role="alertdialog" aria-labelledby="sint-discard-text">
           <span id="sint-discard-text">{__('You have changes that are not saved.', 'social-integrations')}</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button type="button" className="sint-btn ghost" ref={(el) => el?.focus()} onClick={() => setAskClose(false)}>{__('Go back', 'social-integrations')}</button>
+            <button type="button" className="sint-btn ghost" ref={(el) => el?.focus()} onClick={goBack}>{__('Go back', 'social-integrations')}</button>
             <button type="button" className="sint-btn danger" onClick={onClose}>{__('Discard changes', 'social-integrations')}</button>
           </span>
         </div>
