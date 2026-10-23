@@ -67,13 +67,20 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
       {nets.length > 0 && (
         <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
           <button type="button" role="tab" aria-selected={all} className={all ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
-          {nets.map((n) => (
-            <button key={n} type="button" role="tab" aria-selected={tab === n} className={tab === n ? 'on' : ''} onClick={() => setTab(n)}>
-              <NetBadge network={n} color={network(n)?.color} size={18} />
-              {network(n)?.label}
-              {value.captions[n] !== undefined && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited', 'social-integrations')} />}
-            </button>
-          ))}
+          {nets.map((n) => {
+            const label = network(n)?.label ?? n
+            // With many networks a tab shows its logo only, except the selected tab.
+            const short = nets.length > 5 && tab !== n
+            const fields = value.fields && !Array.isArray(value.fields) ? value.fields[n] : undefined
+            const edited = value.captions[n] !== undefined || Object.keys(fields ?? {}).length > 0
+            return (
+              <button key={n} type="button" role="tab" aria-selected={tab === n} className={`${tab === n ? 'on' : ''}${short ? ' icon' : ''}`} aria-label={short ? (edited ? sprintf(__('%s, edited', 'social-integrations'), label) : label) : undefined} title={short ? label : undefined} onClick={() => setTab(n)}>
+                <NetBadge network={n} color={network(n)?.color} size={18} />
+                {!short && label}
+                {edited && <span className="sint-tab-dot" aria-label={short ? undefined : __('Edited', 'social-integrations')} />}
+              </button>
+            )
+          })}
         </div>
       )}
       <label className="sint-field">

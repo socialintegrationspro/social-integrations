@@ -19,12 +19,10 @@ interface Props {
   link?: { url: string; title: string; description?: string; image?: string }
   /** The first comment below the post, if any. */
   comment?: string
-  /** Networks that show the media, not the link card, because the post has media. */
-  cardHidden?: string[]
 }
 
 /** The right column: a post card for one network, then a fit check for each network. */
-export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment, cardHidden = [] }: Props) {
+export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment }: Props) {
   const { network } = useStore()
   const net = preview ? network(preview) : undefined
 
@@ -91,14 +89,6 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--warn-text)' }}><Icon name="alert" size={14} stroke={2.6} /></span>
               {__('Some networks accept fewer images. These networks get the first images.', 'social-integrations')}
-            </div>
-          )}
-          {cardHidden.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ color: 'var(--muted)', paddingTop: 1 }}><Icon name="image" size={14} stroke={2.2} /></span>
-              <span>
-                {sprintf(__('With media, these networks show the media and no link card: %s. The link stays in the caption. To show the card, set Post format to “Link card only”.', 'social-integrations'), cardHidden.map((n) => network(n)?.label ?? n).join(', '))}
-              </span>
             </div>
           )}
         </div>

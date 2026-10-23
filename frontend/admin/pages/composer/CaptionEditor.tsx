@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { NetBadge } from '../../components/ui'
-import { __ } from '../../lib/i18n'
+import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
 import { measure, TOKENS } from './helpers'
 
@@ -10,7 +10,7 @@ interface Props {
   /** 'all' or a network key. */
   tab: string
   setTab: (tab: string) => void
-  /** Networks with their own caption. */
+  /** Networks with their own caption or post options. */
   edited: (network: string) => boolean
   text: string
   setText: (text: string) => void
@@ -23,10 +23,17 @@ interface Props {
   actions: ReactNode
 }
 
-/** Caption tabs, the text box, and a toolbar with tokens, actions and a character count for each network. */
+/** More networks than this: a tab shows only its logo, except the selected tab. */
+const COMPACT = 5
+
+/** Caption tabs, the text box, and a toolbar with tokens, actions and the character count. */
 export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captionFor, tokens, onSubmit, actions }: Props) {
   const { network } = useStore()
   const area = useRef<HTMLTextAreaElement>(null)
+  const compact = nets.length > COMPACT
+  // The count: on 'all', one line when every caption fits, and a chip for each network that is over.
+  const counts = (tab === 'all' ? nets : [tab]).map((n) => ({ n, len: measure(captionFor(n), network(n)), limit: network(n)?.char_limit ?? 0 }))
+  const over = counts.filter((c) => c.len > c.limit)
 
   const insert = (token: string) => {
     const el = area.current
@@ -40,13 +47,17 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
     <>
       <div className="sint-seg" role="tablist" aria-label={__('Caption for', 'social-integrations')} style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
         <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>{__('All networks', 'social-integrations')}</button>
-        {nets.map((n) => (
-          <button key={n} type="button" role="tab" aria-selected={tab === n} className={tab === n ? 'on' : ''} onClick={() => setTab(n)}>
-            <NetBadge network={n} color={network(n)?.color} size={18} />
-            {network(n)?.label}
-            {edited(n) && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--today)' }} aria-label={__('Edited', 'social-integrations')} />}
-          </button>
-        ))}
+        {nets.map((n) => {
+          const label = network(n)?.label ?? n
+          const short = compact && tab !== n
+          return (
+            <button key={n} type="button" role="tab" aria-selected={tab === n} className={`${tab === n ? 'on' : ''}${short ? ' icon' : ''}`} aria-label={short ? (edited(n) ? sprintf(__('%s, edited', 'social-integrations'), label) : label) : undefined} title={short ? label : undefined} onClick={() => setTab(n)}>
+              <NetBadge network={n} color={network(n)?.color} size={18} />
+              {!short && label}
+              {edited(n) && <span className="sint-tab-dot" aria-label={short ? undefined : __('Edited', 'social-integrations')} />}
+            </button>
+          )
+        })}
       </div>
 
       <div className="sint-editor">
@@ -61,15 +72,14 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
           )}
           {actions}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {nets.map((n) => {
-              const limit = network(n)?.char_limit ?? 0
-              const len = measure(captionFor(n), network(n))
-              return (
-                <span key={n} className={`sint-pill ${len > limit ? 'bad' : 'muted'}`}>
-                  {network(n)?.label} {len.toLocaleString()}/{limit.toLocaleString()}
-                </span>
-              )
-            })}
+            {tab === 'all' && nets.length > 1 && over.length === 0 && (
+              <span className="sint-pill muted">{sprintf(__('Fits all %d networks', 'social-integrations'), nets.length)}</span>
+            )}
+            {(tab === 'all' && nets.length > 1 ? over : counts).map(({ n, len, limit }) => (
+              <span key={n} className={`sint-pill ${len > limit ? 'bad' : 'muted'}`}>
+                {network(n)?.label} {len.toLocaleString()}/{limit.toLocaleString()}
+              </span>
+            ))}
           </div>
         </div>
       </div>

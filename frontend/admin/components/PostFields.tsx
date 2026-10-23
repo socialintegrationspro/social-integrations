@@ -66,10 +66,12 @@ interface Props {
   base: (net: string, field: PostField) => string
   /** Token chips for template fields. Leave out when the values are final text, as in the composer. */
   tokens?: string[]
+  /** Networks that show the media and no link card, because the post has media. */
+  mediaHidesCard?: string[]
 }
 
 /** The post fields of a tab: link card, post format, first comment and the network's own options. */
-export function PostFields({ nets, tab, value, onChange, base, tokens }: Props) {
+export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHidesCard = [] }: Props) {
   const { network } = useStore()
   // Token chips show below the field that has the focus.
   const [focus, setFocus] = useState('')
@@ -80,6 +82,13 @@ export function PostFields({ nets, tab, value, onChange, base, tokens }: Props) 
   return (
     <fieldset className="sint-post-fields">
       <legend className="sint-label">{all ? __('Post options', 'social-integrations') : sprintf(__('Post options for %s', 'social-integrations'), network(tab)?.label ?? tab)}</legend>
+      <p className="sint-post-fields-intro">
+        {all
+          ? nets.length > 1
+            ? __('Each option applies to the networks next to its name. Select a network tab for the options of one network.', 'social-integrations')
+            : __('Select the network tab for all of its options.', 'social-integrations')
+          : __('An empty field uses the value from “All networks”.', 'social-integrations')}
+      </p>
       {fields.map(({ field, nets: on }) => {
         const id = `sint-pf-${tab}-${field.name}`
         // On a network tab, an empty shared text field uses the value for all networks.
@@ -131,7 +140,13 @@ export function PostFields({ nets, tab, value, onChange, base, tokens }: Props) 
               </span>
             )}
             {help && <small>{help}</small>}
-            {inherits && field.type !== 'select' && <small>{__('Leave empty to use the value for all networks.', 'social-integrations')}</small>}
+            {field.name === 'format' && current === 'auto' && on.some((n) => mediaHidesCard.includes(n)) && (
+              <small className="sint-post-field-note">
+                {all
+                  ? sprintf(__('The post has media, so these networks show the media and no link card: %s. Select “Link card only” to show the card.', 'social-integrations'), on.filter((n) => mediaHidesCard.includes(n)).map((n) => network(n)?.label ?? n).join(', '))
+                  : sprintf(__('The post has media, so %s shows the media and no link card. Select “Link card only” to show the card.', 'social-integrations'), network(tab)?.label ?? tab)}
+              </small>
+            )}
           </div>
         )
       })}

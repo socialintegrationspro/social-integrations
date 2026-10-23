@@ -904,3 +904,10 @@ body.folded .sint-overlay { left: 36px; }
 .sint-root .sint-field-preview > div::before { content: ''; order: 1; flex: 1 1 12px; min-width: 12px; border-bottom: 1px dotted var(--line); }
 .sint-root .sint-field-preview dt { order: 0; display: inline-flex; gap: 6px; align-items: center; flex: none; color: var(--muted); font-weight: 600; }
 .sint-root .sint-field-preview dd { order: 2; margin: 0; min-width: 0; max-width: 70%; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Caption tabs with many networks: a tab shows its logo only, except the selected tab. */
+.sint-root .sint-seg button.icon { padding: 0 10px; position: relative; }
+.sint-root .sint-tab-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--today); flex: none; }
+.sint-root .sint-seg button.icon .sint-tab-dot { position: absolute; top: 5px; right: 5px; }
+.sint-root .sint-post-fields-intro { grid-column: 1 / -1; margin: -6px 0 0; font-size: 12px; color: var(--muted); }
+.sint-root .sint-post-field-note { display: block; padding: 8px 10px; border-radius: var(--r-sm); background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--text-2) !important; }

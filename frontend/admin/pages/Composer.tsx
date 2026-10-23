@@ -361,7 +361,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               nets={nets}
               tab={tab}
               setTab={setTab}
-              edited={(n) => overrides[n] !== undefined}
+              edited={(n) => overrides[n] !== undefined || Object.keys(fields[n] ?? {}).length > 0}
               text={text}
               setText={setText}
               captionFor={captionFor}
@@ -395,11 +395,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               }
             />
 
+            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} mediaHidesCard={cardHidden} />
+
             {(media.length > 0 || !!postId) && (
               <MediaPicker media={media} chosen={chosenMedia} toggle={toggleMedia} onAdd={addMedia} mediaFrom={postId ? { value: mediaFrom, onChange: changeMediaFrom } : undefined} />
             )}
 
-            <PostFields nets={nets} tab={tab} value={fields} onChange={setFields} base={fieldBase} />
             </>
             )}
           </section>
@@ -414,7 +415,6 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             chosenMedia={format === 'auto' ? chosenMedia : []}
             link={built?.link && format !== 'text' ? { url: built.link, title: shown.title || built.tokens.title || '', description: shown.description, image: linkImage } : undefined}
             comment={shown.first_comment}
-            cardHidden={cardHidden}
           />
         </div>
       )}
