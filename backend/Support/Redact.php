@@ -33,7 +33,7 @@ final class Redact {
 	 * @param string $url URL.
 	 */
 	public static function url( string $url ): string {
-		// Telegram puts the bot token in the path: /bot123456:ABC.../sendMessage.
+		// A bot API URL holds the bot token in its path: /bot123456:ABC.../sendMessage.
 		$url = (string) preg_replace( '#/bot[0-9]+:[A-Za-z0-9_\-]+#', '/bot' . self::HIDDEN, $url );
 		// A webhook URL holds its token in the path: /api/webhooks/{id}/{token}.
 		$url   = (string) preg_replace( '#(/api(?:/v[0-9]+)?/webhooks/[0-9]+/)[A-Za-z0-9_\-]+#', '$1' . self::HIDDEN, $url );

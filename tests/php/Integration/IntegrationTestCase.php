@@ -12,7 +12,7 @@ use SocialIntegrations\Networks\Accounts;
 // phpcs:ignoreFile
 
 /**
- * Gives a fake network API, REST requests as a user, and a connected Telegram account.
+ * Gives a fake network API, REST requests as a user, and a connected Facebook Page.
  */
 abstract class IntegrationTestCase extends \WP_UnitTestCase {
 
@@ -33,11 +33,11 @@ abstract class IntegrationTestCase extends \WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->requests = array();
-		// The Social Integrations app signs in to Facebook and Threads.
+		// The Social Integrations app signs in to Facebook.
 		$this->answers = array(
 			'https://app.socialintegrations.com/v1/networks' => array(
 				200,
-				array( 'networks' => array( array( 'key' => 'facebook' ), array( 'key' => 'threads' ) ) ),
+				array( 'networks' => array( array( 'key' => 'facebook' ) ) ),
 			),
 		);
 		add_filter( 'pre_http_request', array( $this, 'fake_http' ), 10, 3 );
@@ -119,47 +119,37 @@ abstract class IntegrationTestCase extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * A connected Telegram account, and fake Telegram answers that accept each message.
+	 * A connected Facebook Page, and fake Graph answers that accept each post.
 	 *
 	 * @return string Account ID.
 	 */
-	protected function telegram(): string {
+	protected function facebook(): string {
 		$account = Accounts::save(
-			'telegram',
+			'facebook',
 			array(
-				'remote_id' => '-1001',
+				'remote_id' => '1001',
 				'name'      => 'Shop news',
-				'username'  => 'shopnews',
 			),
 			array(
-				'bot_token' => '123:secret-token',
-				'chat_id'   => '-1001',
-				'username'  => 'shopnews',
+				'page_id'      => '1001',
+				'access_token' => 'secret-token',
 			)
 		);
-		$this->answers['https://api.telegram.org/'] = array(
-			200,
-			array(
-				'ok'     => true,
-				'result' => array(
-					'message_id' => 42,
-					'chat'       => array( 'username' => 'shopnews' ),
-				),
-			),
-		);
+		$this->answers['https://graph.facebook.com/'] = array( 200, array( 'id' => '1001_42' ) );
 		return $account['id'];
 	}
 
 	/**
-	 * Makes Telegram refuse each message with a status and a description.
+	 * Makes Facebook refuse each post with a status, a message and a Graph error code.
 	 */
-	protected function telegram_refuses( int $status, string $description ): void {
-		$this->answers['https://api.telegram.org/'] = array(
+	protected function facebook_refuses( int $status, string $message, int $code = 100 ): void {
+		$this->answers['https://graph.facebook.com/'] = array(
 			$status,
 			array(
-				'ok'          => false,
-				'error_code'  => $status,
-				'description' => $description,
+				'error' => array(
+					'message' => $message,
+					'code'    => $code,
+				),
 			),
 		);
 	}

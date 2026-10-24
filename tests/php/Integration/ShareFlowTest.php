@@ -22,7 +22,7 @@ final class ShareFlowTest extends IntegrationTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->login();
-		$this->account = $this->telegram();
+		$this->account = $this->facebook();
 	}
 
 	private function share( array $body = array() ): array {
@@ -43,13 +43,13 @@ final class ShareFlowTest extends IntegrationTestCase {
 		$data = $this->share();
 
 		$this->assertSame( 'published', $data['results'][0]['status'] );
-		$this->assertSame( 'https://t.me/shopnews/42', $data['results'][0]['remote_url'] );
+		$this->assertSame( 'https://www.facebook.com/1001_42', $data['results'][0]['remote_url'] );
 		$this->assertSame( 'published', Queue::find( $data['created'][0] )['status'] );
 
-		$sent = $this->requests_to( '/sendMessage' );
+		$sent = $this->requests_to( '/1001/feed' );
 		$this->assertCount( 1, $sent );
-		$this->assertSame( 'Hello from the shop', $sent[0]['body']['text'] );
-		$this->assertSame( '-1001', $sent[0]['body']['chat_id'] );
+		$this->assertSame( 'Hello from the shop', $sent[0]['body']['message'] );
+		$this->assertSame( 'https://example.org/sale', $sent[0]['body']['link'] );
 
 		$log = $this->rest( 'GET', '/logs' )->get_data();
 		$this->assertSame( 1, $log['total'] );
@@ -57,46 +57,46 @@ final class ShareFlowTest extends IntegrationTestCase {
 		$this->assertSame( 'published', $log['items'][0]['shares'][0]['status'] );
 	}
 
-	public function test_log_details_hide_the_bot_token(): void {
+	public function test_log_details_hide_the_access_token(): void {
 		$data  = $this->share();
 		$log   = $this->rest( 'GET', '/logs' )->get_data();
 		$tries = $this->rest( 'GET', '/logs/' . $log['items'][0]['shares'][0]['id'] . '/tries' )->get_data();
 
 		$this->assertNotEmpty( $data['created'] );
+		$this->assertNotEmpty( $tries );
 		$this->assertStringNotContainsString( 'secret-token', wp_json_encode( $tries ) );
-		$this->assertStringContainsString( '/bot[hidden]/sendMessage', wp_json_encode( $tries, JSON_UNESCAPED_SLASHES ) );
 	}
 
 	public function test_a_refused_share_fails_with_the_reason(): void {
-		$this->telegram_refuses( 400, 'Bad Request: chat not found' );
+		$this->facebook_refuses( 400, 'The Page was not found.' );
 
 		$data = $this->share();
 
 		$this->assertSame( 'failed', $data['results'][0]['status'] );
-		$this->assertStringContainsString( 'chat not found', $data['results'][0]['message'] );
+		$this->assertStringContainsString( 'The Page was not found.', $data['results'][0]['message'] );
 		$this->assertSame( 1, $this->rest( 'GET', '/logs' )->get_data()['failed'] );
 		$this->assertSame( 'connected', Accounts::get( $this->account )['status'] );
 	}
 
 	public function test_an_expired_sign_in_marks_the_account(): void {
-		$this->telegram_refuses( 401, 'Unauthorized' );
+		$this->facebook_refuses( 400, 'Error validating access token.', 190 );
 
 		$data = $this->share();
 
 		$this->assertSame( 'failed', $data['results'][0]['status'] );
 		$this->assertSame( 'expired', Accounts::get( $this->account )['status'] );
 
-		// The next share stops before it calls Telegram, with a clear message.
+		// The next share stops before it calls Facebook, with a clear message.
 		$this->requests = array();
 		$next           = $this->share();
-		$this->assertSame( 'Telegram sign-in expired. Reconnect the account.', $next['results'][0]['message'] );
-		$this->assertSame( array(), $this->requests_to( '/sendMessage' ) );
+		$this->assertSame( 'Facebook Page sign-in expired. Reconnect the account.', $next['results'][0]['message'] );
+		$this->assertSame( array(), $this->requests_to( '/feed' ) );
 	}
 
 	public function test_retry_sends_a_failed_share_again(): void {
-		$this->telegram_refuses( 400, 'Too Many Requests' );
+		$this->facebook_refuses( 400, 'Too many calls.', 4 );
 		$id = $this->share()['created'][0];
-		$this->telegram();
+		$this->facebook();
 
 		$retry = $this->rest( 'POST', "/queue/$id/retry" );
 
@@ -122,7 +122,7 @@ final class ShareFlowTest extends IntegrationTestCase {
 
 		$this->assertArrayNotHasKey( 'results', $data );
 		$this->assertSame( 'scheduled', $row['status'] );
-		$this->assertSame( array(), $this->requests_to( '/sendMessage' ) );
+		$this->assertSame( array(), $this->requests_to( '/feed' ) );
 		$this->assertNotFalse( wp_next_scheduled( Publisher::CRON_HOOK, array( strtotime( $at ) ) ) );
 
 		$items = $this->rest( 'GET', '/queue', array( 'from' => gmdate( 'c' ), 'to' => gmdate( 'c', time() + DAY_IN_SECONDS ) ) )->get_data();
@@ -138,7 +138,7 @@ final class ShareFlowTest extends IntegrationTestCase {
 
 		$this->assertSame( 'published', Queue::find( $due )['status'] );
 		$this->assertSame( 'scheduled', Queue::find( $later )['status'] );
-		$this->assertCount( 1, $this->requests_to( '/sendMessage' ) );
+		$this->assertCount( 1, $this->requests_to( '/feed' ) );
 	}
 
 	public function test_edit_a_scheduled_share(): void {
@@ -158,7 +158,7 @@ final class ShareFlowTest extends IntegrationTestCase {
 		$data = $this->share( array( 'draft' => true ) );
 
 		$this->assertSame( 'draft', Queue::find( $data['created'][0] )['status'] );
-		$this->assertSame( array(), $this->requests_to( '/sendMessage' ) );
+		$this->assertSame( array(), $this->requests_to( '/feed' ) );
 	}
 
 	public function test_delete_a_share(): void {

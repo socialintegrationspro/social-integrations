@@ -22,7 +22,7 @@ final class AutoPostTest extends IntegrationTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->login();
-		$this->account = $this->telegram();
+		$this->account = $this->facebook();
 	}
 
 	private function campaign( array $body = array() ): array {

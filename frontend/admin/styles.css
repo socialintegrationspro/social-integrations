@@ -293,7 +293,7 @@ body.sint-admin-page #wpfooter { display: none; }
 /* Network badge and avatars */
 .sint-net { width: 20px; height: 20px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 9px; flex: 0 0 auto; }
 .sint-net svg { width: 56%; height: 56%; }
-/* Night mode: a faint ring keeps black badges (Threads, X) visible on dark panels. */
+/* Night mode: a faint ring keeps black badges visible on dark panels. */
 .sint-root:not([data-theme='light']) .sint-net { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
 .sint-nets { display: flex; }
 .sint-nets .sint-net { border: 2px solid var(--panel); margin-left: -6px; }
