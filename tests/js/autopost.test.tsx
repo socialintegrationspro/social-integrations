@@ -1,9 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../frontend/admin/lib/store'
-import { AutoPost } from '../../frontend/admin/pages/AutoPost'
-import type { CampaignRef } from '../../frontend/admin/pages/Composer'
+import { Composer, type CampaignRef } from '../../frontend/admin/pages/Composer'
 import { account, storeRoutes } from './fixtures'
 import { ALL_CAPS, findToast, Providers, setCaps } from './render'
 import { fail, fakeServer } from './server'
@@ -14,13 +13,15 @@ const sample = { id: 10, title: 'Summer sale', type: 'post', status: 'publish', 
 
 const preview = { caption: 'Summer sale\n\nhttps://shop.example/s', captions: {}, link: 'https://shop.example/s', media: [], fields: {}, tokens: {}, blocks: [], links: [] }
 
-function renderAutoPost(campaign?: CampaignRef) {
+/** Opens the composer on the Auto-post tab, as the app does. Its "Share to" row is the row of every tab. */
+async function renderAutoPost(campaign?: CampaignRef) {
   const onSaved = vi.fn()
   function WhenReady() {
     const { loading } = useStore()
-    return loading ? null : <AutoPost campaign={campaign} onSaved={onSaved} />
+    return loading ? null : <Composer seed={{ campaign }} onClose={vi.fn()} onSaved={onSaved} />
   }
   render(<Providers><WhenReady /></Providers>)
+  if (!campaign) await userEvent.click(await screen.findByRole('button', { name: 'Auto-post' }))
   return { onSaved }
 }
 
@@ -30,10 +31,10 @@ describe('Auto-post campaign', () => {
 
   it('creates a campaign for every account by default', async () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview, 'POST campaigns/auto': { id: 5 } })
-    const { onSaved } = renderAutoPost()
+    const { onSaved } = await renderAutoPost()
 
     expect(await screen.findByText('All accounts, and new ones you connect')).toBeInTheDocument()
-    expect(screen.getByText('On: shares new posts')).toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Blog to all')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
 
@@ -44,7 +45,7 @@ describe('Auto-post campaign', () => {
 
   it('asks for a name before it saves', async () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
-    renderAutoPost()
+    await renderAutoPost()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Create campaign' }))
 
@@ -59,7 +60,7 @@ describe('Auto-post campaign', () => {
 
   it('shares to the chosen accounts with a delay', async () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
-    renderAutoPost()
+    await renderAutoPost()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
@@ -75,7 +76,7 @@ describe('Auto-post campaign', () => {
 
   it('previews the caption with the latest post', async () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview })
-    renderAutoPost()
+    await renderAutoPost()
 
     expect(await screen.findByText('Preview: Summer sale')).toBeInTheDocument()
     expect(await screen.findByText(/^Summer sale\s+https:\/\/shop\.example\/s$/)).toBeInTheDocument()
@@ -84,7 +85,7 @@ describe('Auto-post campaign', () => {
 
   it('says when no post is available for the preview', async () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
-    renderAutoPost()
+    await renderAutoPost()
 
     expect(await screen.findByText('No published post is available for the preview.')).toBeInTheDocument()
   })
@@ -96,7 +97,7 @@ describe('Auto-post campaign', () => {
       'GET content': [],
       'POST campaigns/auto/5': { id: 5 },
     })
-    renderAutoPost({ type: 'auto', id: 5 })
+    await renderAutoPost({ type: 'auto', id: 5 })
 
     expect(await screen.findByDisplayValue('Blog')).toBeInTheDocument()
     expect(screen.getByText('10 minutes after you publish')).toBeInTheDocument()
@@ -106,6 +107,115 @@ describe('Auto-post campaign', () => {
     expect(server.to('POST campaigns/auto/5')[0]!.body).toMatchObject({ name: 'Blog', caption: '{title}', captions: {} })
   })
 
+  it('opens a campaign without accounts with none selected', async () => {
+    const server = fakeServer({
+      ...storeRoutes(accounts),
+      'GET campaigns/5': { id: 5, name: 'Blog', active: false, no_accounts: true, post_types: ['post'], accounts: [], delay: { value: 0, unit: 'minutes' }, caption: '', captions: [], media: 'auto', custom_media: [] },
+      'GET content': [],
+      'POST campaigns/auto/5': { id: 5 },
+    })
+    await renderAutoPost({ type: 'auto', id: 5 })
+
+    expect(await screen.findByText('0 of 2')).toBeInTheDocument()
+    expect(screen.queryByText('All accounts, and new ones you connect')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
+
+    await waitFor(() => expect(server.to('POST campaigns/auto/5')).toHaveLength(1))
+    expect(server.to('POST campaigns/auto/5')[0]!.body).toMatchObject({ accounts: ['threads'], no_accounts: false })
+  })
+
+  it('keeps an empty selection as no accounts, not every account', async () => {
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Shop News, Bluesky' }))
+
+    expect(screen.getByText('0 of 2')).toBeInTheDocument()
+  })
+
+  it('clears the accounts, then shares to the accounts selected after', async () => {
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear' }))
+    expect(screen.getByText('0 of 2')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Threads only')
+    await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
+
+    await waitFor(() => expect(server.to('POST campaigns/auto')).toHaveLength(1))
+    expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ accounts: ['threads'], no_accounts: false })
+  })
+
+  it('asks for an account before it saves', async () => {
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Nobody')
+    await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
+
+    expect(screen.getByText('Select an account.')).toBeInTheDocument()
+    expect(server.to('POST campaigns/auto')).toHaveLength(0)
+    await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
+    expect(screen.queryByText('Select an account.')).not.toBeInTheDocument()
+  })
+
+  it('goes back to every account with Select all', async () => {
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
+    expect(screen.getByText('All accounts, and new ones you connect')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'All')
+    await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
+
+    await waitFor(() => expect(server.to('POST campaigns/auto')).toHaveLength(1))
+    expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ accounts: [], no_accounts: false })
+  })
+
+  it('shows an expired account as the other tabs do, and keeps it in a saved campaign', async () => {
+    const three = [account(), account({ id: 'threads', network: 'threads', name: 'Shop Threads', status: 'expired' }), account({ id: 'facebook', network: 'facebook', name: 'Shop Page' })]
+    const server = fakeServer({
+      ...storeRoutes(three),
+      'GET campaigns/5': { id: 5, name: 'Blog', active: true, post_types: ['post'], accounts: ['bluesky', 'threads'], delay: { value: 0, unit: 'minutes' }, caption: '', captions: {}, media: 'auto', custom_media: [] },
+      'GET content': [],
+      'POST campaigns/auto/5': { id: 5 },
+    })
+    await renderAutoPost({ type: 'auto', id: 5 })
+
+    expect(await screen.findByText(/Shop Threads on Threads: sign-in expired/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Reconnect' })).toHaveAttribute('href', '#/accounts?reconnect=threads')
+    const pick = screen.getByRole('button', { name: 'Shop Threads, Threads' })
+    expect(pick).toBeDisabled()
+    expect(pick).toHaveClass('expired')
+    await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
+
+    await waitFor(() => expect(server.to('POST campaigns/auto/5')).toHaveLength(1))
+    expect(server.to('POST campaigns/auto/5')[0]!.body).toMatchObject({ accounts: ['bluesky', 'threads'] })
+  })
+
+  it('keeps a paused campaign paused and says where to resume it', async () => {
+    const server = fakeServer({
+      ...storeRoutes(accounts),
+      'GET campaigns/5': { id: 5, name: 'Blog', active: false, post_types: ['post'], accounts: [], delay: { value: 0, unit: 'minutes' }, caption: '', captions: {}, media: 'auto', custom_media: [] },
+      'GET content': [],
+      'POST campaigns/auto/5': { id: 5 },
+    })
+    await renderAutoPost({ type: 'auto', id: 5 })
+
+    expect(await screen.findByText('This campaign is paused. Resume it on the Campaigns screen.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
+    await waitFor(() => expect(server.to('POST campaigns/auto/5')[0]!.body).toMatchObject({ active: false }))
+  })
+
   it('names a copy of a campaign and saves it as a new one', async () => {
     const server = fakeServer({
       ...storeRoutes(accounts),
@@ -113,7 +223,7 @@ describe('Auto-post campaign', () => {
       'GET content': [],
       'POST campaigns/auto': { id: 6 },
     })
-    renderAutoPost({ type: 'auto', id: 5, copy: true })
+    await renderAutoPost({ type: 'auto', id: 5, copy: true })
 
     expect(await screen.findByDisplayValue('Blog (copy)')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
@@ -122,7 +232,7 @@ describe('Auto-post campaign', () => {
 
   it('shows a load error for a saved campaign', async () => {
     fakeServer({ ...storeRoutes(accounts), 'GET campaigns/5': fail('Campaign not found.', 404) })
-    renderAutoPost({ type: 'auto', id: 5 })
+    await renderAutoPost({ type: 'auto', id: 5 })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('The campaign did not load. Campaign not found.')
   })
@@ -130,10 +240,9 @@ describe('Auto-post campaign', () => {
   it('saves the campaign off for a user who cannot publish', async () => {
     setCaps('sint_view', 'sint_share')
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
-    renderAutoPost()
+    await renderAutoPost()
 
     expect(await screen.findByText('You save the campaign off. A user who can publish turns it on.')).toBeInTheDocument()
-    expect(screen.getByRole('switch', { name: 'Campaign is on' })).toBeDisabled()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Mine')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
 
@@ -142,9 +251,35 @@ describe('Auto-post campaign', () => {
 
   it('cannot save without a connected account', async () => {
     fakeServer({ ...storeRoutes([]), 'GET content': [] })
-    renderAutoPost()
+    await renderAutoPost()
 
     expect(await screen.findByRole('link', { name: 'Connect an account first' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create campaign' })).toBeDisabled()
+  })
+})
+
+describe('Auto-post campaign: sint.composer.accounts', () => {
+  beforeEach(() => setCaps(...ALL_CAPS))
+  afterEach(() => {
+    delete window.wp
+    vi.unstubAllGlobals()
+  })
+
+  it('gives the controls every ID for all accounts, and stores a full list as all accounts', async () => {
+    let ctx: { selected: string[]; setSelected: (u: (ids: string[]) => string[]) => void } | undefined
+    const Controls = (c: typeof ctx) => {
+      ctx = c
+      return <button type="button" onClick={() => c!.setSelected((ids) => ids.filter((id) => id !== 'threads'))}>Only Bluesky</button>
+    }
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown, c: typeof ctx) => (name === 'sint.composer.accounts' ? [<Controls key="c" {...c!} />] : value) } } as unknown as Window['wp']
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Only Bluesky' }))
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    expect(ctx!.selected).toEqual(['bluesky'])
+
+    act(() => ctx!.setSelected(() => ['bluesky', 'threads']))
+    expect(await screen.findByText('All accounts, and new ones you connect')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,6 @@
 === Social Integrations – AI Auto Post & Social Media Scheduler ===
 Contributors: socialintegrations
-Tags: auto post, social media, scheduler, facebook, bluesky
+Tags: auto post, social media, scheduler, facebook, linkedin
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -15,7 +15,7 @@ Share your posts, pages, products and any custom post type to social networks wh
 Social Integrations shares your WordPress content to your social accounts.
 
 * Auto-post campaigns share a post on first publish. Each campaign selects the post types, the accounts, a delay and the caption. Campaigns also support custom post types from other plugins and your theme.
-* Networks: Facebook Page, LinkedIn profile, Bluesky, Threads and Telegram.
+* Networks: one Facebook Page and one LinkedIn profile.
 * Caption templates with {title}, {excerpt}, {url}, {tags}, {author}, {site} and {field:your_meta_key}.
 * Post options for each network: the post format (media, link card or text), a first comment, the link card title and description, and options such as who can see or reply to the post. The options use the same tags as the caption.
 * Block rules: select how the plugin uses each block type: as caption text, an image, a link, or not at all. Editors can change the rule for one block in the block toolbar.
@@ -31,31 +31,19 @@ The uncompiled source of the admin app is in the `frontend/` folder of the publi
 This plugin sends data to a third-party service only when you connect an account or share content to it.
 
 = Social Integrations app (app.socialintegrations.com) =
-To connect Facebook, Threads or LinkedIn without your own developer app, select "Connect with Social Integrations". The plugin then registers your site with app.socialintegrations.com and sends the site address and the network name. The network sends you back through that server. The server exchanges the sign-in code and gives the access token to your site once. The server does not keep the token. When the token expires, the plugin sends it to the server to renew it. To show the "Connect with Social Integrations" choice, the Accounts screen gets the list of supported networks from the server. This request sends no data about you or your site. If you use your own app for each network, the plugin sends nothing else to this server.
+To connect Facebook or LinkedIn without your own developer app, select "Connect with Social Integrations". The plugin then registers your site with app.socialintegrations.com and sends the site address and the network name. The network sends you back through that server. The server exchanges the sign-in code and gives the access token to your site once. The server does not keep the token. When the token expires, the plugin sends it to the server to renew it. To show the "Connect with Social Integrations" choice, the Accounts screen gets the list of supported networks from the server. This request sends no data about you or your site. If you use your own app for each network, the plugin sends nothing else to this server.
 Terms: https://socialintegrations.com/terms — Privacy: https://socialintegrations.com/privacy
 
 = Facebook (Meta Graph API) =
 When you connect a Facebook Page and when a share runs, the plugin sends the caption, the post link, the selected images and the first comment (when you set one) to graph.facebook.com.
 Terms: https://www.facebook.com/terms.php — Privacy: https://www.facebook.com/privacy/policy/
 
-= Threads (Meta Threads API) =
-When you connect Threads and when a share runs, the plugin sends the caption, the post link, the selected images, the reply setting and the first comment (when you set one) to graph.threads.net.
-Terms: https://help.instagram.com/769983657850450 — Privacy: https://privacycenter.instagram.com/policy
-
 = LinkedIn =
 When you connect LinkedIn and when a share runs, the plugin sends the caption, the post link, the selected images, the link card title and description, the visibility setting and the first comment (when you set one) to api.linkedin.com.
 Terms: https://www.linkedin.com/legal/user-agreement — Privacy: https://www.linkedin.com/legal/privacy-policy
 
-= Bluesky =
-When you connect Bluesky and when a share runs, the plugin sends your handle, your app password (to sign in), the caption, the post link, the selected images, the link card title and description, and the first comment (when you set one) to bsky.social. To show the account name and picture, it sends the account ID to public.api.bsky.app.
-Terms: https://bsky.social/about/support/tos — Privacy: https://bsky.social/about/support/privacy-policy
-
-= Link previews and images =
-For a Bluesky link card, the plugin gets the page of the shared link to read its image, and its title and description when you do not set them. When a post holds an image from another site, the plugin gets that image to send it to the network. These requests go to the site of the link or the image. They do not send your data.
-
-= Telegram Bot API =
-When you connect Telegram and when a share runs, the plugin sends the caption, the post link, the selected images and the button text (when you set one) to api.telegram.org.
-Terms: https://telegram.org/tos — Privacy: https://telegram.org/privacy
+= Images from other sites =
+When a post holds an image from another site, the plugin gets that image to send it to the network. These requests go to the site of the link or the image. They do not send your data.
 
 = AI providers =
 Only when you enter your own API key and select "Write with AI", the plugin sends the post title, excerpt and text to the provider you selected: OpenAI (api.openai.com, terms https://openai.com/policies/terms-of-use, privacy https://openai.com/policies/privacy-policy), Google Gemini (generativelanguage.googleapis.com, terms https://ai.google.dev/gemini-api/terms, privacy https://policies.google.com/privacy) or Anthropic (api.anthropic.com, terms https://www.anthropic.com/legal/consumer-terms, privacy https://www.anthropic.com/legal/privacy).

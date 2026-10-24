@@ -28,7 +28,7 @@ final class PluginTest extends IntegrationTestCase {
 
 	public function test_free_networks_are_registered(): void {
 		$this->assertSame(
-			array( 'facebook', 'linkedin', 'bluesky', 'threads', 'telegram' ),
+			array( 'facebook', 'linkedin' ),
 			array_keys( Plugin::instance()->networks->all() )
 		);
 	}

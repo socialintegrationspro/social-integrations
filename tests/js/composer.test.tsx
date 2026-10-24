@@ -102,6 +102,28 @@ describe('Composer', () => {
     expect(onSaved).not.toHaveBeenCalled()
   })
 
+  it('keeps the selected accounts when the user changes to Auto-post and back', async () => {
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
+    openComposer()
+    await dialog()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Auto-post' }))
+    expect(await screen.findByText('1 of 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'false')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
+    expect(screen.getByText('All accounts, and new ones you connect')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Single post' }))
+    expect(screen.getByText('2 of 2')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Auto-post' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Single post' }))
+    expect(screen.getByText('0 of 2')).toBeInTheDocument()
+  })
+
   it('blocks a caption that is too long for a network', async () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
@@ -495,5 +517,22 @@ describe('Composer', () => {
     const body = server.to('POST queue')[0]!.body as { fields: unknown; field_values: Record<string, Record<string, string>> }
     expect(body.fields).toEqual({ '*': { first_comment: 'Link in bio' } })
     expect(body.field_values.bluesky).toEqual({ format: 'auto', first_comment: 'Link in bio' })
+  })
+})
+
+describe('AccountControls', () => {
+  afterEach(() => {
+    delete window.wp
+  })
+
+  it('renders nothing without a filter, and the filter controls in their own row', async () => {
+    const { AccountControls } = await import('../../frontend/admin/pages/composer/AccountPicker')
+    const props = { accounts: [], selected: [], setSelected: () => undefined, locked: false }
+    const { container, rerender } = render(<AccountControls {...props} />)
+    expect(container).toBeEmptyDOMElement()
+
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.composer.accounts' ? [<span key="x">Clients</span>] : value) } } as unknown as Window['wp']
+    rerender(<AccountControls {...props} locked />)
+    expect(screen.getByText('Clients').parentElement).toHaveClass('sint-share-to')
   })
 })

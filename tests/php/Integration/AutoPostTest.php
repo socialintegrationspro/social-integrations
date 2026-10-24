@@ -5,6 +5,7 @@
 
 namespace SocialIntegrations\Tests\Integration;
 
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Scheduler\AutoShare;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
@@ -22,7 +23,7 @@ final class AutoPostTest extends IntegrationTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->login();
-		$this->account = $this->telegram();
+		$this->account = $this->facebook();
 	}
 
 	private function campaign( array $body = array() ): array {
@@ -138,5 +139,33 @@ final class AutoPostTest extends IntegrationTestCase {
 		do_action( AutoShare::CRON_HOOK, $post_id );
 
 		$this->assertSame( array(), $this->shares_of( $post_id ) );
+	}
+
+	public function test_save_and_on_off_fire_their_actions(): void {
+		$saved  = array();
+		$active = array();
+		add_action(
+			Hooks::CAMPAIGN_SAVED,
+			static function ( ...$args ) use ( &$saved ) {
+				$saved[] = $args;
+			},
+			10,
+			4
+		);
+		add_action(
+			Hooks::CAMPAIGN_ACTIVE,
+			static function ( ...$args ) use ( &$active ) {
+				$active[] = $args;
+			},
+			10,
+			3
+		);
+		$campaign = $this->campaign();
+		$this->rest( 'POST', '/campaigns/auto/' . $campaign['id'], array( 'name' => 'Renamed' ) );
+		$this->rest( 'POST', '/campaigns/' . $campaign['id'] . '/active', array( 'active' => false ) );
+
+		$this->assertTrue( $saved[0][3], 'A new campaign.' );
+		$this->assertFalse( $saved[1][3], 'A change to the campaign.' );
+		$this->assertSame( array( array( $campaign['id'], 'auto', false ) ), $active );
 	}
 }

@@ -37,7 +37,7 @@ declare global {
         applyFilters: (name: string, value: unknown, ...args: unknown[]) => unknown
         doAction: (name: string, ...args: unknown[]) => void
       }
-      i18n?: { __: (text: string, domain?: string) => string }
+      i18n?: { __: (text: string, domain?: string) => string; _n?: (single: string, plural: string, count: number, domain?: string) => string }
       media?: (options: Record<string, unknown>) => MediaFrame
     }
   }

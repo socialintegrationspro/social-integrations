@@ -33,7 +33,7 @@ final class Registry {
 			$this->networks = array();
 			$classes        = apply_filters(
 				Hooks::NETWORK_CLASSES,
-				array( Facebook::class, LinkedIn::class, Bluesky::class, Threads::class, Telegram::class )
+				array( Facebook::class, LinkedIn::class )
 			);
 			foreach ( (array) $classes as $class_name ) {
 				if ( is_string( $class_name ) && class_exists( $class_name ) && is_subclass_of( $class_name, AbstractNetwork::class ) ) {

@@ -4,7 +4,7 @@ import { Header, type PageProps } from '../components/Header'
 import { AccountAvatar, Icon, LoadError, NetBadge, RefreshButton, Segmented } from '../components/ui'
 import { can, caps, config } from '../lib/config'
 import { fmtStamp } from '../lib/format'
-import { useFetch } from '../lib/hooks'
+import { useExpiredNotices, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { DashboardData } from '../lib/types'
@@ -24,7 +24,7 @@ export function DashboardPage({ openComposer, go }: PageProps) {
   const dim = fetched.stale || (fetched.loading && !!data)
 
   const account = (id: string) => accounts.find((a) => a.id === id)
-  const expired = accounts.filter((a) => a.status === 'expired')
+  const { shown: expired, dismiss } = useExpiredNotices(accounts)
   const who = (id: string, net: string) => {
     const a = account(id)
     return a ? (
@@ -64,6 +64,9 @@ export function DashboardPage({ openComposer, go }: PageProps) {
               {sprintf(__('%1$s sign-in expired for %2$s. Reconnect the account.', 'social-integrations'), network(a.network)?.label ?? a.network, a.name)}
             </span>
             {can(caps.manageAccounts) && <button type="button" className="sint-btn warn sm" onClick={() => go(`accounts?reconnect=${encodeURIComponent(a.id)}`)}>{__('Reconnect', 'social-integrations')}</button>}
+            <button type="button" className="sint-icon-btn sm" style={{ border: 0, background: 'transparent', color: 'var(--warn-text)', flex: '0 0 auto' }} aria-label={__('Close the notice', 'social-integrations')} onClick={() => dismiss([a.id])}>
+              <Icon name="close" size={16} stroke={2.2} />
+            </button>
           </div>
         ))}
 

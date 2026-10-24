@@ -152,18 +152,40 @@ final class Hooks {
 	/**
 	 * Action. Fires after a user saves a campaign in the admin app.
 	 *
-	 * @param int    $id   Campaign ID.
-	 * @param string $type Campaign type, for example 'single' or 'auto'.
-	 * @param bool   $live False when the campaign is a draft or off, so it sends nothing yet.
+	 * @param int    $id      Campaign ID.
+	 * @param string $type    Campaign type, for example 'single' or 'auto'.
+	 * @param bool   $live    False when the campaign is a draft or off, so it sends nothing yet.
+	 * @param bool   $created True for a new campaign, false for a change to a campaign.
 	 */
 	const CAMPAIGN_SAVED = 'sint/campaign_saved';
 
 	/**
+	 * Action. Fires after a user deletes a campaign in the admin app. A plugin that adds its
+	 * own campaign type fires it too.
+	 *
+	 * @param int    $id       Campaign ID.
+	 * @param string $type     Campaign type.
+	 * @param array  $campaign The campaign as it was, with its `name`.
+	 */
+	const CAMPAIGN_DELETED = 'sint/campaign_deleted';
+
+	/**
+	 * Action. Fires after a user turns a campaign on or off in the admin app. A plugin that
+	 * adds its own campaign type fires it too.
+	 *
+	 * @param int    $id     Campaign ID.
+	 * @param string $type   Campaign type.
+	 * @param bool   $active True: the user turned the campaign on.
+	 */
+	const CAMPAIGN_ACTIVE = 'sint/campaign_active';
+
+	/**
 	 * Filter. Campaigns listed on the Campaigns screen. Add items of your own `type`; the
-	 * admin app's `sint.campaigns.actions` JS filter handles their buttons.
+	 * admin app's `sint.campaigns.actions` JS filter handles their buttons. Give each item
+	 * the `created_by` user ID, and the plugin adds the user's name as `author`.
 	 *
 	 * @param array[] $items Each: [ 'id', 'type', 'name', 'accounts', 'status', 'next_at',
-	 *                       'last_at', 'sent', 'total', 'updated_at', 'actions' ].
+	 *                       'last_at', 'sent', 'total', 'updated_at', 'created_by', 'actions' ].
 	 */
 	const CAMPAIGNS = 'sint/campaigns';
 
@@ -189,6 +211,49 @@ final class Hooks {
 	 * @param string $error   Error from the network; empty when there is none.
 	 */
 	const OAUTH_CALLBACK = 'sint/oauth_callback';
+
+	/**
+	 * Action. Fires after a user disconnects an account, when the plugin has cancelled its
+	 * scheduled shares and removed it from the campaigns. Remove the account ID from your own
+	 * data. A list that becomes empty must not mean "every account".
+	 *
+	 * @param string $account_id Account ID.
+	 * @param array  $account    The account as it was, without credentials.
+	 */
+	const ACCOUNT_DELETED = 'sint/account_deleted';
+
+	/**
+	 * Action. Fires after the plugin saves a connected account: a new account, or a sign-in
+	 * again to an account that it has already.
+	 *
+	 * @param string $account_id  Account ID.
+	 * @param array  $account     The account, without credentials.
+	 * @param bool   $reconnected True when the account was there before.
+	 */
+	const ACCOUNT_CONNECTED = 'sint/account_connected';
+
+	/**
+	 * Action. Fires after a user sends a failed share again.
+	 *
+	 * @param array $job    The queue row.
+	 * @param array $result ['status' => 'published'|'failed', ...].
+	 */
+	const SHARE_RETRIED = 'sint/share_retried';
+
+	/**
+	 * Action. Fires after a user deletes a share from the queue.
+	 *
+	 * @param array $job The queue row as it was.
+	 */
+	const SHARE_DELETED = 'sint/share_deleted';
+
+	/**
+	 * Action. Fires after a user deletes entries from the share log.
+	 *
+	 * @param string[] $keys    The keys of the entries.
+	 * @param int      $deleted The number of log rows that the plugin deleted.
+	 */
+	const LOGS_DELETED = 'sint/logs_deleted';
 
 	/**
 	 * Action. Fires after the plugin renews the credentials of an account before a share.

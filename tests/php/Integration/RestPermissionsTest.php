@@ -20,8 +20,8 @@ final class RestPermissionsTest extends IntegrationTestCase {
 		return array(
 			'networks'        => array( 'GET', '/networks' ),
 			'accounts'        => array( 'GET', '/accounts' ),
-			'connect'         => array( 'POST', '/accounts/telegram' ),
-			'disconnect'      => array( 'DELETE', '/accounts/telegram' ),
+			'connect'         => array( 'POST', '/accounts/facebook' ),
+			'disconnect'      => array( 'DELETE', '/accounts/facebook' ),
 			'save app'        => array( 'POST', '/apps/facebook' ),
 			'queue'           => array( 'GET', '/queue?from=2026-01-01&to=2026-02-01' ),
 			'create share'    => array( 'POST', '/queue' ),
@@ -61,7 +61,6 @@ final class RestPermissionsTest extends IntegrationTestCase {
 	 */
 	public function test_administrators_pass_the_check( string $method, string $path ): void {
 		$this->login();
-		$this->answers['https://api.telegram.org/'] = array( 401, array( 'ok' => false ) );
 
 		$status = $this->rest( $method, $path )->get_status();
 

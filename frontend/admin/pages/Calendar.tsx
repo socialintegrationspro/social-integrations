@@ -144,7 +144,8 @@ export function CalendarPage({ openComposer }: PageProps) {
       <div className="t">{label(item)}</div>
     )
 
-  const actions = (item: QueueItem, height?: number) => (
+  // `aligned` keeps a space for each missing tool, so the tools line up from row to row in the list.
+  const actions = (item: QueueItem, height?: number, aligned = false) => (
     <>
       {item.status === 'draft' && can(caps.publish) && (
         <button type="button" className="sint-btn primary sm" style={{ height }} onClick={() => publish(item)}>
@@ -162,10 +163,11 @@ export function CalendarPage({ openComposer }: PageProps) {
             <Icon name="external" size={14} stroke={2} />
           </a>
         )}
+        {!item.remote_url && aligned && <span className="sint-pc-tool-space" aria-hidden="true" />}
         <button type="button" className="sint-pc-tool" aria-label={__('Duplicate', 'social-integrations')} title={__('Duplicate', 'social-integrations')} onClick={() => openComposer({ copy: item })}>
           <Icon name="copy" size={14} stroke={2} />
         </button>
-        {item.status !== 'sending' && item.status !== 'published' && <DeleteButton onConfirm={() => remove(item)} />}
+        {item.status !== 'sending' && item.status !== 'published' ? <DeleteButton onConfirm={() => remove(item)} /> : aligned && <span className="sint-pc-tool-space" aria-hidden="true" />}
       </span>
     </>
   )
@@ -310,7 +312,7 @@ export function CalendarPage({ openComposer }: PageProps) {
                       </span>
                     )}
                     <StatusPill item={item} />
-                    {actions(item)}
+                    {actions(item, undefined, true)}
                   </div>
                 ))}
               </div>

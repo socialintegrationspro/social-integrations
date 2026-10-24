@@ -34,6 +34,7 @@ body.sint-admin-page #wpfooter { display: none; }
   --ok-soft: #12332a;
   --ok-text: #6ee7b7;
   --bad: #f87171;
+  --on-bad: #1b0a0a;
   --bad-soft: #4a1d22;
   --bad-text: #fca5a5;
   --warn: #fbbf24;
@@ -135,6 +136,7 @@ body.sint-admin-page #wpfooter { display: none; }
   --ok-soft: #e3f5ec;
   --ok-text: #256f48;
   --bad: #c2413a;
+  --on-bad: #fff;
   --bad-soft: #fdecec;
   --bad-text: #a8342e;
   --warn: #f59e0b;
@@ -264,6 +266,10 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .sint-btn.ghost { background: transparent; }
 .sint-btn.danger { background: transparent; border-color: var(--bad-border); color: var(--bad-text); }
+.sint-btn.danger.solid { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
+.sint-btn.danger.solid:hover:not(:disabled) { filter: brightness(1.08); }
+.sint-btn.quiet-danger { background: transparent; border-color: transparent; color: var(--muted); }
+.sint-btn.quiet-danger:hover:not(:disabled), .sint-btn.quiet-danger:focus-visible { background: var(--bad-soft); border-color: var(--bad-border); color: var(--bad-text); }
 .sint-btn.warn { background: var(--warn); border-color: var(--warn); color: #1b1405; font-weight: 700; }
 .sint-btn.sm { height: 36px; padding: 0 14px; font-size: 13px; }
 .sint-icon-btn { width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--border); background: var(--raised); color: var(--icon); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -293,7 +299,7 @@ body.sint-admin-page #wpfooter { display: none; }
 /* Network badge and avatars */
 .sint-net { width: 20px; height: 20px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 9px; flex: 0 0 auto; }
 .sint-net svg { width: 56%; height: 56%; }
-/* Night mode: a faint ring keeps black badges (Threads, X) visible on dark panels. */
+/* Night mode: a faint ring keeps black badges visible on dark panels. */
 .sint-root:not([data-theme='light']) .sint-net { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
 .sint-nets { display: flex; }
 .sint-nets .sint-net { border: 2px solid var(--panel); margin-left: -6px; }
@@ -478,6 +484,11 @@ body.folded .sint-overlay { left: 36px; }
 }
 .sint-modal-body { flex: 1; overflow: auto; min-height: 0; }
 .sint-modal-foot { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px dashed var(--hover-border); flex-wrap: wrap; }
+.sint-confirm { padding: 20px 24px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.sint-confirm p { margin: 0; }
+.sint-confirm-who { display: flex; align-items: center; gap: 16px; }
+.sint-confirm-who .sint-avatar { flex: none; }
+.sint-confirm-list { margin: 16px 0 0; padding: 12px 16px 12px 32px; border-radius: var(--r-md); background: var(--bad-soft); color: var(--bad-text); display: flex; flex-direction: column; gap: 4px; }
 
 /* Composer */
 .sint-pick { position: relative; width: 48px; height: 48px; border-radius: 999px; border: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; background: var(--avatar); cursor: pointer; flex: 0 0 48px; }
@@ -486,6 +497,7 @@ body.folded .sint-overlay { left: 36px; }
 .sint-pick[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
 .sint-pick[aria-pressed='false'] { opacity: 0.35; filter: grayscale(1); }
 .sint-pick:disabled { cursor: not-allowed; }
+.sint-pick.expired { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--warn); }
 .sint-editor { background: var(--field); border: 1px solid var(--field-border); border-radius: var(--r-card); display: flex; flex-direction: column; }
 .sint-editor:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 .sint-editor:hover:not(:focus-within) { border-color: var(--hover-border); }
@@ -541,7 +553,6 @@ body.folded .sint-overlay { left: 36px; }
 .sint-kv span:first-child { color: var(--faint); }
 
 /* Auto-post tab of the composer: share-to row, then posts | what | when columns. */
-.sint-autopost-to { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px dashed var(--hover-border); flex-wrap: wrap; }
 .sint-autopost { display: flex; flex-wrap: wrap; min-height: 0; }
 .sint-autopost .col { flex: 1 1 280px; max-width: 340px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .sint-autopost .col.mid { flex: 999 1 400px; max-width: none; border-left: 1px solid var(--line); border-right: 1px solid var(--line); padding: 18px 22px; }
@@ -618,7 +629,7 @@ body.folded .sint-overlay { left: 36px; }
 .sint-log-msg { font-size: 12px; color: var(--bad-text); margin-top: 4px; }
 .sint-log-actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-left: auto; flex-wrap: wrap; }
 
-/* Row selection and delete in the share log. */
+/* Row selection and delete in the share log and on the Campaigns screen. */
 .sint-check-cell { width: 44px; padding-right: 0 !important; }
 .sint-check-cell input { cursor: pointer; }
 @media (hover: hover) {
@@ -626,12 +637,15 @@ body.folded .sint-overlay { left: 36px; }
   .sint-log-table:not(.selecting) tbody .sint-check-cell input:not(:focus-visible) { opacity: 0; transition: opacity 0.1s; }
   .sint-log-table:not(.selecting) .sint-log-row:hover .sint-check-cell input { opacity: 1; }
   .sint-log-table:not(.selecting) thead .sint-check-cell input:not(:focus-visible) { opacity: 0.5; }
+  .sint-camp-table:not(.selecting) tbody .sint-check-cell input:not(:focus-visible) { opacity: 0; transition: opacity 0.1s; }
+  .sint-camp-table:not(.selecting) tbody tr:hover .sint-check-cell input { opacity: 1; }
+  .sint-camp-table:not(.selecting) thead .sint-check-cell input:not(:focus-visible) { opacity: 0.5; }
   .sint-log-del:not(.armed) { opacity: 0; }
   .sint-log-row:hover .sint-log-del, .sint-log-del:focus-visible { opacity: 1; }
 }
-.sint-log-table tr.selected td { background: color-mix(in srgb, var(--accent) 6%, var(--table)); }
-.sint-log-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.sint-log-table thead tr.sint-bulk th { background: color-mix(in srgb, var(--accent) 8%, var(--table)); text-transform: none; letter-spacing: 0; padding-top: 6px; padding-bottom: 6px; }
+.sint-log-table tr.selected td, .sint-camp-table tr.selected td { background: color-mix(in srgb, var(--accent) 6%, var(--table)); }
+.sint-log-table tr.selected td:first-child, .sint-camp-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.sint-log-table thead tr.sint-bulk th, .sint-camp-table thead tr.sint-bulk th { background: color-mix(in srgb, var(--accent) 8%, var(--table)); text-transform: none; letter-spacing: 0; padding-top: 6px; padding-bottom: 6px; }
 .sint-bulk-bar { display: flex; align-items: center; gap: 6px; min-height: 32px; }
 .sint-bulk-count { font-size: 13px; font-weight: 700; color: var(--text); margin-right: 6px; }
 .sint-root .sint-bulk-link, .sint-root .sint-bulk-delete { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
@@ -713,7 +727,11 @@ body.folded .sint-overlay { left: 36px; }
 /* Campaigns screen. */
 .sint-camp-name { display: block; border: 0; background: none; padding: 0; margin-bottom: 4px; color: var(--text); font: inherit; font-weight: 700; text-align: left; cursor: pointer; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sint-camp-name:hover { color: var(--link); }
-.sint-camp-actions { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%; }
+.sint-camp-actions { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; width: 100%; }
+/* Pause and Resume share one width, so Edit and the menu line up on every row. */
+.sint-camp-toggle { min-width: 88px; justify-content: center; }
+span.sint-camp-toggle { display: inline-block; }
+.sint-camp-edit { gap: 6px; }
 
 /* Dashboard: a status strip and big counts, then tiles. */
 .sint-dash-top { display: flex; align-items: flex-end; gap: 24px 40px; flex-wrap: wrap; }
@@ -842,26 +860,41 @@ body.folded .sint-overlay { left: 36px; }
 .sint-table.sint-camp-table { min-width: 0; }
 .sint-camp-table .when { white-space: nowrap; }
 .sint-camp-table .when .d { display: block; }
+.sint-camp-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sint-camp-author { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-camp-nets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sint-camp-net { position: relative; display: inline-flex; }
+.sint-camp-net-n { position: absolute; right: -6px; bottom: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--text); color: var(--table); box-shadow: 0 0 0 2px var(--table); font-size: 9px; font-weight: 700; line-height: 15px; text-align: center; }
+.sint-camp-net-more { height: 22px; padding: 0 7px; border-radius: 999px; background: var(--raised); color: var(--text-2); font-size: 11px; font-weight: 700; line-height: 22px; }
 .sint-camp-sub { display: block; font-size: 12px; color: var(--muted); white-space: normal; }
 .sint-camp-table .acts { width: 1%; white-space: nowrap; }
-.sint-camp-menu { display: none; justify-content: flex-end; }
 @container (max-width: 1000px) {
-  .sint-camp-actions { display: none; }
-  .sint-camp-menu { display: flex; }
+  /* Edit keeps its icon and its name for screen readers. */
+  .sint-camp-edit { width: 36px; padding: 0; justify-content: center; }
+  .sint-camp-edit span { display: none; }
   .sint-camp-name { max-width: 240px; }
 }
 @container (max-width: 620px) {
   .sint-camp-table, .sint-camp-table tbody { display: block; }
-  .sint-camp-table thead { display: none; }
-  .sint-camp-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: 'name name acts' 'status accts accts' 'next last last'; gap: 10px 12px; padding: 16px; border-bottom: 1px dashed var(--line); }
-  .sint-camp-table tr:last-child { border-bottom: 0; }
+  /* The header row shows only to hold the checkbox for every row and the bulk actions. */
+  .sint-camp-table:not(.choosable) thead, .sint-camp-table thead tr:not(.sint-bulk) th:not(.sint-check-cell) { display: none; }
+  .sint-camp-table thead tr { display: flex; align-items: center; padding: 0; }
+  .sint-camp-table thead th { border-bottom: 1px solid var(--line); }
+  .sint-camp-table thead th.sint-check-cell { flex: 0 0 44px; }
+  .sint-camp-table thead tr.sint-bulk th:last-child { flex: 1; }
+  .sint-camp-table.choosable tbody tr { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: 'check name name acts' 'check status accts accts' 'check next last last'; }
+  .sint-camp-table td.sint-check-cell { grid-area: check; width: auto; align-self: start; padding-top: 2px !important; }
+  .sint-camp-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: 'name name acts' 'status accts accts' 'next last last'; gap: 10px 12px; padding: 16px; border-bottom: 1px dashed var(--line); }
+  .sint-camp-table tbody tr:last-child { border-bottom: 0; }
   .sint-camp-table td { display: block; padding: 0; border: 0; }
+  .sint-camp-table tbody tr.selected { background: color-mix(in srgb, var(--accent) 6%, var(--table)); box-shadow: inset 3px 0 0 var(--accent); }
+  .sint-camp-table tbody tr.selected td { background: transparent; box-shadow: none; }
   .sint-camp-table td.name { grid-area: name; min-width: 0; }
   .sint-camp-table td.acts { grid-area: acts; width: auto; align-self: start; }
   .sint-camp-table td.status { grid-area: status; align-self: center; }
   .sint-camp-table td.accts { grid-area: accts; justify-self: end; align-self: center; }
-  .sint-camp-table td.when:nth-of-type(4) { grid-area: next; }
-  .sint-camp-table td.when:nth-of-type(5) { grid-area: last; text-align: right; }
+  .sint-camp-table td.next { grid-area: next; }
+  .sint-camp-table td.last { grid-area: last; text-align: right; }
   .sint-camp-table td.when { white-space: normal; font-size: 13px; }
   .sint-camp-table td.when::before { content: attr(data-label); display: block; font-size: 12px; color: var(--faint); margin-bottom: 2px; }
   .sint-camp-name { max-width: 100%; }

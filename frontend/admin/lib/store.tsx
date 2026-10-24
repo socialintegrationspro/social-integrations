@@ -58,7 +58,7 @@ export function useStore(): Store {
   return store
 }
 
-/* Hash routing: #/dashboard, #/calendar, #/accounts?connected=bluesky */
+/* Hash routing: #/dashboard, #/calendar, #/accounts?connected=facebook */
 export function useRoute(): { path: string; params: URLSearchParams; go: (to: string) => void } {
   const read = () => {
     const hash = window.location.hash.replace(/^#\/?/, '')

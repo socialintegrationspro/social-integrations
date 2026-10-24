@@ -5,7 +5,11 @@
 
 namespace SocialIntegrations\Tests\Integration;
 
+use SocialIntegrations\Campaigns\Auto;
+use SocialIntegrations\Campaigns\Campaigns;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
+use SocialIntegrations\Scheduler\Queue;
 
 // phpcs:ignoreFile
 
@@ -16,51 +20,16 @@ final class AccountsTest extends IntegrationTestCase {
 		$this->login();
 	}
 
-	/** Fake answers of Telegram for a bot that can post in a channel. */
-	private function telegram_accepts_the_bot(): void {
-		$this->answers['https://api.telegram.org/bot123:abc/getMe']         = array( 200, array( 'ok' => true, 'result' => array( 'id' => 9, 'username' => 'shop_bot' ) ) );
-		$this->answers['https://api.telegram.org/bot123:abc/getChatMember'] = array( 200, array( 'ok' => true, 'result' => array( 'status' => 'administrator', 'can_post_messages' => true ) ) );
-		$this->answers['https://api.telegram.org/bot123:abc/getChat']       = array( 200, array( 'ok' => true, 'result' => array( 'id' => -1002, 'type' => 'channel', 'title' => 'Shop', 'username' => 'shop' ) ) );
-	}
-
-	public function test_connect_a_token_network(): void {
-		$this->telegram_accepts_the_bot();
-
-		$response = $this->rest( 'POST', '/accounts/telegram', array( 'bot_token' => ' 123:abc ', 'chat_id' => '@shop' ) );
-
-		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
-		$this->assertSame( 'telegram', $response->get_data()['id'] );
-		$this->assertSame( 'Shop', $response->get_data()['name'] );
-		$this->assertSame( '123:abc', Accounts::get( 'telegram' )['credentials']['bot_token'] );
-	}
-
 	public function test_credentials_are_encrypted_and_never_sent_to_the_browser(): void {
-		$this->telegram();
+		$this->facebook();
 
 		$stored = get_option( Accounts::OPTION );
 		$this->assertStringNotContainsString( 'secret-token', serialize( $stored ) );
 
 		$list = $this->rest( 'GET', '/accounts' )->get_data();
-		$this->assertSame( 'telegram', $list[0]['id'] );
+		$this->assertSame( 'facebook', $list[0]['id'] );
 		$this->assertArrayNotHasKey( 'credentials', $list[0] );
 		$this->assertStringNotContainsString( 'secret-token', wp_json_encode( $list ) );
-	}
-
-	public function test_connect_shows_a_human_error(): void {
-		$this->answers['https://api.telegram.org/'] = array( 401, array( 'ok' => false, 'description' => 'Unauthorized' ) );
-
-		$response = $this->rest( 'POST', '/accounts/telegram', array( 'bot_token' => '123:abc', 'chat_id' => '@shop' ) );
-
-		$this->assertSame( 400, $response->get_status() );
-		$this->assertSame( 'Telegram did not accept this bot token. Copy it again from @BotFather.', $response->get_data()['message'] );
-		$this->assertSame( array(), Accounts::all() );
-	}
-
-	public function test_connect_refuses_a_bad_token_without_a_request(): void {
-		$response = $this->rest( 'POST', '/accounts/telegram', array( 'bot_token' => 'nope', 'chat_id' => '@shop' ) );
-
-		$this->assertSame( 400, $response->get_status() );
-		$this->assertSame( array(), $this->requests );
 	}
 
 	public function test_connect_refuses_sign_in_networks_and_unknown_ones(): void {
@@ -69,11 +38,91 @@ final class AccountsTest extends IntegrationTestCase {
 	}
 
 	public function test_disconnect(): void {
-		$id = $this->telegram();
+		$id = $this->facebook();
 
 		$this->assertTrue( $this->rest( 'DELETE', "/accounts/$id" )->get_data()['deleted'] );
 		$this->assertNull( Accounts::get( $id ) );
 		$this->assertSame( 404, $this->rest( 'DELETE', "/accounts/$id" )->get_status() );
+	}
+
+	public function test_disconnect_stops_unsent_shares_and_keeps_sent_ones(): void {
+		$id        = $this->facebook();
+		$scheduled = $this->share( $id, 'scheduled' );
+		$draft     = $this->share( $id, 'draft' );
+		$sent      = $this->share( $id, 'published' );
+
+		$this->assertSame( array( 'campaigns' => 0, 'shares' => 2 ), $this->rest( 'GET', "/accounts/$id/impact" )->get_data() );
+		$data = $this->rest( 'DELETE', "/accounts/$id" )->get_data();
+
+		$this->assertSame( 2, $data['shares'] );
+		$this->assertSame( 'failed', Queue::find( $scheduled )['status'] );
+		$this->assertNull( Queue::find( $draft ) );
+		$this->assertSame( 'published', Queue::find( $sent )['status'] );
+		$log = Queue::last_logs( array( $scheduled ) )[ $scheduled ] ?? null;
+		$this->assertNotNull( $log );
+		$this->assertStringContainsString( 'The account was disconnected.', $log['message'] );
+	}
+
+	public function test_disconnect_removes_the_account_from_campaigns(): void {
+		$id    = $this->facebook();
+		$other = Accounts::save( 'linkedin', array( 'remote_id' => 'li-1', 'name' => 'Ann' ), array( 'access_token' => 't' ) )['id'];
+		$only  = Auto::save( array( 'name' => 'Only', 'accounts' => array( $id ) ) )['id'];
+		$both  = Auto::save( array( 'name' => 'Both', 'accounts' => array( $id, $other ) ) )['id'];
+		$every = Auto::save( array( 'name' => 'Every', 'accounts' => array() ) )['id'];
+		$fired = array();
+		add_action(
+			Hooks::ACCOUNT_DELETED,
+			static function ( $account_id, $account ) use ( &$fired ) {
+				$fired[] = array( $account_id, isset( $account['credentials'] ) );
+			},
+			10,
+			2
+		);
+
+		$this->assertSame( 2, $this->rest( 'GET', "/accounts/$id/impact" )->get_data()['campaigns'] );
+		$this->assertSame( 2, $this->rest( 'DELETE', "/accounts/$id" )->get_data()['campaigns'] );
+
+		$this->assertSame( array( array( $id, false ) ), $fired );
+		$this->assertSame( array( $other ), Campaigns::get( $both )['accounts'] );
+		$this->assertTrue( Campaigns::get( $both )['active'] );
+		// The last account left: the campaign stops and does not become "every account".
+		$this->assertSame( array(), Campaigns::get( $only )['accounts'] );
+		$this->assertTrue( Campaigns::get( $only )['no_accounts'] );
+		$this->assertFalse( Campaigns::get( $only )['active'] );
+		$this->assertTrue( Campaigns::get( $every )['active'] );
+		$this->assertArrayNotHasKey( 'no_accounts', Campaigns::get( $every ) );
+
+		$resume = $this->rest( 'POST', "/campaigns/$only/active", array( 'active' => true ) );
+		$this->assertSame( 409, $resume->get_status() );
+		$this->assertSame( 'sint_no_accounts', $resume->get_data()['code'] );
+		$items = array_column( $this->rest( 'GET', '/campaigns' )->get_data(), null, 'id' );
+		$this->assertTrue( $items[ $only ]['no_accounts'] );
+		$this->assertFalse( $items[ $every ]['no_accounts'] );
+
+		// A save without accounts needs a choice. A save with an account clears the mark.
+		$this->assertSame( 400, $this->rest( 'POST', "/campaigns/auto/$only", array( 'name' => 'Only', 'accounts' => array(), 'no_accounts' => true ) )->get_status() );
+		$this->rest( 'POST', "/campaigns/auto/$only", array( 'name' => 'Only', 'accounts' => array( $other ), 'active' => true ) );
+		$this->assertArrayNotHasKey( 'no_accounts', Campaigns::get( $only ) );
+		$this->assertTrue( Campaigns::get( $only )['active'] );
+	}
+
+	public function test_impact_of_an_unknown_account(): void {
+		$this->assertSame( 404, $this->rest( 'GET', '/accounts/nothing/impact' )->get_status() );
+	}
+
+	/**
+	 * Adds a share of an account with a status.
+	 */
+	private function share( string $account_id, string $status ): int {
+		return Queue::add(
+			array(
+				'network'      => 'facebook',
+				'account_id'   => $account_id,
+				'caption'      => 'Hello',
+				'status'       => $status,
+				'scheduled_at' => gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ),
+			)
+		);
 	}
 
 	public function test_save_an_app_needs_every_field(): void {
@@ -88,7 +137,7 @@ final class AccountsTest extends IntegrationTestCase {
 
 		$this->assertTrue( $this->rest( 'POST', '/apps/facebook', $fields )->get_data()['app_configured'] );
 		$this->assertTrue( Accounts::has_app( 'facebook' ) );
-		$this->assertSame( 404, $this->rest( 'POST', '/apps/telegram' )->get_status() );
+		$this->assertSame( 404, $this->rest( 'POST', '/apps/myspace' )->get_status() );
 	}
 
 	public function test_networks_list_what_the_admin_app_needs(): void {
@@ -98,7 +147,7 @@ final class AccountsTest extends IntegrationTestCase {
 		$methods = array_column( $data['networks'], 'methods', 'key' );
 		$this->assertSame( array( 'broker', 'app' ), $methods['facebook'] );
 		$this->assertSame( array( 'app' ), $methods['linkedin'] );
-		$this->assertSame( array(), $methods['telegram'] );
+		$this->assertSame( array( 'facebook', 'linkedin' ), array_keys( $methods ) );
 		foreach ( $data['networks'] as $network ) {
 			foreach ( array( 'key', 'label', 'color', 'auth_type', 'char_limit', 'max_images', 'post_fields', 'methods' ) as $key ) {
 				$this->assertArrayHasKey( $key, $network, $network['key'] );

@@ -45,7 +45,7 @@ final class SettingsTest extends IntegrationTestCase {
 	}
 
 	public function test_dashboard_counts_shares(): void {
-		$account = $this->telegram();
+		$account = $this->facebook();
 		$this->rest( 'POST', '/queue', array( 'caption' => 'x', 'accounts' => array( $account ) ) );
 
 		$data = $this->rest( 'GET', '/dashboard' )->get_data();

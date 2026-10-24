@@ -109,7 +109,7 @@ final class Campaigns {
 		$data = self::data( $body );
 		$id   = self::insert( 'single', mb_substr( self::name( $data ), 0, 191 ), $data );
 		$out  = array( 'id' => $id ) + self::share( $data, $id );
-		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'] );
+		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'], true );
 		return $out;
 	}
 
@@ -164,7 +164,7 @@ final class Campaigns {
 			array( 'id' => $id )
 		);
 		$out = array( 'id' => $id ) + self::share( $data, $id );
-		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'] );
+		do_action( Hooks::CAMPAIGN_SAVED, $id, 'single', ! $data['draft'], false );
 		return $out;
 	}
 
@@ -179,6 +179,60 @@ final class Campaigns {
 		$queue = Migrations::queue_table();
 		$wpdb->query( $wpdb->prepare( "UPDATE {$queue} SET campaign_id = 0 WHERE campaign_id = %d", $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( Migrations::campaigns_table(), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
+	/**
+	 * The number of campaigns on the Campaigns screen that list an account, of every type.
+	 *
+	 * @param string $account_id Account ID.
+	 */
+	public static function count_using( string $account_id ): int {
+		$n = 0;
+		foreach ( self::all() as $item ) {
+			if ( in_array( $account_id, (array) ( $item['accounts'] ?? array() ), true ) ) {
+				++$n;
+			}
+		}
+		return $n;
+	}
+
+	/**
+	 * Removes an account from the single and auto-post campaigns. An empty list means "every
+	 * account", so a campaign that loses its last account gets 'no_accounts' instead, and an
+	 * auto-post campaign also stops. The user selects accounts again in the campaign.
+	 *
+	 * @param string $account_id Account ID.
+	 * @return int The number of campaigns that changed.
+	 */
+	public static function forget_account( string $account_id ): int {
+		global $wpdb;
+		$table   = Migrations::campaigns_table();
+		$like    = '%' . $wpdb->esc_like( '"' . $account_id . '"' ) . '%';
+		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT id, type, data FROM {$table} WHERE type IN ('single', 'auto') AND data LIKE %s", $like ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$changed = 0;
+		foreach ( (array) $rows as $row ) {
+			$data = json_decode( (string) $row['data'], true );
+			if ( ! is_array( $data ) || ! in_array( $account_id, (array) ( $data['accounts'] ?? array() ), true ) ) {
+				continue;
+			}
+			$data['accounts'] = array_values( array_diff( (array) $data['accounts'], array( $account_id ) ) );
+			if ( ! $data['accounts'] ) {
+				$data['no_accounts'] = true;
+				if ( 'auto' === $row['type'] ) {
+					$data['active'] = false;
+				}
+			}
+			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$table,
+				array(
+					'data'       => wp_json_encode( $data ),
+					'updated_at' => current_time( 'mysql', true ),
+				),
+				array( 'id' => (int) $row['id'] )
+			);
+			++$changed;
+		}
+		return $changed;
 	}
 
 	/**
@@ -228,8 +282,10 @@ final class Campaigns {
 	/**
 	 * Every campaign, for the Campaigns screen, the newest first.
 	 *
-	 * An item: [ 'id', 'type', 'name', 'accounts' (empty: all), 'status', 'next_at',
-	 * 'last_at', 'sent', 'total', 'updated_at', 'actions' => string[] ].
+	 * An item: [ 'id', 'type', 'name', 'accounts' (empty: all), 'no_accounts' (true: the last
+	 * account was disconnected, so it shares to none), 'status', 'next_at', 'last_at', 'sent',
+	 * 'total', 'updated_at', 'created_by' (user ID), 'author' (the user's name, empty when the
+	 * user does not exist now), 'actions' => string[] ].
 	 */
 	public static function all(): array {
 		global $wpdb;
@@ -241,7 +297,13 @@ final class Campaigns {
 			$items[] = self::list_item( $row, $stats[ (int) $row['id'] ] ?? array() );
 		}
 
-		return (array) apply_filters( Hooks::CAMPAIGNS, $items );
+		$items = (array) apply_filters( Hooks::CAMPAIGNS, $items );
+		foreach ( $items as &$item ) {
+			$user           = ! empty( $item['created_by'] ) ? get_userdata( (int) $item['created_by'] ) : false;
+			$item['author'] = $user ? (string) $user->display_name : '';
+		}
+		unset( $item );
+		return $items;
 	}
 
 	/**
@@ -286,17 +348,19 @@ final class Campaigns {
 			$actions = array( 'edit', 'duplicate', 'delete' );
 		}
 		return array(
-			'id'         => (int) $row['id'],
-			'type'       => (string) $row['type'],
-			'name'       => $name,
-			'accounts'   => array_values( (array) ( $data['accounts'] ?? array() ) ),
-			'status'     => $status,
-			'next_at'    => isset( $by['scheduled'] ) ? Dates::iso( $by['scheduled']['first_at'] ) : '',
-			'last_at'    => isset( $by['published'] ) ? Dates::iso( $by['published']['last_at'] ) : '',
-			'sent'       => (int) ( $by['published']['n'] ?? 0 ),
-			'total'      => $total,
-			'updated_at' => Dates::iso( $row['updated_at'] ),
-			'actions'    => $actions,
+			'id'          => (int) $row['id'],
+			'type'        => (string) $row['type'],
+			'name'        => $name,
+			'accounts'    => array_values( (array) ( $data['accounts'] ?? array() ) ),
+			'no_accounts' => ! empty( $data['no_accounts'] ),
+			'status'      => $status,
+			'next_at'     => isset( $by['scheduled'] ) ? Dates::iso( $by['scheduled']['first_at'] ) : '',
+			'last_at'     => isset( $by['published'] ) ? Dates::iso( $by['published']['last_at'] ) : '',
+			'sent'        => (int) ( $by['published']['n'] ?? 0 ),
+			'total'       => $total,
+			'updated_at'  => Dates::iso( $row['updated_at'] ),
+			'created_by'  => (int) $row['created_by'],
+			'actions'     => $actions,
 		);
 	}
 
