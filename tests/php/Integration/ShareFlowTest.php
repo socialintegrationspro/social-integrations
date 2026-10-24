@@ -5,6 +5,7 @@
 
 namespace SocialIntegrations\Tests\Integration;
 
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
@@ -193,5 +194,40 @@ final class ShareFlowTest extends IntegrationTestCase {
 		$this->assertSame( 'Hello from the shop', $campaigns[0]['name'] );
 		$this->assertSame( 'published', $campaigns[0]['status'] );
 		$this->assertSame( 1, $campaigns[0]['sent'] );
+	}
+
+	public function test_the_campaigns_screen_names_the_user_who_made_the_campaign(): void {
+		wp_update_user( array( 'ID' => get_current_user_id(), 'display_name' => 'Jane Doe' ) );
+		$this->share();
+
+		$campaign = $this->rest( 'GET', '/campaigns' )->get_data()[0];
+
+		$this->assertSame( get_current_user_id(), $campaign['created_by'] );
+		$this->assertSame( 'Jane Doe', $campaign['author'] );
+	}
+
+	public function test_deletes_fire_their_actions(): void {
+		$fired = array();
+		foreach ( array( Hooks::CAMPAIGN_DELETED, Hooks::SHARE_DELETED, Hooks::LOGS_DELETED ) as $hook ) {
+			add_action(
+				$hook,
+				static function ( ...$args ) use ( &$fired, $hook ) {
+					$fired[ $hook ] = $args;
+				},
+				10,
+				3
+			);
+		}
+		$draft = $this->share( array( 'draft' => true ) );
+		$this->rest( 'DELETE', '/queue/' . $draft['created'][0] );
+		$this->rest( 'DELETE', '/campaigns/' . $draft['id'] );
+		$this->share();
+		$key = $this->rest( 'GET', '/logs' )->get_data()['items'][0]['key'];
+		$this->rest( 'POST', '/logs/delete', array( 'keys' => array( $key ) ) );
+
+		$this->assertSame( $draft['created'][0], (int) $fired[ Hooks::SHARE_DELETED ][0]['id'] );
+		$this->assertSame( array( $draft['id'], 'single' ), array_slice( $fired[ Hooks::CAMPAIGN_DELETED ], 0, 2 ) );
+		$this->assertSame( 'Hello from the shop', $fired[ Hooks::CAMPAIGN_DELETED ][2]['name'] );
+		$this->assertSame( array( array( $key ), 1 ), $fired[ Hooks::LOGS_DELETED ] );
 	}
 }

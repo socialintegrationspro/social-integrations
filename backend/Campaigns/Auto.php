@@ -104,11 +104,16 @@ final class Auto {
 	 *
 	 * @param int  $id     Campaign ID.
 	 * @param bool $active True to activate.
+	 * @return array|\WP_Error|null The campaign, an error when it has no accounts, or null when there is no such campaign.
 	 */
-	public static function set_active( int $id, bool $active ): ?array {
+	public static function set_active( int $id, bool $active ) {
 		$campaign = Campaigns::get( $id );
 		if ( ! $campaign || 'auto' !== $campaign['type'] ) {
 			return null;
+		}
+		// Its last account was disconnected. An empty list shares to every account, so the user selects accounts first.
+		if ( $active && ! empty( $campaign['no_accounts'] ) ) {
+			return new \WP_Error( 'sint_no_accounts', __( 'This campaign has no accounts. Edit the campaign and select an account.', 'social-integrations' ), array( 'status' => 409 ) );
 		}
 		$campaign['active'] = $active;
 		return self::save( $campaign, $id );

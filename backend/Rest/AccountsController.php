@@ -11,9 +11,12 @@ use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Errors;
 use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Auth\OAuth;
+use SocialIntegrations\Campaigns\Campaigns;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\NetworkException;
 use SocialIntegrations\Networks\Registry;
+use SocialIntegrations\Scheduler\Queue;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -47,6 +50,7 @@ final class AccountsController extends RestController {
 		$this->route( '/accounts', \WP_REST_Server::READABLE, array( $this, 'accounts' ), array(), Capabilities::VIEW );
 		$this->route( '/accounts/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'connect' ), array(), Capabilities::MANAGE_ACCOUNTS );
 		$this->route( '/accounts/(?P<id>[a-z0-9_-]+)', \WP_REST_Server::DELETABLE, array( $this, 'disconnect' ), array(), Capabilities::MANAGE_ACCOUNTS );
+		$this->route( '/accounts/(?P<id>[a-z0-9_-]+)/impact', \WP_REST_Server::READABLE, array( $this, 'impact' ), array(), Capabilities::MANAGE_ACCOUNTS );
 		$this->route( '/apps/(?P<network>[a-z0-9_-]+)', \WP_REST_Server::CREATABLE, array( $this, 'save_app' ), array(), Capabilities::MANAGE_ACCOUNTS );
 	}
 
@@ -110,16 +114,54 @@ final class AccountsController extends RestController {
 	}
 
 	/**
-	 * Removes an account.
+	 * What a disconnect changes, for the confirm dialog: the campaigns that use the account
+	 * and its shares that are not sent yet.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function impact( \WP_REST_Request $request ) {
+		$id = (string) $request['id'];
+		if ( ! Accounts::get( $id ) ) {
+			return $this->not_found( __( 'This account is not connected.', 'social-integrations' ) );
+		}
+		return rest_ensure_response(
+			array(
+				'campaigns' => Campaigns::count_using( $id ),
+				'shares'    => Queue::count_unsent( $id ),
+			)
+		);
+	}
+
+	/**
+	 * Removes an account. The plugin stops its shares that are not sent yet and removes it
+	 * from the campaigns, so an account connected later never gets them. Shares already
+	 * sent stay in the share log.
+	 *
+	 * Response: { deleted: true, campaigns: int (campaigns that used the account), shares: int (shares stopped) }.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function disconnect( \WP_REST_Request $request ) {
-		if ( ! Accounts::delete( (string) $request['id'] ) ) {
+		$id      = (string) $request['id'];
+		$account = Accounts::get( $id );
+		// Counted first: the campaigns of other plugins forget the account in the action below.
+		$campaigns = $account ? Campaigns::count_using( $id ) : 0;
+		if ( ! $account || ! Accounts::delete( $id ) ) {
 			return $this->not_found( __( 'This account is not connected.', 'social-integrations' ) );
 		}
-		return rest_ensure_response( array( 'deleted' => true ) );
+		unset( $account['credentials'] );
+		$shares = Queue::cancel_unsent( $id, __( 'The account was disconnected. The plugin did not share the post.', 'social-integrations' ) );
+		Campaigns::forget_account( $id );
+		do_action( Hooks::ACCOUNT_DELETED, $id, $account );
+		return rest_ensure_response(
+			array(
+				'deleted'   => true,
+				'campaigns' => $campaigns,
+				'shares'    => $shares,
+			)
+		);
 	}
 
 	/**

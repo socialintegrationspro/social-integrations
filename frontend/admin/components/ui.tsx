@@ -85,7 +85,7 @@ export function AccountAvatar({ account, network, large }: { account: Account; n
 export function AccountToggle({ account, network, on, disabled, onToggle }: { account: Account; network?: Network; on: boolean; disabled?: boolean; onToggle: () => void }) {
   const label = network?.label ?? account.network
   return (
-    <button type="button" className="sint-pick" aria-pressed={on} disabled={disabled} title={`${account.name} · ${label}`} aria-label={`${account.name}, ${label}`} onClick={onToggle}>
+    <button type="button" className={account.status === 'expired' ? 'sint-pick expired' : 'sint-pick'} aria-pressed={on} disabled={disabled} title={`${account.name} · ${label}`} aria-label={`${account.name}, ${label}`} onClick={onToggle}>
       {account.avatar ? <img src={account.avatar} alt="" /> : initials(account.name)}
       <NetBadge network={account.network} color={network?.color} />
     </button>
@@ -277,6 +277,34 @@ export function Modal({ title, onClose, children, footer, narrow, drawer, header
       </m.div>
     </m.div>,
     document.getElementById('sint-app') ?? document.body,
+  )
+}
+
+/** Asks before an action that cannot be undone. The dialog shows a spinner until `onConfirm` ends; the caller closes it. */
+export function ConfirmDialog({ title, children, confirmLabel, onConfirm, onClose }: { title: string; children: ReactNode; confirmLabel: string; onConfirm: () => Promise<void> | void; onClose: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const close = useCallback(() => !busy && onClose(), [busy, onClose])
+  const confirm = async () => {
+    setBusy(true)
+    try {
+      await onConfirm()
+    } finally {
+      setBusy(false)
+    }
+  }
+  const footer = (
+    <>
+      <button type="button" className="sint-btn sm" style={{ marginLeft: 'auto' }} disabled={busy} onClick={close}>{__('Cancel', 'social-integrations')}</button>
+      <button type="button" className="sint-btn danger solid sm" disabled={busy} onClick={confirm}>
+        {busy && <Spinner size={14} />}
+        {confirmLabel}
+      </button>
+    </>
+  )
+  return (
+    <Modal title={title} onClose={close} footer={footer} narrow>
+      <div className="sint-confirm">{children}</div>
+    </Modal>
   )
 }
 

@@ -123,8 +123,10 @@ final class Accounts {
 			'connected_at' => gmdate( 'c' ),
 			'expires_at'   => isset( $credentials['expires_at'] ) ? gmdate( 'c', (int) $credentials['expires_at'] ) : null,
 		);
+		$reconnected   = isset( $stored[ $id ] );
 		$stored[ $id ] = $account + array( 'credentials' => Encryption::encrypt_array( self::flatten( $credentials ) ) );
 		self::store()->persist( $stored );
+		do_action( Hooks::ACCOUNT_CONNECTED, $id, $account, $reconnected );
 		return $account;
 	}
 

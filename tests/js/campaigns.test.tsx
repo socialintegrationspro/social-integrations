@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CampaignsPage, type CampaignItem } from '../../frontend/admin/pages/Campaigns'
-import { storeRoutes } from './fixtures'
+import { account, storeRoutes } from './fixtures'
 import { ALL_CAPS, findToast, renderPage, setCaps } from './render'
 import { fail, fakeServer } from './server'
 
@@ -46,12 +46,41 @@ describe('Campaigns screen', () => {
     expect(within(auto).getByText('Active')).toBeInTheDocument()
     expect(within(auto).getByText('When you publish a post')).toBeInTheDocument()
     expect(within(auto).getByText('4 sent')).toBeInTheDocument()
-    expect(within(auto).getByRole('link', { name: 'Share log of New posts' })).toHaveAttribute('href', '#/log?campaign=auto-3')
 
     const one = screen.getByRole('button', { name: 'Launch day' }).closest('tr')!
     expect(within(one).getByText('Single post')).toBeInTheDocument()
     expect(within(one).getByText('Scheduled')).toBeInTheDocument()
     expect(within(one).queryByRole('link', { name: /Share log/ })).toBeNull()
+  })
+
+  it('shows the user who made each campaign', async () => {
+    fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign({ created_by: 2, author: 'Jane Doe' }), single] })
+    renderPage(CampaignsPage)
+
+    const auto = (await screen.findByRole('button', { name: 'New posts' })).closest('tr')!
+    expect(within(auto).getByText('by Jane Doe')).toBeInTheDocument()
+    const one = screen.getByRole('button', { name: 'Launch day' }).closest('tr')!
+    expect(within(one).queryByText(/^by /)).toBeNull()
+  })
+
+  it('shows one badge for each network, with the number of its accounts', async () => {
+    const accts = [account(), account({ id: 'fb1', network: 'facebook', name: 'Page one' }), account({ id: 'fb2', network: 'facebook', name: 'Page two' })]
+    fakeServer({ ...storeRoutes(accts), 'GET campaigns': [{ ...single, accounts: ['bluesky', 'fb1', 'fb2'] }] })
+    renderPage(CampaignsPage)
+
+    const row = (await screen.findByRole('button', { name: 'Launch day' })).closest('tr')!
+    expect(row.querySelectorAll('.sint-camp-net')).toHaveLength(2)
+    expect(within(row).getByText('2')).toHaveClass('sint-camp-net-n')
+    expect(within(row).getByText('3 accounts')).toBeInTheDocument()
+  })
+
+  it('says when a campaign has no accounts', async () => {
+    fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign({ status: 'paused', no_accounts: true, actions: ['edit', 'duplicate', 'delete', 'resume'] })] })
+    renderPage(CampaignsPage)
+
+    const auto = (await screen.findByRole('button', { name: 'New posts' })).closest('tr')!
+    expect(within(auto).getByText('No accounts')).toBeInTheDocument()
+    expect(within(auto).queryByText('All accounts')).toBeNull()
   })
 
   it('filters the list by campaign type', async () => {
@@ -72,7 +101,8 @@ describe('Campaigns screen', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Launch day' }))
     expect(openComposer).toHaveBeenLastCalledWith({ campaign: { type: 'single', id: 7, accounts: ['bluesky'], copy: false } })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Duplicate Launch day' }))
+    await userEvent.click(screen.getByRole('button', { name: 'More actions for Launch day' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }))
     expect(openComposer).toHaveBeenLastCalledWith({ campaign: { type: 'single', id: 7, accounts: ['bluesky'], copy: true } })
   })
 
@@ -102,10 +132,11 @@ describe('Campaigns screen', () => {
     const server = fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign(), single], 'DELETE campaigns/7': { deleted: true } })
     renderPage(CampaignsPage)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete Launch day' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'More actions for Launch day' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
     expect(server.to('DELETE campaigns/7')).toHaveLength(0)
     server.on({ 'GET campaigns': [campaign()] })
-    await userEvent.click(screen.getByRole('button', { name: 'Click again to delete' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Click again to delete' }))
 
     await findToast('Campaign deleted. Shares already sent stay in the share log.')
     expect(server.to('DELETE campaigns/7')).toHaveLength(1)
@@ -116,20 +147,54 @@ describe('Campaigns screen', () => {
     fakeServer({ ...storeRoutes(), 'GET campaigns': [single], 'DELETE campaigns/7': fail('The campaign is sending now.', 409) })
     renderPage(CampaignsPage)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete Launch day' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Click again to delete' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'More actions for Launch day' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Click again to delete' }))
 
     await findToast('The campaign is sending now.')
     expect(screen.getByRole('button', { name: 'Launch day' })).toBeInTheDocument()
   })
 
-  it('has the same actions in the narrow menu', async () => {
+  it('deletes the selected campaigns on the second click', async () => {
+    const server = fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign(), single], 'DELETE campaigns/3': { deleted: true }, 'DELETE campaigns/7': { deleted: true } })
+    renderPage(CampaignsPage)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Select all campaigns on this page' }))
+    expect(screen.getByText('2 selected')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(server.to('DELETE campaigns/3')).toHaveLength(0)
+    server.on({ 'GET campaigns': [] })
+    await userEvent.click(screen.getByRole('button', { name: 'Click again to delete' }))
+
+    await findToast('2 campaigns deleted. Shares already sent stay in the share log.')
+    expect(server.to('DELETE campaigns/3')).toHaveLength(1)
+    expect(server.to('DELETE campaigns/7')).toHaveLength(1)
+  })
+
+  it('keeps the campaigns that a bulk delete did not delete', async () => {
+    fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign(), single], 'DELETE campaigns/3': { deleted: true }, 'DELETE campaigns/7': fail('The campaign is sending now.', 409) })
+    renderPage(CampaignsPage)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Select New posts' }))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Launch day' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Click again to delete' }))
+
+    await findToast('1 of 2 campaigns deleted. The campaign is sending now.')
+    expect(screen.getByRole('button', { name: 'Launch day' })).toBeInTheDocument()
+    expect(screen.getByText('1 selected')).toBeInTheDocument()
+  })
+
+  it('shows Pause and Edit on the row and the other actions in a menu', async () => {
     fakeServer({ ...storeRoutes(), 'GET campaigns': [campaign()] })
     const { go } = renderPage(CampaignsPage)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Actions for New posts' }))
+    const row = (await screen.findByRole('button', { name: 'New posts' })).closest('tr')!
+    expect(within(row).getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Edit New posts' })).toBeInTheDocument()
+    await userEvent.click(within(row).getByRole('button', { name: 'More actions for New posts' }))
     const menu = screen.getByRole('menu')
-    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Pause', 'Share log', 'Edit', 'Duplicate', 'Delete'])
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Share log', 'Duplicate', 'Delete'])
     await userEvent.click(within(menu).getByRole('menuitem', { name: 'Share log' }))
     expect(go).toHaveBeenCalledWith('log?campaign=auto-3')
   })

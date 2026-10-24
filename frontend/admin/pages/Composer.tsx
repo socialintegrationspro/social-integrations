@@ -67,6 +67,8 @@ export interface ComposerOptionProps {
 export interface ComposerModeProps {
   accounts: Account[]
   selected: string[]
+  /** Changes the accounts that every tab of the composer shares to. */
+  setSelected: (ids: string[]) => void
   onClose: () => void
   onSaved: () => void
   /** The campaign of this mode's type that the user edits or copies. */
@@ -383,11 +385,9 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         </>
       }
     >
-      {mode !== 'auto' && (
-        <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} />
-      )}
+      <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} allNote={mode === 'auto' ? __('All accounts, and new ones you connect', 'social-integrations') : undefined} />
 
-      {Mode ? <Mode accounts={connected} selected={selected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : (
+      {Mode ? <Mode accounts={connected} selected={selected} setSelected={setSelected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : (
         <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
           {!item && <ContentPicker search={contentSearch} postId={postId} onPick={pickPost} onClear={clearPost} />}
 

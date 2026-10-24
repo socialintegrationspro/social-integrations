@@ -16,6 +16,8 @@ interface Props {
   locked: boolean
   /** Leaves the composer for another screen, such as 'accounts'. The composer asks first when there are unsaved changes. */
   onLeave: (to: string) => void
+  /** Shown in place of the count when every connected account is selected. */
+  allNote?: string
 }
 
 /** What a `sint.composer.accounts` filter gets: it adds controls that select accounts. */
@@ -33,10 +35,34 @@ export function AccountControls(ctx: AccountControlsContext) {
   return extra.length ? <div className="sint-share-to">{extra}</div> : null
 }
 
-/** The "Share to" row: one button for each account, plus Select all and expired sign-ins. */
-export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave }: Props) {
+/** One line for each expired account, with a link to reconnect it. Without `onLeave`, the link opens the Accounts screen at once. */
+function ExpiredNotices({ accounts, onLeave }: { accounts: Account[]; onLeave?: (to: string) => void }) {
   const { network } = useStore()
-  const all = selected.length === connected.length
+  return (
+    <>
+      {accounts.filter((a) => a.status === 'expired').map((a) => {
+        const to = `accounts?reconnect=${encodeURIComponent(a.id)}`
+        return (
+          <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="alert" size={14} stroke={2.2} />
+            {sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}
+            {can(caps.manageAccounts) && (
+              <>
+                {' · '}
+                <a href={`#/${to}`} onClick={onLeave && ((e) => { e.preventDefault(); onLeave(to) })} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
+              </>
+            )}
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
+/** The "Share to" row: one button for each account, plus Select all and expired sign-ins. */
+export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave, allNote }: Props) {
+  const { network } = useStore()
+  const all = connected.length > 0 && connected.every((a) => selected.includes(a.id))
 
   return (
     <>
@@ -54,26 +80,17 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
           })}
         </span>
       )}
-      {!locked && connected.length > 1 && (
+      {!locked && (connected.length > 1 || (all && allNote)) && (
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
-          {sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
-          <button type="button" className="sint-btn ghost sm" onClick={() => setSelected(() => (all ? [] : connected.map((a) => a.id)))}>
-            {all ? __('Clear', 'social-integrations') : __('Select all', 'social-integrations')}
-          </button>
-        </span>
-      )}
-      {accounts.filter((a) => a.status === 'expired').map((a) => (
-        <span key={a.id} style={{ fontSize: 12, color: 'var(--warn-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="alert" size={14} stroke={2.2} />
-          {sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}
-          {can(caps.manageAccounts) && (
-            <>
-              {' · '}
-              <a href={`#/accounts?reconnect=${encodeURIComponent(a.id)}`} onClick={(e) => { e.preventDefault(); onLeave(`accounts?reconnect=${encodeURIComponent(a.id)}`) }} style={{ color: 'var(--warn-text)', fontWeight: 700 }}>{__('Reconnect', 'social-integrations')}</a>
-            </>
+          {all && allNote ? allNote : sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
+          {connected.length > 1 && (
+            <button type="button" className="sint-btn ghost sm" onClick={() => setSelected(() => (all ? [] : connected.map((a) => a.id)))}>
+              {all ? __('Clear', 'social-integrations') : __('Select all', 'social-integrations')}
+            </button>
           )}
         </span>
-      ))}
+      )}
+      <ExpiredNotices accounts={accounts} onLeave={onLeave} />
     </div>
     </>
   )

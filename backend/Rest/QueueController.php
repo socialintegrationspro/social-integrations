@@ -10,6 +10,7 @@ namespace SocialIntegrations\Rest;
 use SocialIntegrations\Campaigns\Campaigns;
 use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Scheduler\Publisher;
 use SocialIntegrations\Scheduler\Queue;
@@ -175,6 +176,7 @@ final class QueueController extends RestController {
 			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
 		Queue::delete( $job['id'] );
+		do_action( Hooks::SHARE_DELETED, $job );
 		return rest_ensure_response( array( 'deleted' => true ) );
 	}
 
@@ -217,6 +219,7 @@ final class QueueController extends RestController {
 		if ( null === $result ) {
 			return $this->error( 'sending', __( 'The plugin sends this share now.', 'social-integrations' ), 409 );
 		}
+		do_action( Hooks::SHARE_RETRIED, $job, $result );
 		return rest_ensure_response( $result );
 	}
 
@@ -362,6 +365,8 @@ final class QueueController extends RestController {
 		if ( ! $keys ) {
 			return $this->error( 'no_keys', __( 'Select at least one entry.', 'social-integrations' ), 400 );
 		}
-		return rest_ensure_response( array( 'deleted' => Queue::delete_log_entries( $keys ) ) );
+		$deleted = Queue::delete_log_entries( $keys );
+		do_action( Hooks::LOGS_DELETED, $keys, $deleted );
+		return rest_ensure_response( array( 'deleted' => $deleted ) );
 	}
 }

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { FieldPreview } from '../components/FieldPreview'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
-import { AccountToggle, LoadError, Toggle, useToast } from '../components/ui'
-import { AccountControls } from './composer/AccountPicker'
+import { LoadError, useToast } from '../components/ui'
 import { can, caps } from '../lib/config'
 import { api } from '../lib/api'
 import { applyFilters } from '../lib/hooks'
@@ -35,7 +34,10 @@ interface AutoCampaign extends ShareTemplate {
   name: string
   active: boolean
   post_types: string[]
+  /** Empty: every account, unless `no_accounts`. */
   accounts: string[]
+  /** True when the campaign shares to no account: its last account was disconnected, or the user cleared the list. */
+  no_accounts?: boolean
   delay: { value: number; unit: Unit }
 }
 
@@ -44,14 +46,19 @@ const DEFAULT_CAPTION = '{title}\n\n{excerpt}\n\n{url}'
 const BLANK: AutoCampaign = { id: 0, name: '', active: true, post_types: ['post'], accounts: [], delay: { value: 0, unit: 'minutes' }, caption: '', captions: {}, media: 'auto', custom_media: [] }
 
 /** The Auto-post tab of the composer: one campaign that shares new posts when they are published. */
-export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSaved: () => void }) {
-  const { postTypes, accounts, network } = useStore()
+/** The accounts come from the "Share to" row of the composer, which every tab shares. */
+export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaign?: CampaignRef; onSaved: () => void; selected: string[]; setSelected: (ids: string[]) => void }) {
+  const { postTypes, accounts } = useStore()
   const toast = useToast()
   const source = campaign ? Number(campaign.id) : 0
   const editing = campaign && !campaign.copy ? source : 0
-  // A user who cannot publish saves a campaign that is off. A user who can publish turns it on.
+  // A new campaign or a copy is on. A user who cannot publish saves it off. An edited campaign keeps its state: Pause and Resume are on the Campaigns screen.
   const publish = can(caps.publish)
   const [c, setC] = useState<AutoCampaign | null>(campaign ? null : { ...BLANK, active: publish })
+  // Expired accounts of the opened campaign. The row cannot select them, but the campaign keeps them for when the user reconnects.
+  const kept = useRef<string[]>([])
+  // True when the opened campaign has its own list and leaves out an expired account. Then all connected accounts stay a list.
+  const leftOut = useRef(false)
   const [tab, setTab] = useState('all')
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
@@ -60,6 +67,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   const [saving, setSaving] = useState(false)
   const [nameError, setNameError] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
+  const [accountsError, setAccountsError] = useState(false)
   const savers = useRef<Record<string, (id: number) => Promise<unknown>>>({})
 
   const load = () => {
@@ -68,7 +76,11 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     api.get<AutoCampaign>(`campaigns/${campaign.id}`).then(
       (r) => {
         const d = r.data
-        setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, name: campaign.copy ? sprintf(__('%s (copy)', 'social-integrations'), d.name) : d.name })
+        const ids = accounts.filter((a) => a.status === 'connected').map((a) => a.id)
+        kept.current = d.accounts.filter((id) => accounts.some((a) => a.id === id && a.status !== 'connected'))
+        leftOut.current = d.accounts.length > 0 && accounts.some((a) => a.status !== 'connected' && !d.accounts.includes(a.id))
+        setSelected(d.no_accounts ? [] : d.accounts.length ? d.accounts.filter((id) => ids.includes(id)) : ids)
+        setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, active: campaign.copy ? publish : d.active, name: campaign.copy ? sprintf(__('%s (copy)', 'social-integrations'), d.name) : d.name })
       },
       (e) => setLoadError((e as Error).message),
     )
@@ -128,8 +140,9 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
 
   const set = (patch: Partial<AutoCampaign>) => setC({ ...c, ...patch })
   const connected = accounts.filter((a) => a.status === 'connected')
-  const chosen = (id: string) => c.accounts.length === 0 || c.accounts.includes(id)
-  const nets = Array.from(new Set(connected.filter((a) => chosen(a.id)).map((a) => a.network)))
+  // All connected accounts selected is stored as an empty list: every account, also the accounts connected later.
+  const everyAccount = !leftOut.current && connected.length > 0 && connected.every((a) => selected.includes(a.id))
+  const nets = Array.from(new Set(connected.filter((a) => selected.includes(a.id)).map((a) => a.network)))
   const current = nets.includes(tab) ? tab : 'all'
 
 
@@ -137,6 +150,10 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
   const delayText = c.delay.value === 0 ? __('Immediately after you publish', 'social-integrations') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after you publish', 'social-integrations') : c.delay.unit === 'hours' ? __('%d hours after you publish', 'social-integrations') : __('%d days after you publish', 'social-integrations'), c.delay.value)
 
   const save = async () => {
+    if (!selected.length) {
+      setAccountsError(true)
+      return
+    }
     if (!c?.name.trim()) {
       setNameError(true)
       nameRef.current?.focus()
@@ -144,7 +161,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
     }
     setSaving(true)
     try {
-      const r = await api.post<AutoCampaign>(editing ? `campaigns/auto/${editing}` : 'campaigns/auto', c)
+      const r = await api.post<AutoCampaign>(editing ? `campaigns/auto/${editing}` : 'campaigns/auto', { ...c, accounts: everyAccount ? [] : [...selected, ...kept.current], no_accounts: false })
       await Promise.all(Object.values(savers.current).map((fn) => fn(r.data.id)))
       toast(editing ? __('Campaign saved.', 'social-integrations') : __('Campaign created. The plugin will share new posts that match.', 'social-integrations'))
       onSaved()
@@ -156,28 +173,6 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
 
   return (
     <>
-      {/* An empty list is all accounts: other controls see each ID, and a full list is stored as empty again. */}
-      <AccountControls accounts={connected} selected={c.accounts.length === 0 ? accounts.map((a) => a.id) : c.accounts} setSelected={(update) => {
-        const all = accounts.map((x) => x.id)
-        const next = update(c.accounts.length === 0 ? all : c.accounts)
-        set({ accounts: all.every((id) => next.includes(id)) ? [] : next })
-      }} locked={false} />
-      <div className="sint-autopost-to">
-        <span className="sint-label">{__('Share to', 'social-integrations')}</span>
-        {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts">{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
-        {accounts.map((a) => {
-          const on = chosen(a.id)
-          return (
-            <AccountToggle key={a.id} account={a} network={network(a.network)} on={on} onToggle={() => {
-              const all = accounts.map((x) => x.id)
-              const base = c.accounts.length === 0 ? all : c.accounts
-              const next = on ? base.filter((x) => x !== a.id) : [...base, a.id]
-              set({ accounts: next.length === all.length ? [] : next })
-            }} />
-          )
-        })}
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{c.accounts.length === 0 ? __('All accounts, and new ones you connect', 'social-integrations') : sprintf(__('%1$d of %2$d', 'social-integrations'), c.accounts.length, accounts.length)}</span>
-      </div>
 
       <div className="sint-autopost">
         <aside className="col">
@@ -191,7 +186,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
           {renderExtras('posts')}
         </aside>
 
-        <section className="col mid" style={{ opacity: c.active ? 1 : 0.55 }}>
+        <section className="col mid">
           <div className="sint-label">{__('What to post', 'social-integrations')}</div>
           <TemplateEditor
             value={c}
@@ -226,11 +221,8 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
 
         <aside className="col side">
           <div className="sint-label">{__('When', 'social-integrations')}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 700, fontSize: 14 }}>
-            <Toggle checked={c.active && publish} disabled={!publish} onChange={(v) => set({ active: v })} label={__('Campaign is on', 'social-integrations')} />
-            {c.active && publish ? __('On: shares new posts', 'social-integrations') : __('Paused', 'social-integrations')}
-          </label>
-          {!publish && <p className="sint-sub" style={{ margin: 0 }}>{__('You save the campaign off. A user who can publish turns it on.', 'social-integrations')}</p>}
+          {!publish && !editing && <p className="sint-sub" style={{ margin: 0 }}>{__('You save the campaign off. A user who can publish turns it on.', 'social-integrations')}</p>}
+          {!!editing && !c.active && <p className="sint-sub" style={{ margin: 0 }}>{__('This campaign is paused. Resume it on the Campaigns screen.', 'social-integrations')}</p>}
           <div className="sint-field">
             <span>{__('Share', 'social-integrations')}</span>
             <span style={{ display: 'flex', gap: 8 }}>
@@ -257,6 +249,7 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
             {nameError && <small id="sint-auto-name-error" className="sint-field-error">{__('Enter a name for the campaign.', 'social-integrations')}</small>}
           </label>
           <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar.', 'social-integrations')}</small>
+          {accountsError && !selected.length && <small role="alert" className="sint-field-error">{__('Select an account.', 'social-integrations')}</small>}
           <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Wait…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
         </aside>
       </div>

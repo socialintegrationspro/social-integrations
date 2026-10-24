@@ -170,6 +170,47 @@ final class Queue {
 	}
 
 	/**
+	 * The number of shares of an account that are not sent yet: drafts and scheduled shares.
+	 *
+	 * @param string $account_id Account ID.
+	 */
+	public static function count_unsent( string $account_id ): int {
+		global $wpdb;
+		$table = Migrations::queue_table();
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE account_id = %s AND status IN ('draft', 'scheduled')", $account_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Stops the shares of an account that are not sent yet. A scheduled share fails with
+	 * the message, so the share log tells why the post did not go out. A draft is deleted.
+	 *
+	 * @param string $account_id Account ID.
+	 * @param string $message    The reason, for the share log.
+	 * @return int The number of shares that the plugin stopped.
+	 */
+	public static function cancel_unsent( string $account_id, string $message ): int {
+		global $wpdb;
+		$table = Migrations::queue_table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE account_id = %s AND status = 'scheduled'", $account_id ), ARRAY_A );
+		$stopped = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE account_id = %s AND status = 'draft'", $account_id ) );
+		// phpcs:enable
+		foreach ( (array) $rows as $row ) {
+			if ( self::update( (int) $row['id'], array( 'status' => 'failed' ), 'scheduled' ) ) {
+				self::log(
+					$row,
+					array(
+						'status'  => 'failed',
+						'message' => $message,
+					)
+				);
+				++$stopped;
+			}
+		}
+		return $stopped;
+	}
+
+	/**
 	 * Writes a share log row.
 	 *
 	 * @param array $job    Queue row.

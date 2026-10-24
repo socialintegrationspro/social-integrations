@@ -1,11 +1,11 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Header, type PageProps } from '../components/Header'
-import { AccountAvatar, CopyField, Icon, LoadError, Modal, NetBadge, RefreshButton, SkeletonList, Spinner, useToast } from '../components/ui'
+import { AccountAvatar, ConfirmDialog, CopyField, Icon, LoadError, Modal, NetBadge, RefreshButton, SkeletonList, Spinner, useToast } from '../components/ui'
 import { api } from '../lib/api'
 import { config } from '../lib/config'
 import { fmtDate } from '../lib/format'
-import { applyFilters, useFetch } from '../lib/hooks'
-import { __, sprintf } from '../lib/i18n'
+import { applyFilters, useExpiredNotices, useFetch } from '../lib/hooks'
+import { __, _n, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { Account, Network } from '../lib/types'
 
@@ -26,26 +26,6 @@ interface Entity {
   remote_id: string
   name: string
   avatar: string
-}
-
-// The expired accounts whose notice the user closed. A per-browser choice, so the app keeps it in localStorage.
-const DISMISSED_KEY = 'sint-expired-dismissed'
-
-function readDismissed(): string[] {
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(DISMISSED_KEY) ?? '[]')
-    return Array.isArray(saved) ? saved.map(String) : []
-  } catch {
-    return []
-  }
-}
-
-function writeDismissed(ids: string[]) {
-  try {
-    window.localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids))
-  } catch {
-    // The notice shows again on the next visit.
-  }
 }
 
 export function AccountsPage({ params, go }: PageProps) {
@@ -92,37 +72,28 @@ export function AccountsPage({ params, go }: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const disconnect = async (account: Account) => {
-    if (!window.confirm(sprintf(__('Disconnect %s? Scheduled shares to it will fail.', 'social-integrations'), account.name || account.username))) return
+  // The account that the confirm dialog asks about.
+  const [confirming, setConfirming] = useState<Account | null>(null)
+  const disconnect = (account: Account) => setConfirming(account)
+
+  const remove = async (account: Account) => {
     setRemoving(account.id)
     try {
-      await api.del(`accounts/${account.id}`)
-      toast(__('Account disconnected.', 'social-integrations'))
+      const r = await api.del<{ shares?: number }>(`accounts/${account.id}`)
+      const shares = r.data.shares ?? 0
+      toast(shares ? sprintf(_n('Account disconnected. The plugin stopped %d scheduled share.', 'Account disconnected. The plugin stopped %d scheduled shares.', shares, 'social-integrations'), shares) : __('Account disconnected.', 'social-integrations'))
       await reload()
     } catch (e) {
       toast((e as Error).message, true)
     }
     setRemoving('')
+    setConfirming(null)
   }
 
-  const expired = accounts.filter((a) => a.status === 'expired')
-  // A closed notice shows again when another sign-in expires. An account that is connected again
-  // leaves the list, so its notice shows again if it expires later.
-  const [dismissed, setDismissedState] = useState<string[]>(readDismissed)
-  const setDismissed = (ids: string[]) => {
-    setDismissedState(ids)
-    writeDismissed(ids)
-  }
-  const expiredKey = expired.map((a) => a.id).join(',')
-  useEffect(() => {
-    const kept = dismissed.filter((id) => expired.some((a) => a.id === id))
-    if (accounts.length > 0 && kept.length !== dismissed.length) setDismissed(kept)
-    // Only when the accounts load or the expired accounts change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts.length > 0, expiredKey])
-  const shown = expired.filter((a) => !dismissed.includes(a.id))
+  // A closed notice shows again when another sign-in expires.
+  const { expired, shown, dismiss } = useExpiredNotices(accounts)
   const closeButton = (ids: string[]) => (
-    <button type="button" className="sint-icon-btn sm" style={{ border: 0, background: 'transparent', color: 'var(--warn-text)', flex: '0 0 auto' }} aria-label={__('Close the notice', 'social-integrations')} onClick={() => setDismissed(Array.from(new Set([...dismissed, ...ids])))}>
+    <button type="button" className="sint-icon-btn sm" style={{ border: 0, background: 'transparent', color: 'var(--warn-text)', flex: '0 0 auto' }} aria-label={__('Close the notice', 'social-integrations')} onClick={() => dismiss(ids)}>
       <Icon name="close" size={16} stroke={2.2} />
     </button>
   )
@@ -238,7 +209,7 @@ export function AccountsPage({ params, go }: PageProps) {
                           {__('Open', 'social-integrations')} <Icon name="external" size={14} />
                         </a>
                       )}
-                      <button type="button" className="sint-btn ghost sm" style={{ marginLeft: 'auto', border: 0, color: 'var(--muted)' }} disabled={removing === account.id} onClick={() => disconnect(account)}>
+                      <button type="button" className="sint-btn quiet-danger sm" style={{ marginLeft: 'auto' }} disabled={removing === account.id} onClick={() => disconnect(account)}>
                         {removing === account.id && <Spinner size={14} />}
                         {__('Disconnect', 'social-integrations')}
                       </button>
@@ -253,9 +224,35 @@ export function AccountsPage({ params, go }: PageProps) {
         )}
       </div>
 
+      {confirming && (
+        <ConfirmDialog
+          title={sprintf(__('Disconnect %s?', 'social-integrations'), confirming.name || confirming.username)}
+          confirmLabel={__('Disconnect', 'social-integrations')}
+          onConfirm={() => remove(confirming)}
+          onClose={() => setConfirming(null)}
+        >
+          <div className="sint-confirm-who">
+            <AccountAvatar account={confirming} network={network(confirming.network)} large />
+            <p>{__('The plugin removes the sign-in token from your site. Shares already sent stay in the share log.', 'social-integrations')}</p>
+          </div>
+          <DisconnectImpact id={confirming.id} />
+        </ConfirmDialog>
+      )}
       {connecting && <ConnectModal network={connecting.network} via={connecting.via} redirectUri={redirectUri} onClose={() => setConnecting(null)} onDone={() => { setConnecting(null); reload() }} />}
       {pick && network(pick) && <PickEntity network={network(pick)!} onClose={() => go('accounts')} onDone={() => { reload(); go('accounts') }} />}
     </>
+  )
+}
+
+/** What a disconnect changes: the campaigns that use the account and its scheduled shares. */
+function DisconnectImpact({ id }: { id: string }) {
+  const { data } = useFetch<{ campaigns: number; shares: number }>(`accounts/${id}/impact`)
+  if (!data || (!data.campaigns && !data.shares)) return null
+  return (
+    <ul className="sint-confirm-list">
+      {data.shares > 0 && <li>{sprintf(_n('The plugin stops %d scheduled share to this account.', 'The plugin stops %d scheduled shares to this account.', data.shares, 'social-integrations'), data.shares)}</li>}
+      {data.campaigns > 0 && <li>{sprintf(_n('The plugin removes the account from %d campaign. A campaign without accounts stops.', 'The plugin removes the account from %d campaigns. A campaign without accounts stops.', data.campaigns, 'social-integrations'), data.campaigns)}</li>}
+    </ul>
   )
 }
 

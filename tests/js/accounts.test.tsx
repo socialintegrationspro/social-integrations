@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AccountsPage } from '../../frontend/admin/pages/Accounts'
@@ -97,23 +97,32 @@ describe('Accounts screen', () => {
   })
 
   it('disconnects an account after the user confirms', async () => {
-    const server = fakeServer({ ...storeRoutes(), 'DELETE accounts/bluesky': { deleted: true } })
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const server = fakeServer({
+      ...storeRoutes(),
+      'GET accounts/bluesky/impact': { campaigns: 1, shares: 3 },
+      'DELETE accounts/bluesky': { deleted: true, campaigns: 1, shares: 3 },
+    })
     renderPage(AccountsPage)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Disconnect' }))
+    const dialog = screen.getByRole('dialog', { name: 'Disconnect Shop News?' })
+    expect(await within(dialog).findByText('The plugin stops 3 scheduled shares to this account.')).toBeInTheDocument()
+    expect(within(dialog).getByText(/removes the account from 1 campaign\./)).toBeInTheDocument()
+    expect(server.to('DELETE accounts/bluesky')).toHaveLength(0)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }))
 
-    expect(confirm).toHaveBeenCalledWith('Disconnect Shop News? Scheduled shares to it will fail.')
-    await findToast('Account disconnected.')
+    await findToast('Account disconnected. The plugin stopped 3 scheduled shares.')
     expect(server.to('DELETE accounts/bluesky')).toHaveLength(1)
   })
 
   it('keeps the account when the user cancels the disconnect', async () => {
     const server = fakeServer(storeRoutes())
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderPage(AccountsPage)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Disconnect' }))
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Disconnect Shop News?' })).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
 
     expect(server.to('DELETE accounts/:id')).toHaveLength(0)
   })
@@ -191,13 +200,13 @@ describe('Accounts screen: sint.accounts.view', () => {
     }
     window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.accounts.view' ? View : value) } } as unknown as Window['wp']
     const server = fakeServer({ ...storeRoutes(), 'DELETE accounts/bluesky': {} })
-    vi.stubGlobal('confirm', () => true)
     renderPage(AccountsPage)
 
     expect(await screen.findByText('Custom view: 1 accounts')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Connect Telegram' })).toBeNull()
 
-    seen.disconnect!(account())
+    act(() => seen.disconnect!(account()))
+    await userEvent.click(within(await screen.findByRole('dialog', { name: /^Disconnect/ })).getByRole('button', { name: 'Disconnect' }))
     await waitFor(() => expect(server.to('DELETE accounts/bluesky')).toHaveLength(1))
   })
 })

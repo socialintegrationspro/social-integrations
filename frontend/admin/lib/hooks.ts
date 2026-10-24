@@ -97,3 +97,48 @@ export function useFetch<T>(path: string | null, client: Client = api): Fetched<
   const data = cached ? (cache.get(path) as T) : state.data
   return { data, stale: !cached && state.path !== path, loading: state.loading || state.path !== path, error: state.path === path ? state.error : '', reload, mutate }
 }
+
+// The expired accounts whose notice the user closed. A per-browser choice, so the app keeps it in localStorage.
+const DISMISSED_KEY = 'sint-expired-dismissed'
+
+function readDismissed(): string[] {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(DISMISSED_KEY) ?? '[]')
+    return Array.isArray(saved) ? saved.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function writeDismissed(ids: string[]) {
+  try {
+    window.localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids))
+  } catch {
+    // The notice shows again on the next visit.
+  }
+}
+
+/**
+ * The expired accounts that still show a notice, and `dismiss` to close the notice of some accounts.
+ * An account that is connected again leaves the list, so its notice shows again if it expires later.
+ */
+export function useExpiredNotices<A extends { id: string; status: string }>(accounts: A[]) {
+  const expired = accounts.filter((a) => a.status === 'expired')
+  const [dismissed, setDismissedState] = useState<string[]>(readDismissed)
+  const setDismissed = (ids: string[]) => {
+    setDismissedState(ids)
+    writeDismissed(ids)
+  }
+  const expiredKey = expired.map((a) => a.id).join(',')
+  useEffect(() => {
+    const kept = dismissed.filter((id) => expired.some((a) => a.id === id))
+    if (accounts.length > 0 && kept.length !== dismissed.length) setDismissed(kept)
+    // Only when the accounts load or the expired accounts change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts.length > 0, expiredKey])
+  return {
+    expired,
+    shown: expired.filter((a) => !dismissed.includes(a.id)),
+    dismiss: (ids: string[]) => setDismissed(Array.from(new Set([...dismissed, ...ids]))),
+  }
+}

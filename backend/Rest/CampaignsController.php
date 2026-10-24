@@ -95,6 +95,7 @@ final class CampaignsController extends RestController {
 			return $current;
 		}
 		Campaigns::delete( (int) $request['id'] );
+		do_action( Hooks::CAMPAIGN_DELETED, (int) $request['id'], $current['type'], $current );
 		return rest_ensure_response( array( 'deleted' => true ) );
 	}
 
@@ -117,7 +118,8 @@ final class CampaignsController extends RestController {
 		}
 		$accounts = Auto::clean( $body )['accounts'];
 		// An empty list shares to every account, so a user with an account limit selects accounts.
-		if ( ! $accounts && null !== Accounts::allowed() ) {
+		// `no_accounts`: the user cleared the list, or its last account was disconnected.
+		if ( ! $accounts && ( null !== Accounts::allowed() || ! empty( $body['no_accounts'] ) ) ) {
 			return $this->error( 'no_accounts', __( 'Select at least one account.', 'social-integrations' ), 400 );
 		}
 		if ( ! Accounts::can_use( $accounts ) ) {
@@ -131,7 +133,7 @@ final class CampaignsController extends RestController {
 		if ( ! $campaign ) {
 			return $this->not_found( __( 'This campaign does not exist.', 'social-integrations' ) );
 		}
-		do_action( Hooks::CAMPAIGN_SAVED, (int) $campaign['id'], 'auto', ! empty( $campaign['active'] ) );
+		do_action( Hooks::CAMPAIGN_SAVED, (int) $campaign['id'], 'auto', ! empty( $campaign['active'] ), ! $request['id'] );
 		return rest_ensure_response( $campaign );
 	}
 
@@ -147,6 +149,13 @@ final class CampaignsController extends RestController {
 			return $current;
 		}
 		$campaign = Auto::set_active( (int) $request['id'], ! empty( ( (array) $request->get_json_params() )['active'] ) );
-		return $campaign ? rest_ensure_response( $campaign ) : $this->not_found( __( 'This campaign does not exist.', 'social-integrations' ) );
+		if ( is_wp_error( $campaign ) ) {
+			return $campaign;
+		}
+		if ( ! $campaign ) {
+			return $this->not_found( __( 'This campaign does not exist.', 'social-integrations' ) );
+		}
+		do_action( Hooks::CAMPAIGN_ACTIVE, (int) $request['id'], $current['type'], ! empty( $campaign['active'] ) );
+		return rest_ensure_response( $campaign );
 	}
 }
