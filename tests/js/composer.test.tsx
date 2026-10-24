@@ -497,3 +497,20 @@ describe('Composer', () => {
     expect(body.field_values.bluesky).toEqual({ format: 'auto', first_comment: 'Link in bio' })
   })
 })
+
+describe('AccountControls', () => {
+  afterEach(() => {
+    delete window.wp
+  })
+
+  it('renders nothing without a filter, and the filter controls in their own row', async () => {
+    const { AccountControls } = await import('../../frontend/admin/pages/composer/AccountPicker')
+    const props = { accounts: [], selected: [], setSelected: () => undefined, locked: false }
+    const { container, rerender } = render(<AccountControls {...props} />)
+    expect(container).toBeEmptyDOMElement()
+
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.composer.accounts' ? [<span key="x">Clients</span>] : value) } } as unknown as Window['wp']
+    rerender(<AccountControls {...props} locked />)
+    expect(screen.getByText('Clients').parentElement).toHaveClass('sint-share-to')
+  })
+})

@@ -174,3 +174,97 @@ describe('Accounts screen', () => {
     window.sintConfig!.oauthError = ''
   })
 })
+
+describe('Accounts screen: sint.accounts.view', () => {
+  beforeEach(() => setCaps(...ALL_CAPS))
+  afterEach(() => {
+    delete window.wp
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the view of a filter in place of the grid, and the view connects and disconnects', async () => {
+    const seen: { connect?: (n: unknown) => void; disconnect?: (a: unknown) => void } = {}
+    const View = (p: { accounts: { id: string }[]; networks: unknown[]; connect: (n: unknown) => void; disconnect: (a: unknown) => void }) => {
+      seen.connect = p.connect
+      seen.disconnect = p.disconnect
+      return <p>Custom view: {p.accounts.length} accounts</p>
+    }
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.accounts.view' ? View : value) } } as unknown as Window['wp']
+    const server = fakeServer({ ...storeRoutes(), 'DELETE accounts/bluesky': {} })
+    vi.stubGlobal('confirm', () => true)
+    renderPage(AccountsPage)
+
+    expect(await screen.findByText('Custom view: 1 accounts')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Connect Telegram' })).toBeNull()
+
+    seen.disconnect!(account())
+    await waitFor(() => expect(server.to('DELETE accounts/bluesky')).toHaveLength(1))
+  })
+})
+
+describe('Accounts screen: many expired sign-ins', () => {
+  beforeEach(() => setCaps(...ALL_CAPS))
+
+  it('shows one banner with a Reconnect button for each account', async () => {
+    const expired = (id: string, network: string, name: string) => account({ id, network, name, status: 'expired', via: 'broker' })
+    fakeServer(storeRoutes([expired('a', 'threads', 'Shop'), expired('b', 'bluesky', 'Cafe'), expired('c', 'threads', 'Deli')]))
+    renderPage(AccountsPage)
+
+    expect(await screen.findByText('3 accounts: sign-in expired')).toBeInTheDocument()
+    expect(screen.queryByText('Shop on Threads: sign-in expired')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect Cafe (Bluesky)' }))
+
+    expect(screen.getByRole('dialog', { name: 'Connect Bluesky' })).toBeInTheDocument()
+  })
+})
+
+describe('Accounts screen: closing the expired notice', () => {
+  beforeEach(() => {
+    setCaps(...ALL_CAPS)
+    window.localStorage.clear()
+  })
+
+  const expired = (id: string, name: string) => account({ id, network: 'threads', name, status: 'expired', via: 'broker' })
+
+  it('keeps a closed notice closed, and shows it again when another sign-in expires', async () => {
+    fakeServer(storeRoutes([expired('a', 'Shop'), expired('b', 'Cafe'), expired('c', 'Deli')]))
+    const { unmount } = renderPage(AccountsPage)
+
+    await screen.findByText('3 accounts: sign-in expired')
+    await userEvent.click(screen.getByRole('button', { name: 'Close the notice' }))
+    expect(screen.queryByText('3 accounts: sign-in expired')).toBeNull()
+    expect(JSON.parse(window.localStorage.getItem('sint-expired-dismissed')!)).toEqual(['a', 'b', 'c'])
+    unmount()
+
+    fakeServer(storeRoutes([expired('a', 'Shop'), expired('b', 'Cafe'), expired('c', 'Deli')]))
+    const again = renderPage(AccountsPage)
+    await screen.findByRole('heading', { name: 'Accounts' })
+    expect(screen.queryByText('3 accounts: sign-in expired')).toBeNull()
+    again.unmount()
+
+    fakeServer(storeRoutes([expired('a', 'Shop'), expired('b', 'Cafe'), expired('c', 'Deli'), expired('d', 'Bar')]))
+    renderPage(AccountsPage)
+    expect(await screen.findByText('4 accounts: sign-in expired')).toBeInTheDocument()
+  })
+
+  it('closes one account notice, and forgets an account that is connected again', async () => {
+    fakeServer(storeRoutes([expired('a', 'Shop')]))
+    const { unmount } = renderPage(AccountsPage)
+
+    await screen.findByText('Shop on Threads: sign-in expired')
+    await userEvent.click(screen.getByRole('button', { name: 'Close the notice' }))
+    expect(screen.queryByText('Shop on Threads: sign-in expired')).toBeNull()
+    unmount()
+
+    // Shop is connected again, so the list forgets it.
+    fakeServer(storeRoutes([account({ id: 'a', network: 'threads', name: 'Shop' })]))
+    const ok = renderPage(AccountsPage)
+    await screen.findByText('Shop')
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem('sint-expired-dismissed')!)).toEqual([]))
+    ok.unmount()
+
+    fakeServer(storeRoutes([expired('a', 'Shop')]))
+    renderPage(AccountsPage)
+    expect(await screen.findByText('Shop on Threads: sign-in expired')).toBeInTheDocument()
+  })
+})

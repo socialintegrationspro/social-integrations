@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { FieldPreview } from '../components/FieldPreview'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
 import { AccountToggle, LoadError, Toggle, useToast } from '../components/ui'
+import { AccountControls } from './composer/AccountPicker'
 import { can, caps } from '../lib/config'
 import { api } from '../lib/api'
 import { applyFilters } from '../lib/hooks'
@@ -155,6 +156,12 @@ export function AutoPost({ campaign, onSaved }: { campaign?: CampaignRef; onSave
 
   return (
     <>
+      {/* An empty list is all accounts: other controls see each ID, and a full list is stored as empty again. */}
+      <AccountControls accounts={connected} selected={c.accounts.length === 0 ? accounts.map((a) => a.id) : c.accounts} setSelected={(update) => {
+        const all = accounts.map((x) => x.id)
+        const next = update(c.accounts.length === 0 ? all : c.accounts)
+        set({ accounts: all.every((id) => next.includes(id)) ? [] : next })
+      }} locked={false} />
       <div className="sint-autopost-to">
         <span className="sint-label">{__('Share to', 'social-integrations')}</span>
         {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts">{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}

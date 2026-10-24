@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../frontend/admin/lib/store'
@@ -146,5 +146,31 @@ describe('Auto-post campaign', () => {
 
     expect(await screen.findByRole('link', { name: 'Connect an account first' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create campaign' })).toBeDisabled()
+  })
+})
+
+describe('Auto-post campaign: sint.composer.accounts', () => {
+  beforeEach(() => setCaps(...ALL_CAPS))
+  afterEach(() => {
+    delete window.wp
+    vi.unstubAllGlobals()
+  })
+
+  it('gives the controls every ID for all accounts, and stores a full list as all accounts', async () => {
+    let ctx: { selected: string[]; setSelected: (u: (ids: string[]) => string[]) => void } | undefined
+    const Controls = (c: typeof ctx) => {
+      ctx = c
+      return <button type="button" onClick={() => c!.setSelected((ids) => ids.filter((id) => id !== 'threads'))}>Only Bluesky</button>
+    }
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown, c: typeof ctx) => (name === 'sint.composer.accounts' ? [<Controls key="c" {...c!} />] : value) } } as unknown as Window['wp']
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview })
+    renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Only Bluesky' }))
+    expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    expect(ctx!.selected).toEqual(['bluesky'])
+
+    act(() => ctx!.setSelected(() => ['bluesky', 'threads']))
+    expect(await screen.findByText('All accounts, and new ones you connect')).toBeInTheDocument()
   })
 })

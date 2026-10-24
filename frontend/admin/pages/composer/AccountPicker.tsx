@@ -1,5 +1,7 @@
 import { AccountToggle, Icon } from '../../components/ui'
+import type { ReactNode } from 'react'
 import { can, caps } from '../../lib/config'
+import { applyFilters } from '../../lib/hooks'
 import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
 import type { Account } from '../../lib/types'
@@ -16,12 +18,29 @@ interface Props {
   onLeave: (to: string) => void
 }
 
+/** What a `sint.composer.accounts` filter gets: it adds controls that select accounts. */
+export interface AccountControlsContext {
+  /** The accounts that can get a share. */
+  accounts: Account[]
+  selected: string[]
+  setSelected: (update: (ids: string[]) => string[]) => void
+  locked: boolean
+}
+
+/** Filter `sint.composer.accounts`: other plugins add controls in a row above the accounts. */
+export function AccountControls(ctx: AccountControlsContext) {
+  const extra = applyFilters<ReactNode[]>('sint.composer.accounts', [], ctx)
+  return extra.length ? <div className="sint-share-to">{extra}</div> : null
+}
+
 /** The "Share to" row: one button for each account, plus Select all and expired sign-ins. */
 export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave }: Props) {
   const { network } = useStore()
   const all = selected.length === connected.length
 
   return (
+    <>
+    <AccountControls accounts={connected} selected={selected} setSelected={setSelected} locked={locked} />
     <div className="sint-share-to">
       <span className="sint-label">{__('Share to', 'social-integrations')}</span>
       {accounts.length === 0 && (can(caps.manageAccounts) ? <a href="#/accounts" onClick={(e) => { e.preventDefault(); onLeave('accounts') }}>{__('Connect an account first', 'social-integrations')}</a> : <span className="sint-sub">{__('No accounts are connected.', 'social-integrations')}</span>)}
@@ -56,5 +75,6 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
         </span>
       ))}
     </div>
+    </>
   )
 }

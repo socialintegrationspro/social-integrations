@@ -9,10 +9,43 @@ import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { Account, Network } from '../lib/types'
 
+/** What the Accounts screen gives a `sint.accounts.view` view, which shows the accounts in place of the grid. */
+export interface AccountsViewProps {
+  networks: Network[]
+  accounts: Account[]
+  /** Opens the sign-in of a network. `via` reconnects an account with the same method. */
+  connect: (network: Network, via?: string) => void
+  /** Asks first, then disconnects the account. */
+  disconnect: (account: Account) => void
+  /** The ID of the account that the plugin disconnects now. */
+  removing: string
+  reload: () => Promise<void>
+}
+
 interface Entity {
   remote_id: string
   name: string
   avatar: string
+}
+
+// The expired accounts whose notice the user closed. A per-browser choice, so the app keeps it in localStorage.
+const DISMISSED_KEY = 'sint-expired-dismissed'
+
+function readDismissed(): string[] {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(DISMISSED_KEY) ?? '[]')
+    return Array.isArray(saved) ? saved.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function writeDismissed(ids: string[]) {
+  try {
+    window.localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids))
+  } catch {
+    // The notice shows again on the next visit.
+  }
 }
 
 export function AccountsPage({ params, go }: PageProps) {
@@ -73,6 +106,28 @@ export function AccountsPage({ params, go }: PageProps) {
   }
 
   const expired = accounts.filter((a) => a.status === 'expired')
+  // A closed notice shows again when another sign-in expires. An account that is connected again
+  // leaves the list, so its notice shows again if it expires later.
+  const [dismissed, setDismissedState] = useState<string[]>(readDismissed)
+  const setDismissed = (ids: string[]) => {
+    setDismissedState(ids)
+    writeDismissed(ids)
+  }
+  const expiredKey = expired.map((a) => a.id).join(',')
+  useEffect(() => {
+    const kept = dismissed.filter((id) => expired.some((a) => a.id === id))
+    if (accounts.length > 0 && kept.length !== dismissed.length) setDismissed(kept)
+    // Only when the accounts load or the expired accounts change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts.length > 0, expiredKey])
+  const shown = expired.filter((a) => !dismissed.includes(a.id))
+  const closeButton = (ids: string[]) => (
+    <button type="button" className="sint-icon-btn sm" style={{ border: 0, background: 'transparent', color: 'var(--warn-text)', flex: '0 0 auto' }} aria-label={__('Close the notice', 'social-integrations')} onClick={() => setDismissed(Array.from(new Set([...dismissed, ...ids])))}>
+      <Icon name="close" size={16} stroke={2.2} />
+    </button>
+  )
+  // Filter `sint.accounts.view`: another plugin supplies the view of the networks and accounts.
+  const CustomView = applyFilters<null | ((p: AccountsViewProps) => JSX.Element)>('sint.accounts.view', null)
 
   return (
     <>
@@ -92,17 +147,46 @@ export function AccountsPage({ params, go }: PageProps) {
           </div>
         )}
 
-        {expired.map((a) => (
-          <div key={a.id} className="sint-banner warn">
-            <Icon name="alert" size={20} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
-              <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.', 'social-integrations')}</div>
+        {/* Three or more expired sign-ins: one banner with a Reconnect button for each account. */}
+        {expired.length > 2 ? (
+          shown.length > 0 && (
+            <div className="sint-banner warn">
+              <Icon name="alert" size={20} />
+              <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{sprintf(__('%d accounts: sign-in expired', 'social-integrations'), expired.length)}</div>
+                  <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to these accounts stop until you reconnect them. Scheduled shares wait.', 'social-integrations')}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {expired.map((a) => (
+                    <button key={a.id} type="button" className="sint-btn warn sm" onClick={() => setConnecting(network(a.network) ?? null, a.via)}>
+                      {sprintf(__('Reconnect %1$s (%2$s)', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {closeButton(expired.map((a) => a.id))}
             </div>
-            <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null, a.via)}>{__('Reconnect', 'social-integrations')}</button>
-          </div>
-        ))}
+          )
+        ) : (
+          shown.map((a) => (
+            <div key={a.id} className="sint-banner warn">
+              <Icon name="alert" size={20} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700 }}>{sprintf(__('%1$s on %2$s: sign-in expired', 'social-integrations'), a.name || a.username, network(a.network)?.label ?? a.network)}</div>
+                <div style={{ fontSize: 13, color: 'var(--warn-text)' }}>{__('Shares to this account stop until you reconnect it. Scheduled shares wait.', 'social-integrations')}</div>
+              </div>
+              <button type="button" className="sint-btn warn" style={{ marginLeft: 'auto' }} onClick={() => setConnecting(network(a.network) ?? null, a.via)}>{__('Reconnect', 'social-integrations')}</button>
+              {closeButton([a.id])}
+            </div>
+          ))
+        )}
 
+        {CustomView ? (
+          <div className={refreshing ? 'sint-loading' : undefined} aria-busy={refreshing}>
+            <CustomView networks={networks} accounts={accounts} connect={setConnecting} disconnect={disconnect} removing={removing} reload={reload} />
+          </div>
+        ) : (
         <div className={`sint-grid${refreshing ? ' sint-loading' : ''}`} aria-busy={refreshing}>
           {networks.map((n) => {
             const list = accounts.filter((a) => a.network === n.key)
@@ -166,6 +250,7 @@ export function AccountsPage({ params, go }: PageProps) {
             )
           })}
         </div>
+        )}
       </div>
 
       {connecting && <ConnectModal network={connecting.network} via={connecting.via} redirectUri={redirectUri} onClose={() => setConnecting(null)} onDone={() => { setConnecting(null); reload() }} />}
