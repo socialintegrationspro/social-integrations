@@ -81,7 +81,8 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
           {tokens && (
             <>
               <span style={{ fontSize: 12, color: 'var(--faint)', marginRight: 2 }}>{__('Insert', 'social-integrations')}</span>
-              {TOKENS.map((t) => <button key={t} type="button" className="sint-tok" onClick={() => insert(t)}>{t}</button>)}
+              {/* A product adds {price}, {regular_price} and {sale_price} when they have a value. */}
+              {[...TOKENS, ...['price', 'regular_price', 'sale_price'].filter((k) => tokens[k]).map((k) => `{${k}}`)].map((t) => <button key={t} type="button" className="sint-tok" onClick={() => insert(t)}>{t}</button>)}
             </>
           )}
           {actions}

@@ -78,6 +78,7 @@ final class BlockParserTest extends TestCase {
 		$this->assertSame( array( 'https://example.com/2.jpg', 'https://example.com/1.jpg' ), array_column( $out['media'], 'url' ) );
 		$this->assertSame( 'Body', $out['text'] );
 		$this->assertSame( '', $out['excerpt'] );
+		$this->assertSame( 'skip', $out['blocks'][3]['use'], 'The old name remove shows as skip.' );
 	}
 
 	public function test_block_attribute_counts_only_when_allowed(): void {
@@ -122,6 +123,9 @@ final class BlockParserTest extends TestCase {
 	}
 
 	public function test_block_uses_list_matches_settings(): void {
+		// Posts can still have the old name in a block attribute.
 		$this->assertContains( 'remove', Settings::BLOCK_USES );
+		$this->assertSame( 'skip', Settings::block_use( 'remove' ) );
+		$this->assertSame( 'text', Settings::block_use( 'text' ) );
 	}
 }

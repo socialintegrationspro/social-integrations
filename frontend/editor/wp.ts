@@ -30,7 +30,7 @@ declare global {
   }
 }
 
-export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
+export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip'
 
 /** A post field of a network, as AbstractNetwork::post_fields() gives it. */
 export interface PostField {

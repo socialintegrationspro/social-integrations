@@ -7,14 +7,17 @@
 
 namespace SocialIntegrations\Templates;
 
+use SocialIntegrations\Content\CustomFields;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Content\Products;
 use SocialIntegrations\Hooks;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Replaces {title}, {excerpt}, {url}, {tags}, {author}, {site}, {text} and
- * {field:meta_key} in a caption template.
+ * {field:meta_key} in a caption template. A WooCommerce product also has {price},
+ * {regular_price} and {sale_price}.
  */
 final class TemplateParser {
 
@@ -35,7 +38,7 @@ final class TemplateParser {
 			'author'  => get_the_author_meta( 'display_name', (int) $post->post_author ),
 			'site'    => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES, 'UTF-8' ),
 			'text'    => (string) ( $parsed['text'] ?? '' ),
-		);
+		) + Products::tokens( $post );
 		return apply_filters( Hooks::TEMPLATE_TOKENS, $tokens, $post );
 	}
 
@@ -50,8 +53,7 @@ final class TemplateParser {
 		$output = preg_replace_callback(
 			'/\{field:([a-zA-Z0-9_\-]+)\}/',
 			static function ( $m ) use ( $post ) {
-				$value = get_post_meta( $post->ID, $m[1], true );
-				return is_scalar( $value ) ? (string) $value : '';
+				return CustomFields::value( $post, $m[1] );
 			},
 			$template
 		);
@@ -64,14 +66,23 @@ final class TemplateParser {
 	}
 
 	/**
-	 * Post tags as hashtags.
+	 * The tags of the post as hashtags: post tags, product tags, or the tags of a custom post type.
+	 *
+	 * A tag is a term of a public taxonomy without levels, such as post_tag or product_tag.
+	 * Categories have levels, so they are not hashtags.
 	 *
 	 * @param \WP_Post $post Post.
 	 */
 	private function hashtags( \WP_Post $post ): string {
-		$terms = get_the_terms( $post, 'post_tag' );
-		if ( ! is_array( $terms ) ) {
-			return '';
+		$terms = array();
+		foreach ( get_object_taxonomies( $post->post_type, 'objects' ) as $taxonomy ) {
+			if ( $taxonomy->hierarchical || ! $taxonomy->public || 'post_format' === $taxonomy->name ) {
+				continue;
+			}
+			$found = get_the_terms( $post, $taxonomy->name );
+			if ( is_array( $found ) ) {
+				$terms = array_merge( $terms, $found );
+			}
 		}
 		$tags = array();
 		foreach ( $terms as $term ) {
@@ -90,6 +101,6 @@ final class TemplateParser {
 				$tags[] = '#' . $tag;
 			}
 		}
-		return implode( ' ', $tags );
+		return implode( ' ', array_unique( $tags ) );
 	}
 }

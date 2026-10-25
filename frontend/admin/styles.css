@@ -312,6 +312,37 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-avatar.expired { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--warn); }
 
 /* Toggle */
+/* Tokens in a template that the plugin cannot fill. */
+.sint-token-issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sint-token-issues li { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 6px 6px 12px; border-radius: var(--r-sm); background: var(--warn-soft); color: var(--warn-text); font-size: 12px; font-weight: 600; }
+.sint-token-issues li > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.sint-token-issues .sint-btn { color: var(--text); background: var(--card); }
+
+/* Custom field picker: a chip, and a list of fields with a value from a recent post. */
+.sint-fp { position: relative; display: inline-flex; }
+.sint-fp .sint-chip { gap: 4px; }
+.sint-fp-panel { position: absolute; z-index: 30; left: 0; top: calc(100% + 6px); width: min(360px, 80vw); display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.28); }
+.sint-root .sint-fp-panel .sint-input { width: 100%; min-height: 38px; height: 38px; padding: 0 14px; }
+.sint-fp-list { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; scrollbar-width: thin; }
+.sint-fp-list li { margin: 0; }
+.sint-root .sint-fp-list button { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px; align-items: baseline; min-height: 44px; padding: 8px 12px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.sint-root .sint-fp-list button:hover, .sint-root .sint-fp-list button:focus-visible { background: var(--raised); outline: none; }
+.sint-fp-list .t { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-fp-list .sint-code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.sint-fp-list .s { grid-column: 1 / -1; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-fp-empty { margin: 0; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+
+/* Help tip: a round "?" next to a label, and its text above or below it. */
+.sint-tip { position: relative; display: inline-flex; vertical-align: middle; }
+.sint-root .sint-tip-btn { position: relative; width: 18px; height: 18px; padding: 0; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: help; }
+.sint-root .sint-tip-btn::after { content: ''; position: absolute; inset: -13px; }
+.sint-root .sint-tip-btn:hover, .sint-root .sint-tip-btn[aria-expanded='true'] { color: var(--text); border-color: var(--hover-border); }
+.sint-tip-text { position: absolute; z-index: 40; left: -8px; width: max-content; max-width: min(320px, calc(100vw - 64px)); padding: 10px 12px; border-radius: var(--r-sm); background: var(--ink); color: var(--on-ink); font-size: 12px; font-weight: 500; line-height: 1.5; text-align: left; white-space: normal; box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35); }
+.sint-tip-text.top { bottom: calc(100% + 8px); }
+.sint-tip-text.bottom { top: calc(100% + 8px); }
+.sint-tip-text[hidden] { display: none; }
+.sint-tip-row { display: block; }
+.sint-tip-row + .sint-tip-row { margin-top: 6px; }
 .sint-toggle { width: 38px; height: 22px; border-radius: 999px; background: var(--toggle-off); border: 0; position: relative; cursor: pointer; flex: 0 0 38px; padding: 0; }
 .sint-toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 999px; background: #fff; transition: left 0.15s; }
 .sint-toggle[aria-checked='true'] { background: var(--accent); box-shadow: inset 0 0 0 1px rgba(28, 28, 28, 0.12); }
@@ -382,6 +413,41 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-table tr:last-child td { border-bottom: 0; }
 .sint-table tr.selected td { background: var(--selected); }
 .sint-code { font: 500 12px ui-monospace, Menlo, monospace; color: var(--faint); }
+
+/* Settings: a menu of sections at the left, and one section at a time. On a phone the menu is a row that scrolls. */
+.sint-settings { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+.sint-settings-nav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 4px; }
+.sint-root .sint-settings-nav a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--r); color: var(--text-2); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sint-root .sint-settings-nav a:hover { background: var(--raised); color: var(--text); }
+.sint-root .sint-settings-nav a[aria-current='page'] { background: var(--ink); color: var(--on-ink); }
+.sint-settings-nav .dot { flex: none; width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+.sint-settings-panel { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.sint-settings-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.sint-settings-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 400; }
+.sint-settings-head p { margin: 0; max-width: 640px; font-size: 13px; }
+.sint-settings-card { padding: 20px 22px; }
+@media (max-width: 782px) {
+  .sint-settings { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .sint-settings-nav { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .sint-root .sint-settings-nav a { flex: none; }
+}
+
+/* Block rules on Settings: a grid of short rows, each a block and its select. */
+.sint-rules-bar { display: flex; align-items: center; gap: 8px; padding: 16px 22px 0; font-size: 12px; font-weight: 500; color: var(--faint); }
+.sint-rules { list-style: none; margin: 0; padding: 12px 22px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; }
+.sint-rules li { margin: 0; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: var(--r-md); background: var(--raised); }
+.sint-rules .n { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sint-rules .t { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-rules .sint-code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-root .sint-rules select.sint-select { flex: 0 0 auto; width: 170px; min-width: 0; min-height: 44px; }
+.sint-rules-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 22px; border-top: 1px dashed var(--hover-border); }
+.sint-rules-other { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
+@media (max-width: 782px) {
+  /* A phone gives the block name more room: less padding, a narrower select. */
+  .sint-rules { padding: 12px 12px 16px; }
+  .sint-rules li { padding: 6px 6px 6px 12px; }
+  .sint-root .sint-rules select.sint-select { width: 140px; }
+}
 .sint-thumb { width: 44px; height: 44px; border-radius: 14px; background: var(--thumb); flex: 0 0 auto; object-fit: cover; }
 
 /* Pagination below a table. */
@@ -497,7 +563,10 @@ body.folded .sint-overlay { left: 36px; }
 .sint-pick[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
 .sint-pick[aria-pressed='false'] { opacity: 0.35; filter: grayscale(1); }
 .sint-pick:disabled { cursor: not-allowed; }
-.sint-pick.expired { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--warn); }
+.sint-pick.expired { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--warn); opacity: 1; filter: none; }
+/* An expired account fades its picture, not its amber ring. */
+.sint-pick.expired img { opacity: 0.45; filter: grayscale(1); }
+.sint-check-row { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .sint-editor { background: var(--field); border: 1px solid var(--field-border); border-radius: var(--r-card); display: flex; flex-direction: column; }
 .sint-editor:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 .sint-editor:hover:not(:focus-within) { border-color: var(--hover-border); }

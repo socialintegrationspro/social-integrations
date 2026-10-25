@@ -16,9 +16,9 @@ defined( 'ABSPATH' ) || exit;
  * Applies the block rules from Settings, and the per-block `sintSocial` attribute
  * an editor sets from the block toolbar.
  *
- * Rules: 'text' (adds to the caption body), 'excerpt' (adds to {excerpt} when the
- * post has no excerpt), 'media' (images and video), 'link' (embed URLs), 'skip'
- * (not used), 'remove' (never sent, even as fallback text).
+ * Rules: 'text' (adds to {text}), 'excerpt' (adds to {excerpt} when the post has
+ * no excerpt), 'media' (images and video), 'link' (embed URLs), 'skip' (left out).
+ * A block attribute can have the old name 'remove', which is the same as 'skip'.
  */
 final class BlockParser {
 
@@ -95,7 +95,7 @@ final class BlockParser {
 			$attrs  = (array) ( $block['attrs'] ?? array() );
 			$social = $override && isset( $attrs['sintSocial'] ) && is_array( $attrs['sintSocial'] ) ? $attrs['sintSocial'] : array();
 			$use    = isset( $social['use'] ) && in_array( $social['use'], Settings::BLOCK_USES, true )
-				? $social['use']
+				? Settings::block_use( $social['use'] )
 				: ( $rules[ $name ] ?? ( 'core/gallery' === $name || ! empty( $block['innerBlocks'] ) ? 'container' : $fallback ) );
 
 			$result['blocks'][] = array(
@@ -103,7 +103,7 @@ final class BlockParser {
 				'use'  => 'container' === $use ? 'text' : $use,
 			);
 
-			if ( 'remove' === $use || 'skip' === $use ) {
+			if ( 'skip' === $use ) {
 				continue;
 			}
 

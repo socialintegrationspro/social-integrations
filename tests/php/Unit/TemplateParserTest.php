@@ -17,6 +17,16 @@ final class TemplateParserTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->post = new \WP_Post( array( 'ID' => 7 ) );
+		// Another test mocks ACF, so its functions exist. Here ACF knows no field.
+		Functions\when( 'get_field_object' )->justReturn( false );
+		// A post has tags; categories have levels, so they are not hashtags.
+		Functions\when( 'get_object_taxonomies' )->justReturn(
+			array(
+				(object) array( 'name' => 'category', 'hierarchical' => true, 'public' => true ),
+				(object) array( 'name' => 'post_tag', 'hierarchical' => false, 'public' => true ),
+				(object) array( 'name' => 'post_format', 'hierarchical' => false, 'public' => true ),
+			)
+		);
 	}
 
 	public function test_render_replaces_tokens(): void {
@@ -33,18 +43,18 @@ final class TemplateParserTest extends TestCase {
 		$this->assertSame( "Hello\n\nhttps://example.com/hello #News", $out );
 	}
 
-	public function test_render_reads_post_meta_fields(): void {
+	public function test_render_reads_custom_fields_as_text(): void {
 		Functions\expect( 'get_post_meta' )
 			->twice()
 			->andReturnUsing(
 				static function ( $id, $key ) {
-					return 'price' === $key ? 19 : array( 'not', 'scalar' );
+					return 'price' === $key ? 19 : array( 'red', 'blue' );
 				}
 			);
 
-		$out = ( new TemplateParser() )->render( 'Only {field:price} ({field:list})', $this->post, array() );
+		$out = ( new TemplateParser() )->render( 'Only {field:price} ({field:colors})', $this->post, array() );
 
-		$this->assertSame( 'Only 19 ()', $out );
+		$this->assertSame( 'Only 19 (red, blue)', $out );
 	}
 
 	public function test_render_removes_the_lines_of_empty_tokens(): void {
@@ -66,7 +76,7 @@ final class TemplateParserTest extends TestCase {
 	}
 
 	public function test_hashtags_from_post_tags(): void {
-		Functions\when( 'get_the_terms' )->justReturn(
+		Functions\expect( 'get_the_terms' )->once()->with( $this->post, 'post_tag' )->andReturn(
 			array(
 				(object) array( 'name' => 'word press' ),
 				(object) array( 'name' => 'café-bar' ),
@@ -77,6 +87,25 @@ final class TemplateParserTest extends TestCase {
 		);
 
 		$this->assertSame( '#WordPress #CaféBar #ÉlanVital #WordPressTips', $this->call( new TemplateParser(), 'hashtags', $this->post ) );
+	}
+
+	public function test_hashtags_from_the_tags_of_a_custom_post_type_without_duplicates(): void {
+		Functions\when( 'get_object_taxonomies' )->justReturn(
+			array(
+				(object) array( 'name' => 'product_cat', 'hierarchical' => true, 'public' => true ),
+				(object) array( 'name' => 'product_tag', 'hierarchical' => false, 'public' => true ),
+				(object) array( 'name' => 'product_visibility', 'hierarchical' => false, 'public' => false ),
+				(object) array( 'name' => 'brand', 'hierarchical' => false, 'public' => true ),
+			)
+		);
+		Functions\when( 'get_the_terms' )->alias(
+			static function ( $post, $taxonomy ) {
+				return 'product_tag' === $taxonomy ? array( (object) array( 'name' => 'summer sale' ), (object) array( 'name' => 'shoes' ) ) : array( (object) array( 'name' => 'Shoes' ) );
+			}
+		);
+
+		$product = new \WP_Post( array( 'ID' => 8, 'post_type' => 'product' ) );
+		$this->assertSame( '#SummerSale #Shoes', $this->call( new TemplateParser(), 'hashtags', $product ) );
 	}
 
 	public function test_no_tags_gives_no_hashtags(): void {

@@ -24,7 +24,7 @@ final class PostTypes {
 	/**
 	 * Public post types, keyed by name.
 	 *
-	 * @return array<string, array> ['name', 'label', 'singular', 'source', 'builtin', 'count'].
+	 * @return array<string, array> ['name', 'label', 'singular', 'source', 'builtin', 'count', 'icon', 'tokens'].
 	 */
 	public static function all(): array {
 		$types = array();
@@ -41,6 +41,8 @@ final class PostTypes {
 				'builtin'  => (bool) $object->_builtin,
 				'count'    => isset( $counts->publish ) ? (int) $counts->publish : 0,
 				'icon'     => is_string( $object->menu_icon ) ? $object->menu_icon : '',
+				// Tokens that posts of this type add to a caption template, such as {price} for a product.
+				'tokens'   => 'product' === $name && function_exists( 'wc_get_product' ) ? Products::TOKENS : array(),
 			);
 		}
 		return apply_filters( Hooks::POST_TYPES, $types );

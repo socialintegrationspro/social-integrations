@@ -130,6 +130,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [beforeAI, setBeforeAI] = useState<string | null>(null)
   const [mediaFrom, setMediaFrom] = useState<MediaSource | ''>('')
   const [mode, setMode] = useState(campaign ? campaign.type : 'single')
+  // Tabs that the user opened. They stay mounted, so a tab keeps its form when the user goes to another tab and back.
+  const [opened, setOpened] = useState<string[]>(() => [campaign ? campaign.type : 'single'])
+  const changeMode = (next: string) => {
+    setMode(next)
+    setOpened((list) => (list.includes(next) ? list : [...list, next]))
+  }
   const [options, setOptions] = useState<Record<string, unknown>>({})
   const keepSaved = useRef(!!from)
 
@@ -379,15 +385,23 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
       headerExtra={
         <>
           {modes.length > 0 && !editing && (
-            <Segmented<string> label={__('What to share', 'social-integrations')} value={mode} onChange={setMode} options={[{ value: 'single', label: __('Single post', 'social-integrations') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
+            <Segmented<string> label={__('What to share', 'social-integrations')} value={mode} onChange={changeMode} options={[{ value: 'single', label: __('Single post', 'social-integrations') }, ...modes.map((m) => ({ value: m.value, label: m.label }))]} />
           )}
           {!Mode && <span style={{ fontSize: 12, color: 'var(--faint)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{building && <Spinner size={12} />}{title}</span>}
         </>
       }
     >
-      <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} allNote={mode === 'auto' ? __('All accounts, and new ones you connect', 'social-integrations') : undefined} />
+      <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} />
 
-      {Mode ? <Mode accounts={connected} selected={selected} setSelected={setSelected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === mode ? campaign : undefined} /> : (
+      {opened.map((value) => {
+        const Tab = modes.find((m) => m.value === value)?.component
+        return Tab ? (
+          <div key={value} style={{ display: value === mode ? 'contents' : 'none' }}>
+            <Tab accounts={connected} selected={selected} setSelected={setSelected} onClose={onClose} onSaved={onSaved} campaign={campaign?.type === value ? campaign : undefined} />
+          </div>
+        ) : null
+      })}
+      {!Mode && (
         <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 0 }}>
           {!item && <ContentPicker search={contentSearch} postId={postId} onPick={pickPost} onClear={clearPost} />}
 

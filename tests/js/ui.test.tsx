@@ -2,9 +2,37 @@ import { render, renderHook, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { Menu, Pagination, Segmented, Toggle, usePaged } from '../../frontend/admin/components/ui'
+import { HelpTip, Menu, Pagination, Segmented, Toggle, usePaged } from '../../frontend/admin/components/ui'
 
 describe('ui', () => {
+  it('opens a help tip on hover, focus and a tap, and closes it with Escape only', async () => {
+    render(<div><HelpTip id="tip">Enter 0 to include all posts.</HelpTip><input aria-describedby="tip" aria-label="Days" /></div>)
+    const btn = screen.getByRole('button', { name: 'More information' })
+
+    // The text names the control while it is closed.
+    expect(screen.getByRole('textbox', { name: 'Days' })).toHaveAccessibleDescription('Enter 0 to include all posts.')
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    await userEvent.hover(btn)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    // Escape closes a tip that a hover opened, with the focus somewhere else.
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    await userEvent.unhover(btn)
+    await userEvent.hover(btn)
+    await userEvent.unhover(btn)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+
+    // A click after a hover keeps the tip open.
+    await userEvent.click(btn)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    const modal = vi.fn()
+    document.body.addEventListener('keydown', modal)
+    await userEvent.keyboard('{Escape}')
+    document.body.removeEventListener('keydown', modal)
+    expect(modal).not.toHaveBeenCalled()
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
   it('Toggle is a switch that flips its value', async () => {
     const onChange = vi.fn()
     render(<Toggle checked={false} onChange={onChange} label="Auto-post" />)

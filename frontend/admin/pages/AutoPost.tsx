@@ -57,8 +57,8 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
   const [c, setC] = useState<AutoCampaign | null>(campaign ? null : { ...BLANK, active: publish })
   // Expired accounts of the opened campaign. The row cannot select them, but the campaign keeps them for when the user reconnects.
   const kept = useRef<string[]>([])
-  // True when the opened campaign has its own list and leaves out an expired account. Then all connected accounts stay a list.
-  const leftOut = useRef(false)
+  // Whether the campaign also shares to the accounts that the user connects later. It counts only when every connected account is selected.
+  const [includeNew, setIncludeNew] = useState(true)
   const [tab, setTab] = useState('all')
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
@@ -78,7 +78,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
         const d = r.data
         const ids = accounts.filter((a) => a.status === 'connected').map((a) => a.id)
         kept.current = d.accounts.filter((id) => accounts.some((a) => a.id === id && a.status !== 'connected'))
-        leftOut.current = d.accounts.length > 0 && accounts.some((a) => a.status !== 'connected' && !d.accounts.includes(a.id))
+        setIncludeNew(!d.accounts.length && !d.no_accounts)
         setSelected(d.no_accounts ? [] : d.accounts.length ? d.accounts.filter((id) => ids.includes(id)) : ids)
         setC({ ...BLANK, ...d, captions: Array.isArray(d.captions) ? {} : d.captions, id: editing, active: campaign.copy ? publish : d.active, name: campaign.copy ? sprintf(__('%s (copy)', 'social-integrations'), d.name) : d.name })
       },
@@ -98,7 +98,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
     )
   }, [typesKey])
 
-  const key = c && sample ? JSON.stringify([sample.id, c.caption, c.captions, c.media, c.custom_media.map((m) => m.id), c.link, c.fields]) : ''
+  const key = c && sample ? JSON.stringify([sample.id, c.caption, c.captions, c.media, c.custom_media.map((m) => m.id), c.media_field, c.link, c.fields]) : ''
   useEffect(() => {
     if (!c || !sample) return setPreview(null)
     const t = setTimeout(() => {
@@ -140,8 +140,9 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
 
   const set = (patch: Partial<AutoCampaign>) => setC({ ...c, ...patch })
   const connected = accounts.filter((a) => a.status === 'connected')
-  // All connected accounts selected is stored as an empty list: every account, also the accounts connected later.
-  const everyAccount = !leftOut.current && connected.length > 0 && connected.every((a) => selected.includes(a.id))
+  const allConnected = connected.length > 0 && connected.every((a) => selected.includes(a.id))
+  // An empty list is stored for every account, also the accounts connected later.
+  const everyAccount = allConnected && includeNew
   const nets = Array.from(new Set(connected.filter((a) => selected.includes(a.id)).map((a) => a.network)))
   const current = nets.includes(tab) ? tab : 'all'
 
@@ -195,7 +196,8 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
             tab={current}
             setTab={setTab}
             placeholder={DEFAULT_CAPTION}
-            hint={__('Leave empty to use the default. {field:meta_key} adds any custom field.', 'social-integrations')}
+            hint={__('Leave empty to use the default caption. Custom field adds a value from the post, such as a date or a price.', 'social-integrations')}
+            postType={c.post_types[0]}
           />
           <div className="sint-autopost-share">
             <span className="sint-label">{sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : __('Preview', 'social-integrations')}</span>
@@ -221,6 +223,13 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
 
         <aside className="col side">
           <div className="sint-label">{__('When', 'social-integrations')}</div>
+          {/* The user decides about accounts connected later. Before, all accounts always included them. */}
+          {allConnected && (
+            <label className="sint-check-row">
+              <input type="checkbox" checked={includeNew} onChange={(e) => setIncludeNew(e.target.checked)} />
+              {__('Also share to accounts that you connect later', 'social-integrations')}
+            </label>
+          )}
           {!publish && !editing && <p className="sint-sub" style={{ margin: 0 }}>{__('You save the campaign off. A user who can publish turns it on.', 'social-integrations')}</p>}
           {!!editing && !c.active && <p className="sint-sub" style={{ margin: 0 }}>{__('This campaign is paused. Resume it on the Campaigns screen.', 'social-integrations')}</p>}
           <div className="sint-field">

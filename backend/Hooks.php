@@ -55,6 +55,14 @@ final class Hooks {
 	const TEMPLATE_TOKENS = 'sint/template_tokens';
 
 	/**
+	 * Filter. The custom fields the app offers for a post type, for {field:key} and media.
+	 *
+	 * @param array  $fields Each: key, label, media (bool: the field holds images), sample.
+	 * @param string $type   Post type name.
+	 */
+	const CUSTOM_FIELDS = 'sint/custom_fields';
+
+	/**
 	 * Filter. Data handed to the admin app as `window.sintConfig`.
 	 *
 	 * @param array $config

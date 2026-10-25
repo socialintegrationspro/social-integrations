@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Rest;
 
+use SocialIntegrations\Content\CustomFields;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Hooks;
@@ -27,6 +28,7 @@ final class ContentController extends RestController {
 	 */
 	public function register_routes(): void {
 		$this->route( '/post-types', \WP_REST_Server::READABLE, array( $this, 'post_types' ), array(), Capabilities::VIEW );
+		$this->route( '/post-types/(?P<type>[a-z0-9_\-]+)/fields', \WP_REST_Server::READABLE, array( $this, 'fields' ), array(), Capabilities::VIEW );
 		$this->route(
 			'/content',
 			\WP_REST_Server::READABLE,
@@ -68,6 +70,20 @@ final class ContentController extends RestController {
 	 */
 	public function post_types(): \WP_REST_Response {
 		return rest_ensure_response( array_values( PostTypes::all() ) );
+	}
+
+	/**
+	 * The custom fields of a post type, for the field list in templates.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function fields( \WP_REST_Request $request ) {
+		$type = sanitize_key( (string) $request['type'] );
+		if ( ! in_array( $type, PostTypes::names(), true ) ) {
+			return new \WP_Error( 'sint_post_type', __( 'The plugin cannot share this post type.', 'social-integrations' ), array( 'status' => 404 ) );
+		}
+		return rest_ensure_response( CustomFields::of_type( $type ) );
 	}
 
 	/**

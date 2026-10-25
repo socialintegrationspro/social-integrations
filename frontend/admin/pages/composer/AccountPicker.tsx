@@ -16,8 +16,6 @@ interface Props {
   locked: boolean
   /** Leaves the composer for another screen, such as 'accounts'. The composer asks first when there are unsaved changes. */
   onLeave: (to: string) => void
-  /** Shown in place of the count when every connected account is selected. */
-  allNote?: string
 }
 
 /** What a `sint.composer.accounts` filter gets: it adds controls that select accounts. */
@@ -60,7 +58,7 @@ function ExpiredNotices({ accounts, onLeave }: { accounts: Account[]; onLeave?: 
 }
 
 /** The "Share to" row: one button for each account, plus Select all and expired sign-ins. */
-export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave, allNote }: Props) {
+export function AccountPicker({ accounts, connected, selected, setSelected, locked, onLeave }: Props) {
   const { network } = useStore()
   const all = connected.length > 0 && connected.every((a) => selected.includes(a.id))
 
@@ -80,9 +78,9 @@ export function AccountPicker({ accounts, connected, selected, setSelected, lock
           })}
         </span>
       )}
-      {!locked && (connected.length > 1 || (all && allNote)) && (
+      {!locked && connected.length > 1 && (
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
-          {all && allNote ? allNote : sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
+          {sprintf(__('%1$d of %2$d', 'social-integrations'), selected.length, connected.length)}
           {connected.length > 1 && (
             <button type="button" className="sint-btn ghost sm" onClick={() => setSelected(() => (all ? [] : connected.map((a) => a.id)))}>
               {all ? __('Clear', 'social-integrations') : __('Select all', 'social-integrations')}

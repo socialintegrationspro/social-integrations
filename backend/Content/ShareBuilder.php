@@ -34,9 +34,12 @@ final class ShareBuilder {
 	 * - featured: the featured image, or the first block media when there is none.
 	 * - content:  media from the post's blocks only.
 	 * - custom:   the images selected in the template.
+	 * - field:    the images in a custom field, such as an ACF image or gallery.
 	 * - none:     text and link only.
+	 *
+	 * In auto, a WooCommerce product adds its gallery images after the featured image.
 	 */
-	const MEDIA_SOURCES = array( 'auto', 'featured', 'content', 'custom', 'none' );
+	const MEDIA_SOURCES = array( 'auto', 'featured', 'content', 'custom', 'field', 'none' );
 
 	/**
 	 * Parsed blocks and tokens by post ID, so the plugin parses a post one time for several accounts.
@@ -137,7 +140,7 @@ final class ShareBuilder {
 	 * @param array    $account Account, or empty.
 	 * @param string   $context Who asks.
 	 * @param array    $base    Template to start from; empty for the default.
-	 * @return array{caption: string, captions: array<string, string>, media: string, custom_media: array, link: string, fields: array}
+	 * @return array{caption: string, captions: array<string, string>, media: string, custom_media: array, media_field: string, link: string, fields: array}
 	 */
 	public function template( \WP_Post $post, array $account = array(), string $context = 'composer', array $base = array() ): array {
 		$template = array(
@@ -145,6 +148,7 @@ final class ShareBuilder {
 			'captions'     => (array) ( $base['captions'] ?? array() ),
 			'media'        => (string) ( $base['media'] ?? 'auto' ),
 			'custom_media' => (array) ( $base['custom_media'] ?? array() ),
+			'media_field'  => (string) ( $base['media_field'] ?? '' ),
 			'link'         => (string) ( $base['link'] ?? '' ),
 			'fields'       => (array) ( $base['fields'] ?? array() ),
 		);
@@ -164,6 +168,7 @@ final class ShareBuilder {
 			'captions'     => $captions,
 			'media'        => in_array( $media, self::MEDIA_SOURCES, true ) ? $media : 'auto',
 			'custom_media' => (array) ( $template['custom_media'] ?? array() ),
+			'media_field'  => (string) preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) ( $template['media_field'] ?? '' ) ),
 			'link'         => '' !== $link ? $link : self::DEFAULT_LINK,
 			'fields'       => PostFields::clean( $template['fields'] ?? array() ),
 		);
@@ -175,7 +180,7 @@ final class ShareBuilder {
 	 * The link is a template too, such as '{url}' or '{field:product_url}'. Empty: the post's permalink.
 	 *
 	 * @param array $input Raw template.
-	 * @return array{caption: string, captions: array, media: string, custom_media: array, link: string, fields: array}
+	 * @return array{caption: string, captions: array, media: string, custom_media: array, media_field: string, link: string, fields: array}
 	 */
 	public static function clean_template( array $input ): array {
 		$media = (string) ( $input['media'] ?? 'auto' );
@@ -184,6 +189,8 @@ final class ShareBuilder {
 			'captions'     => Settings::captions( (array) ( $input['captions'] ?? array() ) ),
 			'media'        => in_array( $media, self::MEDIA_SOURCES, true ) ? $media : 'auto',
 			'custom_media' => Settings::media_items( (array) ( $input['custom_media'] ?? array() ) ),
+			// A field name such as 'gallery' or '_product_image_gallery'; letters, digits, '_' and '-'.
+			'media_field'  => 'field' === $media ? mb_substr( (string) preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) ( $input['media_field'] ?? '' ) ), 0, 191 ) : '',
 			'link'         => mb_substr( sanitize_text_field( (string) ( $input['link'] ?? '' ) ), 0, 2048 ),
 			'fields'       => PostFields::clean( $input['fields'] ?? array() ),
 		);
@@ -231,6 +238,7 @@ final class ShareBuilder {
 		if ( $featured ) {
 			$featured['featured'] = true;
 		}
+		$gallery = Products::gallery( $post );
 
 		switch ( $template['media'] ) {
 			case 'none':
@@ -244,14 +252,17 @@ final class ShareBuilder {
 					}
 				}
 				break;
+			case 'field':
+				$items = '' !== $template['media_field'] ? CustomFields::media( $post, $template['media_field'] ) : array();
+				break;
 			case 'featured':
-				$items = $featured ? array( $featured ) : array_slice( array_merge( $first, $rest ), 0, 1 );
+				$items = $featured ? array( $featured ) : array_slice( array_merge( $gallery, $first, $rest ), 0, 1 );
 				break;
 			case 'content':
 				$items = array_merge( $first, $rest );
 				break;
 			default:
-				$items = array_merge( $first, $featured ? array( $featured ) : array(), $rest );
+				$items = array_merge( $first, $featured ? array( $featured ) : array(), $gallery, $rest );
 		}
 
 		$seen   = array();

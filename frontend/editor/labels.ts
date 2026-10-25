@@ -7,14 +7,14 @@ export function networkName(key: string): string {
 
 export function ruleLabel(use: string): string {
   const labels: Record<BlockUse, string> = {
-    text: __('Caption text', 'social-integrations'),
-    excerpt: __('Excerpt text', 'social-integrations'),
+    excerpt: __('Text: {excerpt}', 'social-integrations'),
+    text: __('Text: {text}', 'social-integrations'),
     media: __('Media', 'social-integrations'),
     link: __('Link', 'social-integrations'),
-    skip: __('Do not use', 'social-integrations'),
-    remove: __('Never send', 'social-integrations'),
+    skip: __('Leave out', 'social-integrations'),
   }
-  return labels[use as BlockUse] ?? use
+  // 'remove' is an old name of 'skip'.
+  return labels[(use === 'remove' ? 'skip' : use) as BlockUse] ?? use
 }
 
 export function statusLabel(status: string): string {

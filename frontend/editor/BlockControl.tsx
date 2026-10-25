@@ -19,11 +19,13 @@ interface BlockEditProps {
   setAttributes: (attrs: { sintSocial: Social }) => void
 }
 
-const USES: BlockUse[] = ['text', 'excerpt', 'media', 'link', 'skip', 'remove']
+const USES: BlockUse[] = ['excerpt', 'text', 'media', 'link', 'skip']
 
 /** The "Social" control in the toolbar of the selected block. */
 function SocialControl({ name, clientId, attributes, setAttributes }: BlockEditProps) {
-  const social: Social = attributes.sintSocial ?? {}
+  const saved = attributes.sintSocial ?? {}
+  // A block saved with the old name 'remove' shows 'skip', which does the same thing.
+  const social: Social = (saved.use as string) === 'remove' ? { ...saved, use: 'skip' } : saved
   // As BlockParser decides it: the rule for the block type; else a block with blocks
   // inside passes the choice to them; else the default use.
   const inner = wp.data.useSelect((select) => select('core/block-editor').getBlockCount(clientId) as number, [clientId])

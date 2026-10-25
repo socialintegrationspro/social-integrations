@@ -19,7 +19,8 @@ final class Settings {
 	const OPTION = 'sint_settings';
 
 	/**
-	 * Ways a block can be used in a social post.
+	 * Ways a block can be used in a social post. 'remove' is an old name of 'skip': posts
+	 * can still have it in a block attribute, and settings read it as 'skip'.
 	 */
 	const BLOCK_USES = array( 'text', 'excerpt', 'media', 'link', 'skip', 'remove' );
 
@@ -43,9 +44,9 @@ final class Settings {
 				'core/embed'     => 'link',
 				'core/quote'     => 'skip',
 				'core/pullquote' => 'skip',
-				'core/shortcode' => 'remove',
-				'core/code'      => 'remove',
-				'core/html'      => 'remove',
+				'core/shortcode' => 'skip',
+				'core/code'      => 'skip',
+				'core/html'      => 'skip',
 			),
 			'block_fallback'       => 'text',
 			'allow_block_override' => true,
@@ -64,7 +65,20 @@ final class Settings {
 	 */
 	public static function all(): array {
 		$saved = get_option( self::OPTION, array() );
-		return self::merge( self::defaults(), is_array( $saved ) ? $saved : array() );
+		$all   = self::merge( self::defaults(), is_array( $saved ) ? $saved : array() );
+		// 'remove' and 'skip' do the same thing, so the settings show one of them.
+		$all['blocks']         = array_map( array( self::class, 'block_use' ), (array) $all['blocks'] );
+		$all['block_fallback'] = self::block_use( (string) $all['block_fallback'] );
+		return $all;
+	}
+
+	/**
+	 * A block use with the old name 'remove' changed to 'skip'.
+	 *
+	 * @param string $value Block use.
+	 */
+	public static function block_use( string $value ): string {
+		return 'remove' === $value ? 'skip' : $value;
 	}
 
 	/**
@@ -93,14 +107,14 @@ final class Settings {
 			foreach ( $input['blocks'] as $name => $use ) {
 				$name = preg_replace( '/[^a-z0-9\-\/]/', '', strtolower( (string) $name ) );
 				if ( $name && in_array( $use, self::BLOCK_USES, true ) ) {
-					$blocks[ $name ] = $use;
+					$blocks[ $name ] = self::block_use( $use );
 				}
 			}
 			$current['blocks'] = $blocks;
 		}
 
 		if ( isset( $input['block_fallback'] ) && in_array( $input['block_fallback'], self::BLOCK_USES, true ) ) {
-			$current['block_fallback'] = $input['block_fallback'];
+			$current['block_fallback'] = self::block_use( $input['block_fallback'] );
 		}
 		if ( isset( $input['allow_block_override'] ) ) {
 			$current['allow_block_override'] = (bool) $input['allow_block_override'];

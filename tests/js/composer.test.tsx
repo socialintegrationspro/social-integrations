@@ -75,7 +75,7 @@ describe('Composer', () => {
 
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Shop Page, Facebook Page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Shop Page, Facebook Page: sign-in expired' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Share now' })).toBeDisabled()
 
     await userEvent.type(caption(), 'Big news')
@@ -114,7 +114,7 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'false')
 
     await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
-    expect(screen.getByText('All accounts, and new ones you connect')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeChecked()
     await userEvent.click(screen.getByRole('button', { name: 'Single post' }))
     expect(screen.getByText('2 of 2')).toBeInTheDocument()
 

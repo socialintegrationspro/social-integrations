@@ -42,6 +42,23 @@ final class SettingsTest extends TestCase {
 		);
 	}
 
+	public function test_the_old_name_remove_reads_and_saves_as_skip(): void {
+		Functions\when( 'get_option' )->justReturn(
+			array(
+				'blocks'         => array( 'core/code' => 'remove' ),
+				'block_fallback' => 'remove',
+			)
+		);
+		Functions\when( 'update_option' )->justReturn( true );
+
+		$all = Settings::all();
+		$this->assertSame( array( 'core/code' => 'skip' ), $all['blocks'] );
+		$this->assertSame( 'skip', $all['block_fallback'] );
+
+		$saved = Settings::save( array( 'blocks' => array( 'core/html' => 'remove' ) ) );
+		$this->assertSame( array( 'core/html' => 'skip' ), $saved['blocks'] );
+	}
+
 	public function test_save_sanitizes_the_input(): void {
 		Functions\when( 'get_option' )->justReturn( array() );
 		Functions\expect( 'update_option' )->once()->with( Settings::OPTION, \Mockery::type( 'array' ), false );

@@ -1,7 +1,9 @@
 import { useState, type FocusEvent } from 'react'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
+import { checkTokens } from '../lib/tokens'
 import type { FieldMap, Network, PostField } from '../lib/types'
+import { TokenIssues } from './TokenIssues'
 import { Icon, NetBadge, Toggle } from './ui'
 
 /** Key of the values for all networks. */
@@ -89,12 +91,14 @@ interface Props {
   base: (net: string, field: PostField) => string
   /** Token chips for template fields. Leave out when the values are final text, as in the composer. */
   tokens?: string[]
+  /** Custom field names to check {field:key} against, or null when they are not known. */
+  fieldKeys?: string[] | null
   /** Networks that show the media and no link card, because the post has media. */
   mediaHidesCard?: string[]
 }
 
 /** The post fields of a tab: link card, post format, first comment and the network's own options. */
-export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHidesCard = [] }: Props) {
+export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys = null, mediaHidesCard = [] }: Props) {
   const { network } = useStore()
   // Token chips show below the field that has the focus.
   const [focus, setFocus] = useState('')
@@ -189,6 +193,7 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, mediaHide
                 {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText(shown + t)}>{t}</button>)}
               </span>
             )}
+            {tokens && field.tokens && field.type !== 'select' && <TokenIssues issues={checkTokens(shown, tokens, fieldKeys)} onFix={(from, to) => setText(shown.split(from).join(to))} />}
             {/* The note replaces the help: it says what happens to this post, and how to change it. */}
             {hidden.length > 0 ? (
               <div className="sint-post-field-note" role="note">

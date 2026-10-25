@@ -85,10 +85,54 @@ export function AccountAvatar({ account, network, large }: { account: Account; n
 export function AccountToggle({ account, network, on, disabled, onToggle }: { account: Account; network?: Network; on: boolean; disabled?: boolean; onToggle: () => void }) {
   const label = network?.label ?? account.network
   return (
-    <button type="button" className={account.status === 'expired' ? 'sint-pick expired' : 'sint-pick'} aria-pressed={on} disabled={disabled} title={`${account.name} · ${label}`} aria-label={`${account.name}, ${label}`} onClick={onToggle}>
+    <button type="button" className={account.status === 'expired' ? 'sint-pick expired' : 'sint-pick'} aria-pressed={on} disabled={disabled} title={`${account.name} · ${label}`} aria-label={account.status === 'expired' ? sprintf(__('%1$s, %2$s: sign-in expired', 'social-integrations'), account.name, label) : `${account.name}, ${label}`} onClick={onToggle}>
       {account.avatar ? <img src={account.avatar} alt="" /> : initials(account.name)}
       <NetBadge network={account.network} color={network?.color} />
     </button>
+  )
+}
+
+/**
+ * A round "?" button that shows a short help text. Hover, focus or a tap opens it. Escape, a tap outside it
+ * or moving the pointer away closes it. A tap also hovers and focuses, so a tap only opens: it does not toggle.
+ * The text stays in the page, so a control can use `id` in its aria-describedby.
+ */
+export function HelpTip({ id, side = 'top', children }: { id: string; side?: 'top' | 'bottom'; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  // Escape closes an open tip, also a tip that a hover opened. The listener catches the key first, so a modal around the tip stays open.
+  useEffect(() => {
+    if (!open) return
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', esc, true)
+    return () => document.removeEventListener('keydown', esc, true)
+  }, [open])
+
+  return (
+    <span className="sint-tip" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        className="sint-tip-btn"
+        aria-label={__('More information', 'social-integrations')}
+        aria-describedby={id}
+        aria-expanded={open}
+        onClick={(e) => {
+          // In a label, a click on the button does not go to the control.
+          e.preventDefault()
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+      >
+        ?
+      </button>
+      <span id={id} role="tooltip" className={`sint-tip-text ${side}`} hidden={!open}>
+        {children}
+      </span>
+    </span>
   )
 }
 

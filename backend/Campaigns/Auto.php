@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Data: [ 'active' => bool, 'post_types' => string[], 'accounts' => string[] (empty:
  * every account), 'delay' => [ 'value' => int, 'unit' => 'minutes'|'hours'|'days' ],
- * 'caption', 'captions', 'media', 'custom_media' ].
+ * 'caption', 'captions', 'media', 'custom_media', 'media_field', 'link', 'fields' ].
  */
 final class Auto {
 

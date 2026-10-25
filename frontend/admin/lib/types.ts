@@ -66,6 +66,18 @@ export interface PostType {
   source: string
   builtin: boolean
   count: number
+  /** Tokens that posts of this type add to a caption, such as 'price' for a product. */
+  tokens?: string[]
+}
+
+/** A custom field of a post type, from GET post-types/{type}/fields. */
+export interface CustomField {
+  key: string
+  label: string
+  /** True when the field holds images, such as an image or gallery field. */
+  media: boolean
+  /** The value in a recent post, as text. */
+  sample: string
 }
 
 export interface Share {
@@ -198,9 +210,9 @@ export interface LogPage {
   campaigns: { key: string; name: string; type: string }[]
 }
 
-export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip' | 'remove'
+export type BlockUse = 'text' | 'excerpt' | 'media' | 'link' | 'skip'
 
-export type MediaSource = 'auto' | 'featured' | 'content' | 'custom' | 'none'
+export type MediaSource = 'auto' | 'featured' | 'content' | 'custom' | 'field' | 'none'
 
 export interface Settings {
   blocks: Record<string, BlockUse>
