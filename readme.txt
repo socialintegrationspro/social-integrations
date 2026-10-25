@@ -46,7 +46,7 @@ Terms: https://www.linkedin.com/legal/user-agreement — Privacy: https://www.li
 When a post holds an image from another site, the plugin gets that image to send it to the network. These requests go to the site of the link or the image. They do not send your data.
 
 = AI providers =
-Only when you enter your own API key and select "Write with AI", the plugin sends the post title, excerpt and text to the provider you selected: OpenAI (api.openai.com, terms https://openai.com/policies/terms-of-use, privacy https://openai.com/policies/privacy-policy), Google Gemini (generativelanguage.googleapis.com, terms https://ai.google.dev/gemini-api/terms, privacy https://policies.google.com/privacy) or Anthropic (api.anthropic.com, terms https://www.anthropic.com/legal/consumer-terms, privacy https://www.anthropic.com/legal/privacy).
+Only when you enter your own API key, the plugin sends data to the provider that you selected. When you use the AI menu next to a caption, it sends the caption, and the post title, excerpt and text when you write from a post. When an auto-post campaign uses "Write with AI", it sends the instructions of the campaign with the values of the post (such as the title, the excerpt, the text, the price and custom fields) one time for each new post. The providers are OpenAI (api.openai.com, terms https://openai.com/policies/terms-of-use, privacy https://openai.com/policies/privacy-policy), Google Gemini (generativelanguage.googleapis.com, terms https://ai.google.dev/gemini-api/terms, privacy https://policies.google.com/privacy) or Anthropic (api.anthropic.com, terms https://www.anthropic.com/legal/consumer-terms, privacy https://www.anthropic.com/legal/privacy).
 
 == Credits ==
 

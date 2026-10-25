@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { FieldPreview } from '../components/FieldPreview'
+import { AiCaption, NO_AI } from '../components/AiCaption'
+import { CaptionText } from '../components/CaptionText'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
 import { LoadError, useToast } from '../components/ui'
 import { can, caps } from '../lib/config'
@@ -48,7 +50,7 @@ const BLANK: AutoCampaign = { id: 0, name: '', active: true, post_types: ['post'
 /** The Auto-post tab of the composer: one campaign that shares new posts when they are published. */
 /** The accounts come from the "Share to" row of the composer, which every tab shares. */
 export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaign?: CampaignRef; onSaved: () => void; selected: string[]; setSelected: (ids: string[]) => void }) {
-  const { postTypes, accounts } = useStore()
+  const { postTypes, accounts, network } = useStore()
   const toast = useToast()
   const source = campaign ? Number(campaign.id) : 0
   const editing = campaign && !campaign.copy ? source : 0
@@ -189,6 +191,8 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
 
         <section className="col mid">
           <div className="sint-label">{__('What to post', 'social-integrations')}</div>
+          <AiCaption value={c.ai ?? NO_AI} onChange={(ai) => set({ ai })} postType={c.post_types[0] ?? 'post'} sample={sample} />
+          {c.ai?.on && <div className="sint-label">{__('Template caption, when the AI fails', 'social-integrations')}</div>}
           <TemplateEditor
             value={c}
             onChange={set}
@@ -207,7 +211,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
               <p className="sint-sub">{__('The preview did not load. Change the caption to try again.', 'social-integrations')}</p>
             ) : preview ? (
               <>
-                <p>{shownCaption}</p>
+                <p><CaptionText text={shownCaption} format={current !== 'all' ? network(current)?.text_format : undefined} /></p>
                 {preview.media.length > 0 && (
                   <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {preview.media.map((m) => (m.type === 'image' ? <img key={m.url} className="sint-thumb" src={m.url} alt={m.alt} /> : <span key={m.url} className="sint-pill muted">{__('Video', 'social-integrations')}</span>))}

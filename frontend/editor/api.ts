@@ -40,7 +40,8 @@ export const getState = (postId: number) => wp.apiFetch<EditorState>({ path: `/s
 export const getPreview = (postId: number, data: { title: string; content: string; excerpt: string; caption: string; fields: FieldMap }) =>
   wp.apiFetch<EditorPreview>({ path: `/sint/v1/editor/${postId}/preview`, method: 'POST', data })
 
-export const writeCaption = (postId: number) => wp.apiFetch<{ caption: string }>({ path: '/sint/v1/ai/caption', method: 'POST', data: { post_id: postId } })
+/** Asks the AI to write or change a caption. See AIController for the data. */
+export const aiCaption = (data: Record<string, unknown>) => wp.apiFetch<{ caption: string; warnings?: string[] }>({ path: '/sint/v1/ai/caption', method: 'POST', data })
 
 /** The error text of a failed request. */
 export const errorText = (e: unknown, fallback: string): string =>

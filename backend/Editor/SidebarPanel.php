@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Editor;
 
+use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Admin\Menu;
 use SocialIntegrations\Content\PostTypes;
 use SocialIntegrations\Networks\Registry;
@@ -111,6 +112,24 @@ final class SidebarPanel {
 			'blockOverride' => (bool) Settings::get( 'allow_block_override', true ),
 			'blockRules'    => (object) Settings::get( 'blocks', array() ),
 			'blockFallback' => (string) Settings::get( 'block_fallback', 'text' ),
+			'aiReady'       => null !== Providers::current(),
+			'tokens'        => $this->tokens(),
 		);
+	}
+
+	/**
+	 * The tokens of a caption for the post type on the screen, such as {price} for a product.
+	 *
+	 * @return string[]
+	 */
+	private function tokens(): array {
+		$tokens = array( '{title}', '{excerpt}', '{url}', '{tags}', '{author}', '{site}' );
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$type   = $screen && ! empty( $screen->post_type ) ? (string) $screen->post_type : '';
+		$all    = PostTypes::all();
+		foreach ( (array) ( $all[ $type ]['tokens'] ?? array() ) as $name ) {
+			$tokens[] = '{' . $name . '}';
+		}
+		return $tokens;
 	}
 }

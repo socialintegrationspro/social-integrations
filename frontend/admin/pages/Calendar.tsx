@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { plainText } from '../lib/richtext'
 import { m } from 'motion/react'
 import { easeOut } from '../lib/motion'
 import { Header, type PageProps } from '../components/Header'
@@ -129,15 +130,18 @@ export function CalendarPage({ openComposer }: PageProps) {
     }
   }
 
-  const label = (item: QueueItem) => item.post?.title || item.caption.slice(0, 80) || __('Post', 'social-integrations')
+  const label = (item: QueueItem) => item.post?.title || plainText(item.caption).slice(0, 80) || __('Post', 'social-integrations')
   // The caption adds something only when the card's title is the post's.
-  const snippet = (item: QueueItem) => (item.post?.title && item.caption.trim() !== item.post.title ? item.caption.trim() : '')
+  const snippet = (item: QueueItem) => {
+    const text = plainText(item.caption).trim()
+    return item.post?.title && text !== item.post.title ? text : ''
+  }
   const account = (item: QueueItem) => accounts.find((a) => a.id === item.account_id)
 
   // Shares that the plugin did not send yet open in the composer; sent shares are a record.
   const title = (item: QueueItem) =>
     editable(item) ? (
-      <button type="button" className="sint-pc-open" title={item.caption} onClick={() => openComposer({ item })}>
+      <button type="button" className="sint-pc-open" title={plainText(item.caption)} onClick={() => openComposer({ item })}>
         <span className="t">{label(item)}</span>
       </button>
     ) : (

@@ -1,4 +1,5 @@
 import { config } from '../../lib/config'
+import { plainText, toUnicode } from '../../lib/richtext'
 import { __ } from '../../lib/i18n'
 import type { MediaSource, Network } from '../../lib/types'
 
@@ -44,9 +45,14 @@ export function timePresets(live: string): { label: string; value: string }[] {
   ]
 }
 
-/** Caption length as a network counts it: some count every link as a fixed length. */
+/**
+ * Caption length as a network counts it: the text that the network gets, without style marks.
+ * Underline and strikethrough add a line character to each letter on a network that shows plain
+ * text. Some networks count every link as a fixed length.
+ */
 export function measure(text: string, net?: Network): number {
-  const counted = net?.url_length ? text.replace(/https?:\/\/\S+/g, 'x'.repeat(net.url_length)) : text
+  const sent = net?.text_format === 'unicode' || !net?.text_format ? toUnicode(text) : plainText(text)
+  const counted = net?.url_length ? sent.replace(/https?:\/\/\S+/g, 'x'.repeat(net.url_length)) : sent
   return [...counted].length
 }
 

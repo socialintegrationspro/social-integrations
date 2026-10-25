@@ -7,10 +7,12 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\AI\AutoCaption;
 use SocialIntegrations\Campaigns\Auto;
 use SocialIntegrations\Content\ShareBuilder;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Accounts;
+use SocialIntegrations\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -85,8 +87,12 @@ final class AutoShare {
 		$builder   = new ShareBuilder();
 		$used      = array();
 
+		// The editor's own caption for the post comes first, so the AI does not write one then.
+		$own = '' !== trim( (string) get_post_meta( $post_id, self::META_CAPTION, true ) );
+
 		foreach ( Auto::matching( $post ) as $campaign ) {
 			$wanted  = $chosen ? $chosen : $campaign['accounts'];
+			$writer  = $own ? null : AutoCaption::for_campaign( $post, $campaign );
 			$when    = max( time(), $published + Auto::delay( $campaign ) );
 			$batch   = Queue::batch();
 			$created = array();
@@ -97,7 +103,15 @@ final class AutoShare {
 				if ( $wanted && ! in_array( $account['id'], $wanted, true ) ) {
 					continue;
 				}
-				$share                  = $builder->build( $post, $account, 'auto', $campaign );
+				$share = $builder->build( $post, $account, 'auto', $campaign );
+				// The AI caption replaces the template caption, except where the campaign has a caption for the network.
+				$network = Plugin::instance()->networks->get( $account['network'] );
+				if ( $writer && $network && empty( $campaign['captions'][ $account['network'] ] ) ) {
+					$written = $writer->caption( $network->char_limit() );
+					if ( null !== $written ) {
+						$share['caption'] = $written;
+					}
+				}
 				$created[]              = Queue::add(
 					array(
 						'post_id'      => $post_id,
@@ -118,6 +132,9 @@ final class AutoShare {
 			}
 			if ( ! $created ) {
 				continue;
+			}
+			if ( $writer ) {
+				$writer->note_fallback( $batch );
 			}
 			do_action(
 				Hooks::SHARES_CREATED,

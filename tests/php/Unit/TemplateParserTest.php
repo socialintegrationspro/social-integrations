@@ -57,6 +57,52 @@ final class TemplateParserTest extends TestCase {
 		$this->assertSame( 'Only 19 (red, blue)', $out );
 	}
 
+	public function test_render_applies_modifiers(): void {
+		Functions\when( 'get_post_meta' )->justReturn( '' );
+
+		$out = ( new TemplateParser() )->render(
+			"{title|upper} {excerpt|words:2} {field:venue|default:Online}",
+			$this->post,
+			array(
+				'title'   => 'Trail run',
+				'excerpt' => 'Light trail shoes',
+			)
+		);
+
+		$this->assertSame( 'TRAIL RUN Light trail… Online', $out );
+	}
+
+	public function test_render_fills_each_token_one_time(): void {
+		$out = ( new TemplateParser() )->render(
+			'{excerpt} {url}',
+			$this->post,
+			array(
+				'excerpt' => 'Use {url} here',
+				'url'     => 'https://example.com',
+			)
+		);
+
+		$this->assertSame( 'Use {url} here https://example.com', $out );
+	}
+
+	public function test_double_brace_shows_a_token_as_text(): void {
+		$out = ( new TemplateParser() )->render( 'Type {{title}} in the caption', $this->post, array( 'title' => 'Hello' ) );
+
+		$this->assertSame( 'Type {title} in the caption', $out );
+	}
+
+	public function test_style_marks_pass_through_and_a_value_cannot_add_one(): void {
+		$out = ( new TemplateParser() )->render( '{b}{title}{/b} {{b}}', $this->post, array( 'title' => 'A {b} title' ) );
+
+		$this->assertSame( '{b}A {{b}} title{/b} {{b}}', $out );
+	}
+
+	public function test_a_filter_token_with_another_name_still_fills(): void {
+		$out = ( new TemplateParser() )->render( 'On {event-date}', $this->post, array( 'event-date' => 'Nov 7' ) );
+
+		$this->assertSame( 'On Nov 7', $out );
+	}
+
 	public function test_render_removes_the_lines_of_empty_tokens(): void {
 		$out = ( new TemplateParser() )->render(
 			"{title}\n\n{excerpt}\n\n{url}\n",

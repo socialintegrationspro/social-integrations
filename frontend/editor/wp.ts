@@ -56,6 +56,10 @@ export interface EditorConfig {
   blockOverride: boolean
   blockRules: Record<string, BlockUse>
   blockFallback: BlockUse
+  /** True when an AI provider is set up in Settings. */
+  aiReady?: boolean
+  /** Caption tokens for the post type, such as '{title}' or '{price}'. */
+  tokens?: string[]
 }
 
 export const wp = window.wp

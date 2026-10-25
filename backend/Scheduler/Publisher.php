@@ -7,6 +7,7 @@
 
 namespace SocialIntegrations\Scheduler;
 
+use SocialIntegrations\AI\AutoCaption;
 use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Support\Cron;
@@ -17,6 +18,7 @@ use SocialIntegrations\Networks\Accounts;
 use SocialIntegrations\Networks\NetworkException;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Plugin;
+use SocialIntegrations\Templates\RichText;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -131,7 +133,7 @@ final class Publisher {
 			}
 
 			$credentials = $this->fresh_credentials( $network, $account );
-			$payload     = PostFields::apply_format( $network, $this->payload( $job ) );
+			$payload     = $this->styled( $network, PostFields::apply_format( $network, $this->payload( $job ) ) );
 			$answer      = $network->publish( $credentials, $payload );
 			if ( ! empty( $answer['credentials'] ) && is_array( $answer['credentials'] ) ) {
 				$credentials = array_merge( $credentials, $answer['credentials'] );
@@ -149,12 +151,38 @@ final class Publisher {
 		if ( $network ) {
 			$details['requests'] = $network->take_trace();
 		}
+		// An auto-post share that got the template caption, because the AI did not write one.
+		$ai_error = 0 === strpos( (string) ( $job['campaign_key'] ?? '' ), 'auto-' ) ? AutoCaption::fallback_error( (int) $job['post_id'], (string) ( $job['batch_id'] ?? '' ) ) : '';
+		if ( '' !== $ai_error ) {
+			$details['ai'] = array( 'error' => $ai_error );
+			if ( 'published' === $result['status'] && '' === $result['message'] ) {
+				/* translators: %s: the error from the AI provider */
+				$result['message'] = sprintf( __( 'The AI did not write the caption, so the plugin used the template caption. %s', 'social-integrations' ), $ai_error );
+			}
+		}
 		$result['details'] = $details;
 
 		Queue::update( (int) $job['id'], array( 'status' => $result['status'] ) );
 		Queue::log( $job, $result );
 		do_action( Hooks::SHARE_COMPLETED, $result, $job );
 		return $result;
+	}
+
+	/**
+	 * The caption and the first comment with their styles converted for the network. The other
+	 * fields, such as a link card title, have no styles: they get the text only.
+	 *
+	 * @param AbstractNetwork $network Network.
+	 * @param array           $payload Share payload.
+	 */
+	private function styled( AbstractNetwork $network, array $payload ): array {
+		$payload['message'] = $network->format_text( (string) $payload['message'] );
+		foreach ( (array) $payload['fields'] as $name => $value ) {
+			if ( is_string( $value ) ) {
+				$payload['fields'][ $name ] = 'first_comment' === $name ? $network->format_text( $value ) : RichText::plain( $value );
+			}
+		}
+		return $payload;
 	}
 
 	/**

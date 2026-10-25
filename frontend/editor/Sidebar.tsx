@@ -1,4 +1,5 @@
-import { errorText, getPreview, getState, writeCaption, type EditorPreview, type EditorState } from './api'
+import { errorText, getPreview, getState, type EditorPreview, type EditorState } from './api'
+import { CAPTION_ID, CaptionTools } from './CaptionTools'
 import { delayText, networkName, ruleLabel, statusLabel } from './labels'
 import { __, config, Fragment, h, sprintf, useEffect, useRef, useState, wp, type FieldMap, type PostField } from './wp'
 
@@ -212,8 +213,6 @@ function CaptionPanel({ post, nets, onChange }: { post: ReturnType<typeof usePos
   const fields = fieldsOf(post.meta)
   const fieldsKey = JSON.stringify(fields)
   const [preview, setPreview] = useState<EditorPreview | null>(null)
-  const [writing, setWriting] = useState(false)
-  const [error, setError] = useState('')
   const [previewFailed, setPreviewFailed] = useState(false)
 
   // The preview follows the editor, one second after the last change.
@@ -233,43 +232,20 @@ function CaptionPanel({ post, nets, onChange }: { post: ReturnType<typeof usePos
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post.id, post.title, post.content, post.excerpt, caption, fieldsKey])
 
-  const write = () => {
-    setWriting(true)
-    setError('')
-    writeCaption(post.id)
-      .then((r) => {
-        // The AI adds the post link on the last line. {url} keeps the link right when the
-        // address of the post changes before it is published.
-        const lines = r.caption.trimEnd().split('\n')
-        const last = lines[lines.length - 1] ?? ''
-        if (/^https?:\/\/\S+$/.test(last.trim())) {
-          lines[lines.length - 1] = '{url}'
-        }
-        onChange(lines.join('\n'))
-      })
-      .catch((e: unknown) => setError(errorText(e, __('The AI did not write a caption. Try again.', 'social-integrations'))))
-      .finally(() => setWriting(false))
-  }
-
   return (
     <Fragment>
       <PanelBody title={__('Caption', 'social-integrations')} initialOpen={caption !== ''}>
         <TextareaControl
           __nextHasNoMarginBottom
+          id={CAPTION_ID}
           label={__('Caption for this post', 'social-integrations')}
           value={caption}
           rows={5}
           onChange={onChange}
-          help={__('Leave it empty to use the caption of the campaign. You can use {title}, {excerpt}, {url}, {tags} and {author}.', 'social-integrations')}
+          help={__('Leave it empty to use the caption of the campaign. Select a token to put a value of the post in the caption.', 'social-integrations')}
         />
-        <div className="sint-ed-row">
-          <Button variant="secondary" onClick={write} isBusy={writing} disabled={writing}>
-            {__('Write with AI', 'social-integrations')}
-          </Button>
-          {caption !== '' && <Button variant="link" onClick={() => onChange('')}>{__('Use the campaign caption', 'social-integrations')}</Button>}
-        </div>
+        <CaptionTools postId={post.id} caption={caption} onChange={onChange} />
         <p className="sint-ed-help">{__('The AI reads the last saved version of the post.', 'social-integrations')}</p>
-        {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
       </PanelBody>
       <PanelBody title={__('Preview', 'social-integrations')} initialOpen={false}>
         {!preview && !previewFailed && <Spinner />}

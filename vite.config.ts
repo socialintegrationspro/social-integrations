@@ -6,7 +6,7 @@ const minifyVendor = (): Plugin => ({
   name: 'sint-minify-vendor',
   apply: 'build',
   async renderChunk(code, chunk) {
-    if (chunk.name !== 'vendor') return null
+    if (chunk.name !== 'vendor' && chunk.name !== 'lexical') return null
     const out = await transformWithEsbuild(code, chunk.fileName, { minify: true, format: 'esm', legalComments: 'none' })
     return { code: out.code, map: null }
   },
@@ -28,9 +28,15 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: 'frontend/admin/main.tsx',
-      // React and Motion go in their own chunk, which minifyVendor() shrinks. CSS (the bundled
-      // font) stays with the entry, because Assets.php enqueues the entry's CSS only.
-      output: { manualChunks: (id) => (id.includes('node_modules') && !id.endsWith('.css') ? 'vendor' : undefined) },
+      // React and Motion go in their own chunk, which minifyVendor() shrinks. The caption editor
+      // library has a chunk of its own, which loads only when a screen shows a caption. CSS (the
+      // bundled font) stays with the entry, because Assets.php enqueues the entry's CSS only.
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes('node_modules') || id.endsWith('.css')) return undefined
+          return /[\\/](lexical|@lexical)[\\/]/.test(id) ? 'lexical' : 'vendor'
+        },
+      },
     },
   },
   server: {

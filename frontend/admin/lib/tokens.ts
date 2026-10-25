@@ -1,3 +1,6 @@
+import { MARKS } from './richtext'
+import { parseTemplate, stringifyToken } from './template'
+
 /** A token in a template that the plugin cannot fill, and the closest token that it can fill. */
 export interface TokenIssue {
   token: string
@@ -45,17 +48,19 @@ function closest(word: string, list: string[]): string | undefined {
 export function checkTokens(text: string, tokens: string[], fields: string[] | null): TokenIssue[] {
   const issues: TokenIssue[] = []
   const seen = new Set<string>()
-  for (const [token] of text.matchAll(/\{[^{}\s]+\}/g)) {
-    if (seen.has(token)) continue
-    seen.add(token)
-    const field = /^\{field:(.*)\}$/.exec(token)
-    if (field) {
-      if (fields === null || fields.includes(field[1]!)) continue
-      const near = closest(field[1]!, fields)
-      issues.push({ token, field: true, suggestion: near ? `{field:${near}}` : undefined })
-    } else if (!tokens.includes(token)) {
-      const near = closest(token.slice(1, -1), tokens.map((t) => t.slice(1, -1)))
-      issues.push({ token, field: false, suggestion: near ? `{${near}}` : undefined })
+  for (const piece of parseTemplate(text)) {
+    // A style mark, such as {b}, is not a token.
+    if (piece.type !== 'token' || seen.has(piece.raw) || (MARKS as readonly string[]).includes(piece.name)) continue
+    seen.add(piece.raw)
+    const { name, mods, raw } = piece
+    if (name.startsWith('field:')) {
+      const key = name.slice(6)
+      if (fields === null || fields.includes(key)) continue
+      const near = closest(key, fields)
+      issues.push({ token: raw, field: true, suggestion: near ? stringifyToken(`field:${near}`, mods) : undefined })
+    } else if (!tokens.includes(`{${name}}`)) {
+      const near = closest(name, tokens.map((t) => t.slice(1, -1)))
+      issues.push({ token: raw, field: false, suggestion: near ? stringifyToken(near, mods) : undefined })
     }
   }
   return issues

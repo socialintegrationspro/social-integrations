@@ -1,8 +1,11 @@
-import { useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { NetBadge } from '../../components/ui'
 import { __, sprintf } from '../../lib/i18n'
 import { useStore } from '../../lib/store'
 import { measure, TOKENS } from './helpers'
+
+// The editor library loads only when the composer shows a caption.
+const CaptionInput = lazy(() => import('../../components/caption/CaptionInput'))
 
 interface Props {
   /** Networks of the selected accounts; each gets a tab. */
@@ -29,7 +32,8 @@ const COMPACT = 5
 /** Caption tabs, the text box, and a toolbar with tokens, actions and the character count. */
 export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captionFor, tokens, onSubmit, actions }: Props) {
   const { network } = useStore()
-  const area = useRef<HTMLTextAreaElement>(null)
+  // Inserts text at the caret of the caption.
+  const insertAt = useRef<((text: string) => void) | null>(null)
   const compact = nets.length > COMPACT
   // The count: on 'all', one line when every caption fits, and a chip for each network that is over.
   const counts = (tab === 'all' ? nets : [tab]).map((n) => ({ n, len: measure(captionFor(n), network(n)), limit: network(n)?.char_limit ?? 0 }))
@@ -49,12 +53,11 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
     requestAnimationFrame(() => list.querySelector<HTMLButtonElement>(`[data-tab="${key}"]`)?.focus())
   }
 
+  // A selected post gives the values, so the chip inserts the value, not the token.
   const insert = (token: string) => {
-    const el = area.current
     const value = tokens ? token.replace(/\{(\w+)\}/, (_m, k: string) => tokens[k] ?? token) : token
-    if (!el) return setText(text + value)
-    setText(text.slice(0, el.selectionStart) + value + text.slice(el.selectionEnd))
-    requestAnimationFrame(() => el.focus())
+    if (insertAt.current) insertAt.current(value)
+    else setText(text + value)
   }
 
   return (
@@ -75,8 +78,22 @@ export function CaptionEditor({ nets, tab, setTab, edited, text, setText, captio
       </div>
 
       <div className="sint-editor">
-        <label className="sint-sr" htmlFor="sint-caption">{__('Caption', 'social-integrations')}</label>
-        <textarea id="sint-caption" ref={area} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onSubmit() }} placeholder={__('Write a caption, or select an item from your site.', 'social-integrations')} style={{ minHeight: 170, resize: 'vertical', background: 'transparent', border: 0, color: 'var(--text)', padding: 16, fontSize: 15, lineHeight: 1.65, outline: 'none' }} />
+        <span className="sint-sr" id="sint-caption-label">{__('Caption', 'social-integrations')}</span>
+        <Suspense fallback={<div className="sint-skeleton" style={{ minHeight: 170 }} />}>
+          <CaptionInput
+            key={tab}
+            id="sint-caption"
+            mode="text"
+            formats
+            bare
+            value={text}
+            onChange={setText}
+            onSubmit={onSubmit}
+            insertRef={insertAt}
+            labelledBy="sint-caption-label"
+            placeholder={__('Write a caption, or select an item from your site.', 'social-integrations')}
+          />
+        </Suspense>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px', borderTop: '1px solid var(--line)', flexWrap: 'wrap' }}>
           {tokens && (
             <>

@@ -23,6 +23,10 @@ describe('checkTokens', () => {
     ])
   })
 
+  it('skips style marks', () => {
+    expect(checkTokens('{b}Big news:{/b} {i}{title}{/i}', TOKENS, [])).toEqual([])
+  })
+
   it('does not check fields while they are not known', () => {
     expect(checkTokens('{field:anything}', TOKENS, null)).toEqual([])
   })

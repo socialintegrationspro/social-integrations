@@ -17,6 +17,19 @@ window.sintConfig = {
   ai: { ready: false },
 }
 
+// jsdom has no layout. The caption editor reads where the caret is to place its list of tokens.
+if (!Range.prototype.getBoundingClientRect) {
+  Range.prototype.getBoundingClientRect = () => new DOMRect(0, 0, 0, 0)
+  Range.prototype.getClientRects = () => ({ length: 0, item: () => null, [Symbol.iterator]: [][Symbol.iterator] }) as unknown as DOMRectList
+}
+if (typeof window.ResizeObserver === 'undefined') {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+}
+
 afterEach(() => {
   cleanup()
   window.location.hash = ''

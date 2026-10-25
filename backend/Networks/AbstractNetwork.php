@@ -8,6 +8,7 @@
 namespace SocialIntegrations\Networks;
 
 use SocialIntegrations\Support\Redact;
+use SocialIntegrations\Templates\RichText;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -305,6 +306,32 @@ abstract class AbstractNetwork {
 	}
 
 	/**
+	 * How the network shows the text styles of a caption, such as {b}bold{/b}:
+	 * - 'unicode': plain text, so the styles become Unicode letters.
+	 * - 'markdown': the network reads Markdown.
+	 * - 'own': publish() converts the marks itself, such as to HTML.
+	 */
+	public function text_format(): string {
+		return 'unicode';
+	}
+
+	/**
+	 * Converts the style marks of a caption or a comment for the network. The publisher calls it before publish().
+	 *
+	 * @param string $text Text with marks.
+	 */
+	public function format_text( string $text ): string {
+		switch ( $this->text_format() ) {
+			case 'own':
+				return $text;
+			case 'markdown':
+				return RichText::to_markdown( $text );
+			default:
+				return RichText::to_unicode( $text );
+		}
+	}
+
+	/**
 	 * Whether the sign-in uses PKCE. When true, the sign-in adds a S256 code challenge
 	 * to the authorization_url() address and passes the verifier to exchange_code()
 	 * as $app['code_verifier'].
@@ -437,6 +464,7 @@ abstract class AbstractNetwork {
 			'auth_type'      => $this->auth_type(),
 			'char_limit'     => $this->char_limit(),
 			'url_length'     => $this->url_length(),
+			'text_format'    => $this->text_format(),
 			'max_images'     => $this->max_images(),
 			'supports_video' => $this->supports_video(),
 			'media_required' => $this->media_required(),

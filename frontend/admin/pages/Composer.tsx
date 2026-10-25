@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
+import { AiMenu } from '../components/AiMenu'
 import { MediaWarning, PostFields, resolveFields } from '../components/PostFields'
 import { api } from '../lib/api'
 import { can, caps, config } from '../lib/config'
@@ -125,9 +126,6 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const [opening, setOpening] = useState(campaign?.type === 'single')
   // True while the caption and media of the selected post load.
   const [building, setBuilding] = useState(false)
-  const [writing, setWriting] = useState(false)
-  // The text before the last AI answer, for Undo.
-  const [beforeAI, setBeforeAI] = useState<string | null>(null)
   const [mediaFrom, setMediaFrom] = useState<MediaSource | ''>('')
   const [mode, setMode] = useState(campaign ? campaign.type : 'single')
   // Tabs that the user opened. They stay mounted, so a tab keeps its form when the user goes to another tab and back.
@@ -263,23 +261,6 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const over = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
   const canSend = !busy && !building && !opening && selected.length > 0 && caption.trim() !== '' && over.length === 0
   const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
-  // With a post selected and its built caption unchanged, AI writes a new caption; otherwise it improves the text.
-  const fresh = !!postId && text === (built?.caption ?? '')
-
-  /** Writes a draft of the current tab's caption from the post, or improves the current text. */
-  const writeWithAI = async () => {
-    const limits = (tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500)
-    setWriting(true)
-    try {
-      const r = await api.post<{ caption: string }>('ai/caption', { post_id: postId, text: fresh ? '' : text, limit: Math.min(500, ...limits) })
-      setBeforeAI(text)
-      setText(r.data.caption)
-    } catch (e) {
-      toast((e as Error).message, true)
-    }
-    setWriting(false)
-  }
-
   const addMedia = () => {
     setTouched(true)
     const opened = pickMedia((items) => {
@@ -428,13 +409,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               actions={
                 <>
                   {config.ai.ready && (postId || text.trim()) && (
-                    <button type="button" className="sint-btn ai sm" disabled={writing} onClick={writeWithAI}>
-                      <Icon name="sparkle" size={15} stroke={2} />
-                      {writing ? __('Wait…', 'social-integrations') : fresh ? __('Write with AI', 'social-integrations') : __('Improve with AI', 'social-integrations')}
-                    </button>
-                  )}
-                  {beforeAI !== null && !writing && (
-                    <button type="button" className="sint-btn ghost sm" onClick={() => { setText(beforeAI); setBeforeAI(null) }}>{__('Undo', 'social-integrations')}</button>
+                    <AiMenu text={text} onApply={setText} postId={postId} limit={Math.min(500, ...(tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />
                   )}
                   <button type="button" className="sint-btn ghost sm" onClick={addMedia}>
                     <Icon name="image" size={15} stroke={2} />

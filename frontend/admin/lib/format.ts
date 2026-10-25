@@ -43,3 +43,7 @@ export const utcToLocal = (iso: string) => new Date(Date.parse(iso) + config.gmt
 
 /** datetime-local value in the site's time zone → UTC ISO. */
 export const localToUtc = (value: string) => new Date(Date.parse(value + ':00Z') - config.gmtOffset * 3600000).toISOString()
+
+
+/** A caption without its style marks, such as {b}, as a person reads it. */
+export { plainText } from './richtext'

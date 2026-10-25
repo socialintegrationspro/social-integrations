@@ -6,6 +6,8 @@ export interface Network {
   char_limit: number
   /** Characters a link counts as; 0 counts it as typed. */
   url_length: number
+  /** How the network shows text styles: 'unicode' (special letters), 'markdown' or 'own' (real styles). */
+  text_format?: 'unicode' | 'markdown' | 'own'
   max_images: number
   supports_video: boolean
   /** The media that a post needs: '' (none), 'media' (an image or a video) or 'video'. */

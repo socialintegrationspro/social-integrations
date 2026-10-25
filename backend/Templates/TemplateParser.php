@@ -17,7 +17,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Replaces {title}, {excerpt}, {url}, {tags}, {author}, {site}, {text} and
  * {field:meta_key} in a caption template. A WooCommerce product also has {price},
- * {regular_price} and {sale_price}.
+ * {regular_price} and {sale_price}. A token can have modifiers: {title|upper},
+ * {excerpt|words:20}, {field:venue|default:Online} (see Modifiers).
  */
 final class TemplateParser {
 
@@ -43,7 +44,14 @@ final class TemplateParser {
 	}
 
 	/**
-	 * Fills a template.
+	 * A token in a template: {name}, {field:key}, each with modifiers such as |upper or |words:20.
+	 * A token in double braces, such as {{title}}, is text: the caption shows "{title}".
+	 */
+	const TOKEN = '/\{\{((?:field:)?[A-Za-z0-9_\-]+(?:\|[^{}\n]*)?)\}\}|\{(field:[A-Za-z0-9_\-]+|[A-Za-z0-9_]+)((?:\|[a-z]+(?::[^{}|\n]{0,200})?)*)\}/';
+
+	/**
+	 * Fills a template in one pass, so a value that holds a token, such as an excerpt with
+	 * "{url}", is not filled again. An unknown token stays as text.
 	 *
 	 * @param string   $template Template.
 	 * @param \WP_Post $post     Post.
@@ -51,14 +59,30 @@ final class TemplateParser {
 	 */
 	public function render( string $template, \WP_Post $post, array $tokens ): string {
 		$output = preg_replace_callback(
-			'/\{field:([a-zA-Z0-9_\-]+)\}/',
-			static function ( $m ) use ( $post ) {
-				return CustomFields::value( $post, $m[1] );
+			self::TOKEN,
+			static function ( $m ) use ( $post, $tokens ) {
+				if ( '' !== $m[1] ) {
+					// A style mark in double braces, such as {{b}}, is for RichText to read.
+					return preg_match( '/^[biusm]$/', $m[1] ) ? $m[0] : '{' . $m[1] . '}';
+				}
+				$name = $m[2];
+				if ( 0 === strpos( $name, 'field:' ) ) {
+					$value = CustomFields::value( $post, substr( $name, 6 ) );
+				} elseif ( array_key_exists( $name, $tokens ) ) {
+					$value = (string) $tokens[ $name ];
+				} else {
+					return $m[0];
+				}
+				// A value cannot add a style: a mark in it, such as a title "{b}", stays text.
+				return (string) preg_replace( '/\{(\/?[biusm])\}/', '{{$1}}', Modifiers::apply( $value, $m[3] ?? '' ) );
 			},
 			$template
 		);
+		// A filter can add a token with a name that the pattern does not match, such as 'event-date'.
 		foreach ( $tokens as $key => $value ) {
-			$output = str_replace( '{' . $key . '}', (string) $value, (string) $output );
+			if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $key ) ) {
+				$output = str_replace( '{' . $key . '}', (string) $value, (string) $output );
+			}
 		}
 		// Lines that held only an empty token disappear.
 		$output = preg_replace( "/\n{3,}/", "\n\n", (string) $output );

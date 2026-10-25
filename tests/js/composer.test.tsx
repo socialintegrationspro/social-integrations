@@ -7,6 +7,7 @@ import { Composer, type ComposerSeed } from '../../frontend/admin/pages/Composer
 import { account, queueItem, storeRoutes } from './fixtures'
 import { ALL_CAPS, findToast, Providers, setCaps } from './render'
 import { fakeServer } from './server'
+import { captionValue, findCaption, typeCaption } from './caption'
 
 const accounts = [
   account(),
@@ -54,7 +55,6 @@ function openComposer(seed: ComposerSeed = {}) {
 }
 
 const dialog = () => screen.findByRole('dialog', { name: /New campaign|Edit post|Edit campaign/ })
-const caption = () => screen.getByLabelText('Caption')
 
 describe('Composer', () => {
   beforeEach(() => setCaps(...ALL_CAPS))
@@ -78,7 +78,7 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Shop Page, Facebook Page: sign-in expired' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Share now' })).toBeDisabled()
 
-    await userEvent.type(caption(), 'Big news')
+    await typeCaption(await findCaption(), 'Big news')
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await findToast('Shared to 2 accounts.')
@@ -95,7 +95,7 @@ describe('Composer', () => {
     const { onSaved } = openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Hello')
+    await typeCaption(await findCaption(), 'Hello')
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await findToast('Threads did not accept the post.')
@@ -129,7 +129,7 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    fireEvent.change(caption(), { target: { value: 'x'.repeat(301) } })
+    await typeCaption(await findCaption(), 'x'.repeat(301))
 
     const share = screen.getByRole('button', { name: 'Share now' })
     expect(share).toBeDisabled()
@@ -143,7 +143,7 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Short')
+    await typeCaption(await findCaption(), 'Short')
 
     expect(screen.getByText('Fits all 2 networks')).toBeInTheDocument()
     expect(screen.getByText('The caption fits all 2 networks.')).toBeInTheDocument()
@@ -154,13 +154,13 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'For all')
+    await typeCaption(await findCaption(), 'For all')
     await userEvent.click(screen.getByRole('tab', { name: /Threads/ }))
-    expect(caption()).toHaveValue('For all')
-    fireEvent.change(caption(), { target: { value: 'Only Threads' } })
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('For all'))
+    await typeCaption(await findCaption(), 'Only Threads')
     expect(screen.getByRole('tab', { name: /Threads/ })).toContainElement(screen.getByLabelText('Edited'))
     await userEvent.click(screen.getByRole('tab', { name: 'All networks' }))
-    expect(caption()).toHaveValue('For all')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('For all'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add to calendar' }))
@@ -188,7 +188,7 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Later')
+    await typeCaption(await findCaption(), 'Later')
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
     fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2026-12-01T09:30' } })
     expect(screen.getByText('Asia/Dhaka')).toBeInTheDocument()
@@ -211,7 +211,7 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Draft text')
+    await typeCaption(await findCaption(), 'Draft text')
     await userEvent.click(screen.getByRole('button', { name: 'Save draft' }))
 
     await findToast('Draft saved.')
@@ -269,13 +269,13 @@ describe('Composer', () => {
     const { onClose } = openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Work in progress')
+    await typeCaption(await findCaption(), 'Work in progress')
     await userEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
 
     expect(screen.getByRole('alertdialog')).toHaveTextContent('You have changes that are not saved.')
     await userEvent.click(screen.getByRole('button', { name: 'Go back' }))
     expect(onClose).not.toHaveBeenCalled()
-    expect(caption()).toHaveValue('Work in progress')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Work in progress'))
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!)
     await userEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
@@ -303,17 +303,17 @@ describe('Composer', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Summer sale/ }))
 
-    await waitFor(() => expect(caption()).toHaveValue('Summer sale\n\nhttps://shop.example/summer-sale'))
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Summer sale\n\nhttps://shop.example/summer-sale'))
     expect(server.to('GET content/10/share')).toHaveLength(1)
     expect(screen.getByText('shop.example')).toBeInTheDocument()
     expect(screen.getByText('Not shared yet')).toBeInTheDocument()
 
     // Tokens insert the post's values.
-    fireEvent.change(caption(), { target: { value: '' } })
+    await typeCaption(await findCaption(), '')
     await userEvent.click(screen.getByRole('button', { name: '{tags}' }))
-    expect(caption()).toHaveValue('#Shoes')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('#Shoes'))
     await userEvent.click(screen.getByRole('button', { name: 'Rebuild from post' }))
-    expect(caption()).toHaveValue('Summer sale\n\nhttps://shop.example/summer-sale')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Summer sale\n\nhttps://shop.example/summer-sale'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Write without a post' }))
     expect(screen.queryByText('shop.example')).toBeNull()
@@ -374,12 +374,12 @@ describe('Composer', () => {
     const { onSaved } = openComposer({ item })
 
     expect(await screen.findByRole('dialog', { name: 'Edit post' })).toBeInTheDocument()
-    expect(caption()).toHaveValue('Old text')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Old text'))
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Shop Threads, Threads' })).toBeNull()
     expect(screen.queryByText('From your site')).toBeNull()
 
-    fireEvent.change(caption(), { target: { value: 'New text' } })
+    await typeCaption(await findCaption(), 'New text')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await findToast('Saved to the calendar.')
@@ -404,7 +404,7 @@ describe('Composer', () => {
     openComposer({ copy: queueItem({ caption: 'Copy me' }) })
 
     expect(await screen.findByRole('dialog', { name: 'New campaign' })).toBeInTheDocument()
-    expect(caption()).toHaveValue('Copy me')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Copy me'))
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'false')
   })
@@ -419,7 +419,7 @@ describe('Composer', () => {
     openComposer({ campaign: { type: 'single', id: 4 } })
 
     expect(await screen.findByRole('dialog', { name: 'Edit campaign' })).toBeInTheDocument()
-    await waitFor(() => expect(caption()).toHaveValue('Saved caption'))
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Saved caption'))
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'false')
 
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
@@ -429,19 +429,41 @@ describe('Composer', () => {
     expect(server.to('POST campaigns/4')[0]!.body).toMatchObject({ caption: 'Saved caption', accounts: ['threads'] })
   })
 
-  it('improves the caption with AI and can undo it', async () => {
+  it('improves the caption with the AI menu and can undo it', async () => {
     window.sintConfig!.ai.ready = true
-    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST ai/caption': { caption: 'A better caption' } })
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST ai/caption': { caption: 'A better caption', warnings: [] } })
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'my text')
-    await userEvent.click(screen.getByRole('button', { name: 'Improve with AI' }))
+    await typeCaption(await findCaption(), 'my text')
+    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
+    const menu = screen.getByRole('menu', { name: 'AI' })
+    // Without a post there is nothing to write from.
+    expect(within(menu).queryByRole('menuitem', { name: /Write from post/ })).toBeNull()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: /^Improve/ }))
 
-    await waitFor(() => expect(caption()).toHaveValue('A better caption'))
-    expect(server.to('POST ai/caption')[0]!.body).toEqual({ text: 'my text', limit: 300 })
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('A better caption'))
+    expect(server.to('POST ai/caption')[0]!.body).toEqual({ mode: 'improve', text: 'my text', limit: 300 })
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
-    expect(caption()).toHaveValue('my text')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('my text'))
+  })
+
+  it('changes the tone and translates with the AI menu', async () => {
+    window.sintConfig!.ai.ready = true
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST ai/caption': { caption: 'Hola', warnings: [] } })
+    openComposer()
+    await dialog()
+
+    await typeCaption(await findCaption(), 'Hello')
+    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
+    await userEvent.click(within(screen.getByRole('menu', { name: 'AI' })).getByRole('menuitem', { name: 'Playful' }))
+    await waitFor(() => expect(server.to('POST ai/caption')).toHaveLength(1))
+    expect(server.to('POST ai/caption')[0]!.body).toMatchObject({ mode: 'tone', tone: 'playful' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Language' }), 'Spanish{Enter}')
+    await waitFor(() => expect(server.to('POST ai/caption')).toHaveLength(2))
+    expect(server.to('POST ai/caption')[1]!.body).toMatchObject({ mode: 'translate', language: 'Spanish', text: 'Hola' })
   })
 
   it('shares with Ctrl and Enter', async () => {
@@ -449,7 +471,8 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
-    await userEvent.type(caption(), 'Fast{Control>}{Enter}{/Control}')
+    await typeCaption(await findCaption(), 'Fast')
+    fireEvent.keyDown(await findCaption(), { key: 'Enter', ctrlKey: true })
 
     await waitFor(() => expect(server.to('POST queue')).toHaveLength(1))
   })
@@ -497,7 +520,7 @@ describe('Composer', () => {
     expect(image).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(image)
 
-    await userEvent.type(caption(), 'With image')
+    await typeCaption(await findCaption(), 'With image')
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
     await waitFor(() => expect(server.to('POST queue')).toHaveLength(1))
     expect(server.to('POST queue')[0]!.body).toMatchObject({ media: [{ id: 3, url: 'https://shop.example/a.jpg', type: 'image' }] })
@@ -510,7 +533,7 @@ describe('Composer', () => {
     await dialog()
 
     fireEvent.change(screen.getByLabelText('First comment'), { target: { value: 'Link in bio' } })
-    await userEvent.type(caption(), 'Hi')
+    await typeCaption(await findCaption(), 'Hi')
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await waitFor(() => expect(server.to('POST queue')).toHaveLength(1))

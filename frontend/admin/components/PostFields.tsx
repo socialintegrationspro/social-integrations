@@ -1,10 +1,13 @@
-import { useState, type FocusEvent } from 'react'
+import { lazy, Suspense, useRef, useState, type FocusEvent } from 'react'
 import { __, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { checkTokens } from '../lib/tokens'
 import type { FieldMap, Network, PostField } from '../lib/types'
 import { TokenIssues } from './TokenIssues'
 import { Icon, NetBadge, Toggle } from './ui'
+
+// The editor library loads only when a screen shows a field with tokens.
+const CaptionInput = lazy(() => import('./caption/CaptionInput'))
 
 /** Key of the values for all networks. */
 export const ALL = '*'
@@ -93,15 +96,19 @@ interface Props {
   tokens?: string[]
   /** Custom field names to check {field:key} against, or null when they are not known. */
   fieldKeys?: string[] | null
+  /** Custom fields of the post type, for the labels of their chips. */
+  fieldList?: { key: string; label: string }[]
   /** Networks that show the media and no link card, because the post has media. */
   mediaHidesCard?: string[]
 }
 
 /** The post fields of a tab: link card, post format, first comment and the network's own options. */
-export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys = null, mediaHidesCard = [] }: Props) {
+export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys = null, fieldList = [], mediaHidesCard = [] }: Props) {
   const { network } = useStore()
   // Token chips show below the field that has the focus.
   const [focus, setFocus] = useState('')
+  // Inserts a token at the caret of each field with tokens, by field ID.
+  const inserts = useRef<Record<string, { current: ((text: string) => void) | null }>>({})
   // The field whose list of networks is open.
   const [listed, setListed] = useState('')
   const all = tab === 'all'
@@ -175,7 +182,7 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys
         return (
           <div key={field.name} className="sint-field">
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label htmlFor={id} style={{ fontSize: 13, fontWeight: 600 }}>{field.label}</label>
+              <label htmlFor={id} id={`${id}-label`} style={{ fontSize: 13, fontWeight: 600 }}>{field.label}</label>
               {appliesTo}
             </span>
             {netList}
@@ -183,6 +190,25 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys
               <select id={id} className="sint-select" value={current} onChange={(e) => set(e.target.value)}>
                 {(field.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+            ) : tokens && field.tokens ? (
+              // A template field: its tokens are chips, as in the caption. The first comment can have text styles.
+              <div {...focusProps}>
+                <Suspense fallback={<div className="sint-cap single sint-skeleton" style={{ minHeight: 42 }} />}>
+                  <CaptionInput
+                    key={`${tab}-${field.name}`}
+                    id={id}
+                    value={shown}
+                    onChange={setText}
+                    tokens={tokens}
+                    chips={{ fields: fieldList, fieldKeys }}
+                    singleLine={field.type !== 'textarea'}
+                    formats={field.name === 'first_comment'}
+                    labelledBy={`${id}-label`}
+                    placeholder={inherits ? inherited : undefined}
+                    insertRef={(inserts.current[id] ??= { current: null })}
+                  />
+                </Suspense>
+              </div>
             ) : field.type === 'textarea' ? (
               <textarea id={id} className="sint-textarea" rows={2} value={shown} placeholder={inherits ? inherited : undefined} onChange={(e) => setText(e.target.value)} {...focusProps} />
             ) : (
@@ -190,7 +216,7 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys
             )}
             {chips && (
               <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} {...focusProps}>
-                {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText(shown + t)}>{t}</button>)}
+                {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => (inserts.current[id]?.current ? inserts.current[id]!.current!(t) : setText(shown + t))}>{t}</button>)}
               </span>
             )}
             {tokens && field.tokens && field.type !== 'select' && <TokenIssues issues={checkTokens(shown, tokens, fieldKeys)} onFix={(from, to) => setText(shown.split(from).join(to))} />}

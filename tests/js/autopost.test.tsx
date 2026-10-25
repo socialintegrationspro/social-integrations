@@ -6,6 +6,7 @@ import { Composer, type CampaignRef } from '../../frontend/admin/pages/Composer'
 import { account, postTypes, storeRoutes } from './fixtures'
 import { ALL_CAPS, findToast, Providers, setCaps } from './render'
 import { fail, fakeServer } from './server'
+import { captionValue, findCaption, typeCaption } from './caption'
 
 const accounts = [account(), account({ id: 'threads', network: 'threads', name: 'Shop Threads' })]
 
@@ -252,7 +253,8 @@ describe('Auto-post campaign', () => {
     expect(within(list).getByText('For example: October 24, 2026')).toBeInTheDocument()
     await userEvent.click(within(list).getByRole('button', { name: /^Event date/ }))
     expect(screen.queryByRole('group', { name: 'Custom field' })).toBeNull()
-    expect(screen.getByRole('textbox', { name: 'Caption' })).toHaveValue('{field:event_date}')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('{field:event_date}'))
+    expect(screen.getByRole('button', { name: 'Event date token. Select to change.' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Link from a custom field' }))
     await userEvent.click(within(screen.getByRole('group', { name: 'Link from a custom field' })).getByRole('button', { name: /^Ticket link/ }))
@@ -268,21 +270,50 @@ describe('Auto-post campaign', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'GET post-types/post/fields': fields })
     await renderAutoPost()
 
-    const caption = await screen.findByRole('textbox', { name: 'Caption' })
+    const caption = await findCaption()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Custom field' })).toBeInTheDocument())
-    fireEvent.change(caption, { target: { value: '{titel} {field:buy_ul}' } })
+    await typeCaption(caption, '{titel} {field:buy_ul}')
 
     expect(await screen.findByText('{field:buy_ul}: no recent post of this type has this field. When a post does not have it, the share leaves it empty.')).toBeInTheDocument()
     expect(screen.getByText('{titel} is not a token. The share shows it as text.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Use {field:buy_url}' }))
     await userEvent.click(screen.getByRole('button', { name: 'Use {title}' }))
-    expect(caption).toHaveValue('{title} {field:buy_url}')
+    await waitFor(() => expect(captionValue(caption)).toBe('{title} {field:buy_url}'))
     expect(screen.queryByText(/is not a token|has this field/)).toBeNull()
 
     // The link gets the same check.
     fireEvent.change(screen.getByRole('textbox', { name: 'Link' }), { target: { value: '{field:buy_uri}' } })
     await userEvent.click(screen.getByRole('button', { name: 'Use {field:buy_url}' }))
     expect(screen.getByRole('textbox', { name: 'Link' })).toHaveValue('{field:buy_url}')
+  })
+
+  it('lets the AI write the caption from instructions, tests them and saves them', async () => {
+    window.sintConfig!.ai.ready = true
+    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview, 'GET post-types/post/fields': [], 'POST ai/caption': { caption: 'AI caption for Summer sale', warnings: [] }, 'POST campaigns/auto': { id: 5 } })
+    await renderAutoPost()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Write with AI' }))
+    expect(screen.getByText('Template caption, when the AI fails')).toBeInTheDocument()
+    const prompt = await findCaption('Instructions for the AI')
+    await typeCaption(prompt, 'Write about {title|upper}.')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Tone' }), { target: { value: 'playful' } })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Test with the latest post' }))
+    expect(await screen.findByText('AI caption for Summer sale')).toBeInTheDocument()
+    expect(server.to('POST ai/caption')[0]!.body).toEqual({ mode: 'prompt', post_id: 10, prompt: 'Write about {title|upper}.', tone: 'playful', limit: 600 })
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'AI posts')
+    await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
+    await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ ai: { on: true, prompt: 'Write about {title|upper}.', tone: 'playful' } }))
+    window.sintConfig!.ai.ready = false
+  })
+
+  it('has no AI choice when the AI is not set up', async () => {
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
+    await renderAutoPost()
+
+    await findCaption()
+    expect(screen.queryByRole('button', { name: 'Write with AI' })).toBeNull()
   })
 
   it('says when the posts have no custom fields', async () => {
@@ -320,7 +351,7 @@ describe('Auto-post campaign', () => {
     expect(screen.queryByRole('button', { name: '{price}' })).toBeNull()
     fireEvent.change(await screen.findByRole('combobox', { name: 'Post type' }), { target: { value: 'product' } })
     await userEvent.click(await screen.findByRole('button', { name: '{sale_price}' }))
-    expect(screen.getByRole('textbox', { name: 'Caption' })).toHaveValue('{sale_price}')
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('{sale_price}'))
   })
 
   it('names a copy of a campaign and saves it as a new one', async () => {

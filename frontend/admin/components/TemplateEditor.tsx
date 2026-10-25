@@ -1,14 +1,21 @@
-import { useId } from 'react'
+import { lazy, Suspense, useId, useRef } from 'react'
 import { useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
+import { config } from '../lib/config'
+import { hasMarks } from '../lib/richtext'
 import { checkTokens } from '../lib/tokens'
 import { useStore } from '../lib/store'
 import type { CustomField, FieldMap, MediaItem, MediaSource } from '../lib/types'
+import type { AiSettings } from './AiCaption'
+import { AiMenu } from './AiMenu'
 import { FieldPicker } from './FieldPicker'
 import { MediaWarning, PostFields } from './PostFields'
 import { TokenIssues } from './TokenIssues'
 import { Icon, NetBadge, useToast } from './ui'
+
+// The editor library loads only when a screen shows a caption.
+const CaptionInput = lazy(() => import('./caption/CaptionInput'))
 
 /** What a campaign shares for each post: captions, link and post fields with tokens, and where the media comes from. */
 export interface ShareTemplate {
@@ -18,6 +25,8 @@ export interface ShareTemplate {
   custom_media: MediaItem[]
   /** The custom field with the images, when `media` is 'field'. */
   media_field?: string
+  /** An auto-post campaign: the AI writes the caption from these instructions. */
+  ai?: AiSettings
   /** Link template; empty: the post's permalink. */
   link?: string
   /** Post field templates (see PostFields). */
@@ -57,6 +66,8 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
   const toast = useToast()
   // The caption and the field select get their names by ID: their labels also hold chips and help.
   const id = useId()
+  // Inserts a token at the caret of the caption.
+  const insert = useRef<((text: string) => void) | null>(null)
   const all = tab === 'all'
   const fieldsFetch = useFetch<CustomField[]>(postType ? `post-types/${encodeURIComponent(postType)}/fields` : null)
   const fields = fieldsFetch.data ?? []
@@ -75,6 +86,13 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
     if (v.trim() === '') delete captions[tab]
     else captions[tab] = v
     onChange({ captions })
+  }
+
+  // A token goes in at the caret. An empty network caption starts from the caption for all networks.
+  const addToken = (token: string) => {
+    if (!all && text === '' && value.caption) setText(value.caption + token)
+    else if (insert.current) insert.current(token)
+    else setText(text + token)
   }
 
   const addMedia = () => {
@@ -105,12 +123,28 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
       )}
       <div className="sint-field">
         <span id={`${id}-caption`}>{all ? __('Caption', 'social-integrations') : sprintf(__('Caption for %s', 'social-integrations'), network(tab)?.label ?? tab)}</span>
-        <textarea aria-labelledby={`${id}-caption`} className="sint-textarea" rows={5} value={text} placeholder={all ? placeholder : value.caption || placeholder} onChange={(e) => setText(e.target.value)} />
+        <Suspense fallback={<div className="sint-cap sint-skeleton" style={{ minHeight: 132 }} />}>
+          <CaptionInput
+            key={tab}
+            value={text}
+            onChange={setText}
+            tokens={tokens}
+            chips={{ fields, fieldKeys }}
+            labelledBy={`${id}-caption`}
+            placeholder={all ? placeholder : value.caption || placeholder}
+            insertRef={insert}
+            formats
+            tools={config.ai.ready && (
+              <AiMenu text={text} onApply={setText} template tokens={tokens} limit={Math.min(500, ...(all ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />
+            )}
+          />
+        </Suspense>
         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => setText((text || (all ? '' : value.caption)) + t)}>{t}</button>)}
-          {postType && <FieldPicker label={__('Custom field', 'social-integrations')} fields={fields} loading={fieldsFetch.loading} onPick={(f) => setText((text || (all ? '' : value.caption)) + `{field:${f.key}}`)} />}
+          {tokens.map((t) => <button key={t} type="button" className="sint-chip" onClick={() => addToken(t)}>{t}</button>)}
+          {postType && <FieldPicker label={__('Custom field', 'social-integrations')} fields={fields} loading={fieldsFetch.loading} onPick={(f) => addToken(`{field:${f.key}}`)} />}
         </span>
         <TokenIssues issues={checkTokens(text, tokens, fieldKeys)} onFix={(from, to) => setText(text.split(from).join(to))} />
+        {hasMarks(text) && <small>{__('Text styles use special characters on most networks. Screen readers can read them incorrectly. Use them for a small number of words. Telegram, Discord and Reddit show real styles.', 'social-integrations')}</small>}
         {all ? hint && <small>{hint}</small> : <small>{__('Leave empty to use the caption for all networks.', 'social-integrations')}</small>}
       </div>
       <label className="sint-field" style={{ maxWidth: 320 }}>
@@ -166,6 +200,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
         base={(_net, field) => field.default}
         tokens={tokens}
         fieldKeys={fieldKeys}
+        fieldList={fields}
       />
     </>
   )
