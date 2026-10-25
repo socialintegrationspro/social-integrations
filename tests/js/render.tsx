@@ -69,3 +69,18 @@ export async function findToast(text: string | RegExp) {
 }
 
 export { screen }
+
+/** Opens the panel of the "Share to" row, where the user selects the accounts. */
+export async function openAccounts(): Promise<void> {
+  const { screen } = await import('@testing-library/react')
+  const { default: userEvent } = await import('@testing-library/user-event')
+  const change = await screen.findByRole('button', { name: 'Change' })
+  await userEvent.click(change)
+}
+
+/** Opens the review panel of a composer tab, with the summary and the timing. */
+export async function openReview(): Promise<void> {
+  const { screen } = await import('@testing-library/react')
+  const { default: userEvent } = await import('@testing-library/user-event')
+  await userEvent.click(await screen.findByRole('button', { name: /^Review and/ }))
+}

@@ -1126,6 +1126,60 @@ span.sint-camp-toggle { display: inline-block; }
 }
 
 /* "Share to": the label, one row of account buttons, the count and the expired sign-ins. */
+/* A bar at the bottom of a composer tab: a short summary and the button that opens the review panel. */
+.sint-review-bar { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 22px; border-top: 1px solid var(--line); background: var(--panel); }
+.sint-review-sum { font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+/* The review panel: the summary, then the timing and the last settings. */
+.sint-review { display: flex; flex-direction: column; gap: 14px; padding: 16px 22px 22px; }
+.sint-sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: center; padding: 10px 14px; border-radius: var(--r-md); background: var(--card); border: 1px solid var(--line); }
+.sint-sum .l { grid-column: 1; font-size: 12px; font-weight: 700; color: var(--muted); }
+.sint-sum .v { grid-column: 1; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.sint-root .sint-sum-change { grid-column: 2; grid-row: 1 / span 2; min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--link); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.sint-root .sint-sum-change:hover { background: var(--raised); }
+.sint-review-when { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.sint-review-when .sint-foot-actions:empty { display: none; }
+
+/* Post options for each network, closed behind one row. */
+.sint-post-fields-box { border: 1px solid var(--border); border-radius: var(--r-card); }
+.sint-post-fields-box.open > .sint-post-fields { padding: 0 18px 18px; border: 0; }
+.sint-root .sint-post-fields-toggle { width: 100%; min-height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border: 0; border-radius: var(--r-card); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.sint-root .sint-post-fields-toggle:hover { background: var(--raised); }
+.sint-post-fields-toggle .t { flex: none; font-size: 14px; font-weight: 700; }
+.sint-post-fields-toggle .s { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-post-fields-toggle svg { flex: none; transition: transform 0.15s; }
+.sint-post-fields-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+
+/* The "Share to" row: a summary of the selected accounts, and a panel to change them. */
+.sint-root .sint-share-to-box { border-bottom: 1px solid var(--line); }
+.sint-root .sint-share-to-box > .sint-share-to { border-bottom: 0; }
+.sint-root .sint-acc-summary { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; padding: 4px 12px 4px 4px; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; }
+.sint-root .sint-acc-summary:hover { background: var(--raised); }
+.sint-acc-stack { display: inline-flex; align-items: center; padding-left: 8px; }
+.sint-root .sint-acc-stack .sint-avatar { margin-left: -8px; box-shadow: 0 0 0 2px var(--panel); }
+.sint-acc-more { margin-left: 4px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.sint-acc-count { display: inline-flex; align-items: baseline; gap: 5px; font-size: 14px; }
+.sint-acc-count span { color: var(--muted); font-size: 13px; }
+.sint-root .sint-acc-warn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+.sint-acc-one { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+.sint-accounts-panel { display: flex; flex-direction: column; gap: 12px; padding: 14px 22px 18px; }
+.sint-root .sint-accounts-panel .sint-share-to { padding: 0; border: 0; }
+.sint-acc-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sint-root .sint-acc-search { flex: 1 1 240px; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: var(--r); border: 1px solid var(--field-border); background: var(--field); color: var(--muted); }
+.sint-root .sint-acc-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 14px; outline: none; box-shadow: none; padding: 0; min-height: 40px; }
+.sint-acc-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-md); background: var(--warn-soft); color: var(--warn-text); font-size: 13px; font-weight: 600; }
+.sint-acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 8px; max-height: 340px; overflow: auto; padding: 2px; }
+.sint-acc-card { position: relative; display: flex; align-items: center; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--card); }
+.sint-root .sint-acc-card > button { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 12px; border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.sint-root .sint-acc-card > button:disabled { cursor: not-allowed; }
+.sint-acc-card:has(> button[aria-pressed='true']) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sint-acc-card .n { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sint-acc-card .n strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-acc-card .n span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-acc-card .check { flex: none; width: 24px; height: 24px; border-radius: 999px; border: 1.5px solid var(--border); display: inline-flex; align-items: center; justify-content: center; }
+.sint-acc-card > button[aria-pressed='true'] .check { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.sint-acc-card.expired { border-style: dashed; border-color: var(--warn-text); background: var(--warn-soft); }
+.sint-acc-card.expired .n span { color: var(--warn-text); }
+.sint-root .sint-acc-card.expired a { flex: none; margin-right: 12px; color: var(--warn-text); font-size: 13px; font-weight: 700; }
 .sint-root .sint-share-to { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .sint-root .sint-share-to-list { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
 @media (max-width: 600px) {
@@ -1133,3 +1187,12 @@ span.sint-camp-toggle { display: inline-block; }
   .sint-root .sint-share-to-list { flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; overscroll-behavior-x: contain; }
   .sint-root .sint-share-to-list > * { flex: none; }
 }
+/* A preview column after the middle column: one line between them. */
+.sint-autopost .col.mid:last-child { border-right: 0; }
+.sint-autopost .col.mid + .sint-preview-col { border-left: 0 !important; }
+/* A short form: the review bar stays at the bottom of the modal, not under the content. */
+.sint-modal-body:has(.sint-review-bar) { display: flex; flex-direction: column; }
+.sint-review-bar { margin-top: auto; }
+/* The accounts in the side panel: the panel scrolls, not the grid. */
+.sint-modal.drawer .sint-acc-grid { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+.sint-root .sint-acc-show { flex: 0 1 230px; width: auto; min-height: 42px; }

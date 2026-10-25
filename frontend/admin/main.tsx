@@ -12,6 +12,7 @@ import { can } from './lib/config'
 import * as baseUi from './components/ui'
 import { CaptionText } from './components/CaptionText'
 import { FieldPreview } from './components/FieldPreview'
+import { TemplatePreview } from './components/TemplatePreview'
 import { TemplateEditor } from './components/TemplateEditor'
 import * as format from './lib/format'
 import { useFetch } from './lib/hooks'
@@ -20,7 +21,7 @@ import { applyTheme, initialTheme } from './lib/theme'
 
 // Shared with scripts that extend the app through `wp.hooks`, so their
 // components use the same React instance.
-const ui = { ...baseUi, TemplateEditor, FieldPreview, CaptionText }
+const ui = { ...baseUi, TemplateEditor, FieldPreview, TemplatePreview, CaptionText }
 ;(window as unknown as { sintApp: unknown }).sintApp = { React, api, createApi, ui, format, useStore, useFetch, can }
 
 const mount = () => {

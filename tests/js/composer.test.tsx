@@ -5,7 +5,7 @@ import type { BuiltShare, ContentItem } from '../../frontend/admin/lib/types'
 import { useStore } from '../../frontend/admin/lib/store'
 import { Composer, type ComposerSeed } from '../../frontend/admin/pages/Composer'
 import { account, queueItem, storeRoutes } from './fixtures'
-import { ALL_CAPS, findToast, Providers, setCaps } from './render'
+import { ALL_CAPS, findToast, Providers, setCaps, openAccounts, openReview } from './render'
 import { fakeServer } from './server'
 import { captionValue, findCaption, typeCaption } from './caption'
 
@@ -73,9 +73,11 @@ describe('Composer', () => {
     const { onSaved } = openComposer()
     await dialog()
 
+    await openAccounts()
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Shop Page, Facebook Page: sign-in expired' })).toBeDisabled()
+    await openReview()
     expect(screen.getByRole('button', { name: 'Share now' })).toBeDisabled()
 
     await typeCaption(await findCaption(), 'Big news')
@@ -96,6 +98,7 @@ describe('Composer', () => {
     await dialog()
 
     await typeCaption(await findCaption(), 'Hello')
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await findToast('Threads did not accept the post.')
@@ -107,6 +110,7 @@ describe('Composer', () => {
     openComposer()
     await dialog()
 
+    await openAccounts()
     await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Auto-post' }))
@@ -114,6 +118,7 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'false')
 
     await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
+    await openReview()
     expect(screen.getByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeChecked()
     await userEvent.click(screen.getByRole('button', { name: 'Single post' }))
     expect(screen.getByText('2 of 2')).toBeInTheDocument()
@@ -128,9 +133,11 @@ describe('Composer', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
     await dialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Show preview' }))
 
     await typeCaption(await findCaption(), 'x'.repeat(301))
 
+    await openReview()
     const share = screen.getByRole('button', { name: 'Share now' })
     expect(share).toBeDisabled()
     expect(share).toHaveAttribute('title', 'Shorten the Bluesky caption first.')
@@ -142,6 +149,7 @@ describe('Composer', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
     await dialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Show preview' }))
 
     await typeCaption(await findCaption(), 'Short')
 
@@ -162,6 +170,7 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'All networks' }))
     await waitFor(async () => expect(captionValue(await findCaption())).toBe('For all'))
 
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add to calendar' }))
 
@@ -189,6 +198,7 @@ describe('Composer', () => {
     await dialog()
 
     await typeCaption(await findCaption(), 'Later')
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
     fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2026-12-01T09:30' } })
     expect(screen.getByText('Asia/Dhaka')).toBeInTheDocument()
@@ -203,6 +213,7 @@ describe('Composer', () => {
     openComposer({ at: '2026-11-20T03:00:00.000Z' })
     await dialog()
 
+    await openReview()
     expect(screen.getByLabelText('Date and time')).toHaveValue('2026-11-20T09:00')
   })
 
@@ -228,15 +239,40 @@ describe('Composer', () => {
     expect(screen.getByText('You save drafts only. A user who can publish schedules them.')).toBeInTheDocument()
   })
 
+  it('shows the accounts as a short summary, and opens a panel to change them', async () => {
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
+    openComposer()
+    await dialog()
+
+    // Closed: a count and one note for the expired account, no account buttons.
+    expect(screen.getByText('2 of 2')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Shop Threads, Threads' })).toBeNull()
+
+    // The note opens the panel with the accounts that need a new sign-in.
+    await userEvent.click(screen.getByRole('button', { name: '1 needs a new sign-in' }))
+    expect(screen.getByRole('combobox', { name: 'Show accounts' })).toHaveValue('expired')
+    expect(screen.getByRole('button', { name: 'Shop Page, Facebook Page: sign-in expired' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Shop Threads, Threads' })).toBeNull()
+
+    // All accounts, then a search.
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Show accounts' }), 'all')
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search accounts' }), 'thre')
+    expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Shop News, Bluesky' })).toBeNull()
+
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Share to' })).getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('searchbox', { name: 'Search accounts' })).toBeNull()
+  })
+
   it('selects and clears all accounts', async () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
     await dialog()
 
     expect(screen.getByText('2 of 2')).toBeInTheDocument()
+    await openAccounts()
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
     expect(screen.getByText('0 of 2')).toBeInTheDocument()
-    expect(screen.getByText('Select an account to see a preview.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled()
     await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
     expect(screen.getByText('2 of 2')).toBeInTheDocument()
@@ -248,8 +284,9 @@ describe('Composer', () => {
     await dialog()
 
     expect(screen.getByRole('note')).toHaveTextContent('These networks need an image or a video: Threads. Add media, or the share to them fails.')
+    await openAccounts()
     await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
-    expect(screen.queryByRole('note')).toBeNull()
+    expect(screen.queryByText(/These networks need an image or a video/)).toBeNull()
   })
 
   it('leaves for Accounts to reconnect an expired account', async () => {
@@ -257,7 +294,10 @@ describe('Composer', () => {
     const { onClose } = openComposer()
     await dialog()
 
-    expect(screen.getByText(/Shop Page on Facebook Page: sign-in expired/)).toBeInTheDocument()
+    // The row names the expired account in one short note; the panel has its Reconnect link.
+    expect(screen.getByRole('button', { name: '1 needs a new sign-in' })).toBeInTheDocument()
+    await openAccounts()
+    expect(screen.getByText('1 account needs a new sign-in. It gets no shares until you reconnect it.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: 'Reconnect' }))
 
     expect(onClose).toHaveBeenCalled()
@@ -300,6 +340,7 @@ describe('Composer', () => {
     })
     openComposer()
     await dialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Show preview' }))
 
     await userEvent.click(await screen.findByRole('button', { name: /Summer sale/ }))
 
@@ -375,11 +416,13 @@ describe('Composer', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Edit post' })).toBeInTheDocument()
     await waitFor(async () => expect(captionValue(await findCaption())).toBe('Old text'))
-    expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'Shop Threads, Threads' })).toBeNull()
+    // An edited share keeps its account: the row names it, with nothing to change.
+    expect(screen.getByText('Shop News · Bluesky')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Change' })).toBeNull()
     expect(screen.queryByText('From your site')).toBeNull()
 
     await typeCaption(await findCaption(), 'New text')
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await findToast('Saved to the calendar.')
@@ -393,6 +436,7 @@ describe('Composer', () => {
     const { onSaved } = openComposer({ item })
     await screen.findByRole('dialog', { name: 'Edit post' })
 
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await findToast('Bluesky sign-in expired. Reconnect the account.')
@@ -405,6 +449,7 @@ describe('Composer', () => {
 
     expect(await screen.findByRole('dialog', { name: 'New campaign' })).toBeInTheDocument()
     await waitFor(async () => expect(captionValue(await findCaption())).toBe('Copy me'))
+    await openAccounts()
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Shop Threads, Threads' })).toHaveAttribute('aria-pressed', 'false')
   })
@@ -420,8 +465,10 @@ describe('Composer', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Edit campaign' })).toBeInTheDocument()
     await waitFor(async () => expect(captionValue(await findCaption())).toBe('Saved caption'))
+    await openAccounts()
     expect(screen.getByRole('button', { name: 'Shop News, Bluesky' })).toHaveAttribute('aria-pressed', 'false')
 
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Select a time' }))
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -481,12 +528,17 @@ describe('Composer', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
     await dialog()
+    expect(screen.queryByRole('group', { name: 'Preview network' })).not.toBeInTheDocument()
 
+    await userEvent.click(screen.getByRole('button', { name: 'Show preview' }))
     const group = screen.getByRole('group', { name: 'Preview network' })
     await userEvent.click(within(group).getByRole('button', { name: 'Threads' }))
 
     expect(within(group).getByRole('button', { name: 'Threads' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('Shop Threads', { selector: 'div' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hide preview' }))
+    expect(screen.queryByRole('group', { name: 'Preview network' })).not.toBeInTheDocument()
   })
 
   it('tells the user when the media library is not loaded', async () => {
@@ -521,6 +573,7 @@ describe('Composer', () => {
     await userEvent.click(image)
 
     await typeCaption(await findCaption(), 'With image')
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
     await waitFor(() => expect(server.to('POST queue')).toHaveLength(1))
     expect(server.to('POST queue')[0]!.body).toMatchObject({ media: [{ id: 3, url: 'https://shop.example/a.jpg', type: 'image' }] })
@@ -534,6 +587,7 @@ describe('Composer', () => {
 
     fireEvent.change(screen.getByLabelText('First comment'), { target: { value: 'Link in bio' } })
     await typeCaption(await findCaption(), 'Hi')
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Share now' }))
 
     await waitFor(() => expect(server.to('POST queue')).toHaveLength(1))

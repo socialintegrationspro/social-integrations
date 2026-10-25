@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../frontend/admin/lib/store'
 import { Composer, type CampaignRef } from '../../frontend/admin/pages/Composer'
 import { account, postTypes, storeRoutes } from './fixtures'
-import { ALL_CAPS, findToast, Providers, setCaps } from './render'
+import { ALL_CAPS, findToast, Providers, setCaps, openAccounts, openReview } from './render'
 import { fail, fakeServer } from './server'
 import { captionValue, findCaption, typeCaption } from './caption'
 
@@ -34,6 +34,7 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview, 'POST campaigns/auto': { id: 5 } })
     const { onSaved } = await renderAutoPost()
 
+    await openReview()
     expect(await screen.findByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeChecked()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Blog to all')
@@ -48,6 +49,7 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     await renderAutoPost()
 
+    await openReview()
     await userEvent.click(await screen.findByRole('button', { name: 'Create campaign' }))
 
     expect(screen.getByText('Enter a name for the campaign.')).toBeInTheDocument()
@@ -63,8 +65,10 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: '1 hour' }))
     expect(screen.getByText('1 hours after you publish')).toBeInTheDocument()
     fireEvent.change(screen.getByRole('combobox', { name: 'Post type' }), { target: { value: 'page' } })
@@ -78,7 +82,10 @@ describe('Auto-post campaign', () => {
   it('previews the caption with the latest post', async () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview })
     await renderAutoPost()
+    expect(screen.queryByText('Preview: Summer sale')).not.toBeInTheDocument()
+    expect(server.to('POST content/10/share')).toHaveLength(0)
 
+    fireEvent.click(screen.getByRole('button', { name: 'Show preview' }))
     expect(await screen.findByText('Preview: Summer sale')).toBeInTheDocument()
     expect(await screen.findByText(/^Summer sale\s+https:\/\/shop\.example\/s$/)).toBeInTheDocument()
     expect(server.to('GET content')[0]!.query.get('status')).toBe('publish')
@@ -88,6 +95,7 @@ describe('Auto-post campaign', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     await renderAutoPost()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Show preview' }))
     expect(await screen.findByText('No published post is available for the preview.')).toBeInTheDocument()
   })
 
@@ -100,7 +108,9 @@ describe('Auto-post campaign', () => {
     })
     await renderAutoPost({ type: 'auto', id: 5 })
 
+    await openReview()
     expect(await screen.findByDisplayValue('Blog')).toBeInTheDocument()
+    await openReview()
     expect(screen.getByText('10 minutes after you publish')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
 
@@ -118,7 +128,9 @@ describe('Auto-post campaign', () => {
     await renderAutoPost({ type: 'auto', id: 5 })
 
     expect(await screen.findByText('0 of 2')).toBeInTheDocument()
+    await openReview()
     expect(screen.queryByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeNull()
+    await openAccounts()
     await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
@@ -131,6 +143,7 @@ describe('Auto-post campaign', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
     await userEvent.click(screen.getByRole('button', { name: 'Shop News, Bluesky' }))
 
@@ -141,10 +154,12 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Clear' }))
     expect(screen.getByText('0 of 2')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Shop Threads, Threads' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
+    await openReview()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Threads only')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
 
@@ -156,7 +171,9 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Clear' }))
+    await openReview()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Nobody')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
 
@@ -170,8 +187,10 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Shop Threads, Threads' }))
     await userEvent.click(screen.getByRole('button', { name: 'Select all' }))
+    await openReview()
     expect(screen.getByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'All')
@@ -185,6 +204,7 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openReview()
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Also share to accounts that you connect later' }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'These two')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
@@ -201,6 +221,7 @@ describe('Auto-post campaign', () => {
     })
     await renderAutoPost({ type: 'auto', id: 5 })
 
+    await openReview()
     await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Also share to accounts that you connect later' })).not.toBeChecked())
   })
 
@@ -214,12 +235,14 @@ describe('Auto-post campaign', () => {
     })
     await renderAutoPost({ type: 'auto', id: 5 })
 
-    expect(await screen.findByText(/Shop Threads on Threads: sign-in expired/)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '1 needs a new sign-in' })).toBeInTheDocument()
+    await openAccounts()
     expect(screen.getByRole('link', { name: 'Reconnect' })).toHaveAttribute('href', '#/accounts?reconnect=threads')
     const pick = screen.getByRole('button', { name: 'Shop Threads, Threads: sign-in expired' })
     expect(pick).toBeDisabled()
-    expect(pick).toHaveClass('expired')
+    expect(pick.closest('.sint-acc-card')).toHaveClass('expired')
     await waitFor(() => expect(screen.getByText('1 of 2')).toBeInTheDocument())
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
 
     await waitFor(() => expect(server.to('POST campaigns/auto/5')).toHaveLength(1))
@@ -235,6 +258,7 @@ describe('Auto-post campaign', () => {
     })
     await renderAutoPost({ type: 'auto', id: 5 })
 
+    await openReview()
     expect(await screen.findByText('This campaign is paused. Resume it on the Campaigns screen.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save campaign' }))
     await waitFor(() => expect(server.to('POST campaigns/auto/5')[0]!.body).toMatchObject({ active: false }))
@@ -260,6 +284,7 @@ describe('Auto-post campaign', () => {
     await userEvent.click(within(screen.getByRole('group', { name: 'Link from a custom field' })).getByRole('button', { name: /^Ticket link/ }))
     expect(screen.getByRole('textbox', { name: 'Link' })).toHaveValue('{field:ticket_url}')
 
+    await openReview()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Events')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
     await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ caption: '{field:event_date}', link: '{field:ticket_url}' }))
@@ -302,6 +327,7 @@ describe('Auto-post campaign', () => {
     expect(await screen.findByText('AI caption for Summer sale')).toBeInTheDocument()
     expect(server.to('POST ai/caption')[0]!.body).toEqual({ mode: 'prompt', post_id: 10, prompt: 'Write about {title|upper}.', tone: 'playful', limit: 600 })
 
+    await openReview()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'AI posts')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
     await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ ai: { on: true, prompt: 'Write about {title|upper}.', tone: 'playful' } }))
@@ -338,6 +364,7 @@ describe('Auto-post campaign', () => {
     const field = screen.getByRole('combobox', { name: 'Field with the images' })
     expect(within(field).getAllByRole('option').map((o) => o.textContent)).toEqual(['Gallery'])
 
+    await openReview()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Gallery')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
     await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ media: 'field', media_field: 'event_gallery' }))
@@ -363,7 +390,9 @@ describe('Auto-post campaign', () => {
     })
     await renderAutoPost({ type: 'auto', id: 5, copy: true })
 
+    await openReview()
     expect(await screen.findByDisplayValue('Blog (copy)')).toBeInTheDocument()
+    await openReview()
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
     await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ id: 0, name: 'Blog (copy)' }))
   })
@@ -380,6 +409,7 @@ describe('Auto-post campaign', () => {
     const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST campaigns/auto': { id: 5 } })
     await renderAutoPost()
 
+    await openReview()
     expect(await screen.findByText('You save the campaign off. A user who can publish turns it on.')).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Mine')
     await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
@@ -392,7 +422,7 @@ describe('Auto-post campaign', () => {
     await renderAutoPost()
 
     expect(await screen.findByRole('link', { name: 'Connect an account first' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create campaign' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Review and create' })).toBeDisabled()
   })
 })
 
@@ -413,11 +443,13 @@ describe('Auto-post campaign: sint.composer.accounts', () => {
     fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview })
     await renderAutoPost()
 
+    await openAccounts()
     await userEvent.click(await screen.findByRole('button', { name: 'Only Bluesky' }))
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
     expect(ctx!.selected).toEqual(['bluesky'])
 
     act(() => ctx!.setSelected(() => ['bluesky', 'threads']))
+    await openReview()
     expect(await screen.findByRole('checkbox', { name: 'Also share to accounts that you connect later' })).toBeChecked()
   })
 })

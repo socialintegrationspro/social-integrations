@@ -201,6 +201,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
         tokens={tokens}
         fieldKeys={fieldKeys}
         fieldList={fields}
+        collapsible
       />
     </>
   )

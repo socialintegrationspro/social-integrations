@@ -1,5 +1,5 @@
 import { lazy, Suspense, useRef, useState, type FocusEvent } from 'react'
-import { __, sprintf } from '../lib/i18n'
+import { __, _n, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { checkTokens } from '../lib/tokens'
 import type { FieldMap, Network, PostField } from '../lib/types'
@@ -100,10 +100,12 @@ interface Props {
   fieldList?: { key: string; label: string }[]
   /** Networks that show the media and no link card, because the post has media. */
   mediaHidesCard?: string[]
+  /** Closed behind one row until the user opens it, or until a field has a value. */
+  collapsible?: boolean
 }
 
 /** The post fields of a tab: link card, post format, first comment and the network's own options. */
-export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys = null, fieldList = [], mediaHidesCard = [] }: Props) {
+export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys = null, fieldList = [], mediaHidesCard = [], collapsible = false }: Props) {
   const { network } = useStore()
   // Token chips show below the field that has the focus.
   const [focus, setFocus] = useState('')
@@ -113,9 +115,20 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys
   const [listed, setListed] = useState('')
   const all = tab === 'all'
   const fields = tabFields(nets, tab, network)
+  // A tab with a value set shows its options at once, so the user sees what the posts get.
+  const [shut, setShut] = useState(() => Object.keys(value[ALL] ?? {}).length === 0 && !nets.some((n) => Object.keys(value[n] ?? {}).length > 0))
   if (fields.length === 0) return null
 
-  return (
+  const toggle = collapsible && (
+    <button type="button" className="sint-post-fields-toggle" aria-expanded={!shut} onClick={() => setShut(!shut)}>
+      <span className="t">{all ? __('Options for each network', 'social-integrations') : sprintf(__('Options for %s', 'social-integrations'), network(tab)?.label ?? tab)}</span>
+      <span className="s">{[fields.slice(0, 3).map((f) => f.field.label).join(', '), all && nets.length > 1 ? sprintf(_n('%d network', '%d networks', nets.length, 'social-integrations'), nets.length) : ''].filter(Boolean).join(' · ')}</span>
+      <Icon name="down" size={16} stroke={2.2} />
+    </button>
+  )
+  if (collapsible && shut) return <div className="sint-post-fields-box">{toggle}</div>
+
+  const box = (
     <fieldset className="sint-post-fields">
       <legend className="sint-label">{all ? __('Post options', 'social-integrations') : sprintf(__('Post options for %s', 'social-integrations'), network(tab)?.label ?? tab)}</legend>
       <p className="sint-post-fields-intro">
@@ -241,4 +254,5 @@ export function PostFields({ nets, tab, value, onChange, base, tokens, fieldKeys
       })}
     </fieldset>
   )
+  return collapsible ? <div className="sint-post-fields-box open">{toggle}{box}</div> : box
 }

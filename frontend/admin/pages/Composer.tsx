@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { can, caps, config } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
 import { localToUtc, utcToLocal } from '../lib/format'
-import { __, sprintf } from '../lib/i18n'
+import { __, _n, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
 import { useStore } from '../lib/store'
 import { AutoPost } from './AutoPost'
@@ -127,6 +127,12 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   // True while the caption and media of the selected post load.
   const [building, setBuilding] = useState(false)
   const [mediaFrom, setMediaFrom] = useState<MediaSource | ''>('')
+  // The review panel with the summary and the timing, which opens before the share goes out.
+  const [review, setReview] = useState(false)
+  // The preview column is closed when the composer opens; the user opens and closes it.
+  const [showPreview, setShowPreview] = useState(false)
+  // One function for every render: Modal sets the focus again when onClose changes.
+  const closeReview = useCallback(() => setReview(false), [])
   const [mode, setMode] = useState(campaign ? campaign.type : 'single')
   // Tabs that the user opened. They stay mounted, so a tab keeps its form when the user goes to another tab and back.
   const [opened, setOpened] = useState<string[]>(() => [campaign ? campaign.type : 'single'])
@@ -260,6 +266,10 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
   const title = contentSearch.results.find((r) => r.id === postId)?.title ?? built?.tokens.title ?? ''
   const over = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
   const canSend = !busy && !building && !opening && selected.length > 0 && caption.trim() !== '' && over.length === 0
+  // One line in the footer, and the summary in the review panel.
+  const accountsText = sprintf(_n('%d account', '%d accounts', selected.length, 'social-integrations'), selected.length)
+  const captionText = !caption.trim() ? __('No caption yet', 'social-integrations') : over.length ? sprintf(__('Too long for %s', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : sprintf(_n('Fits %d network', 'Fits all %d networks', nets.length, 'social-integrations'), nets.length)
+  const summary = [accountsText, title || __('Text only', 'social-integrations'), captionText].join(' · ')
   const live = picked?.id === postId && picked?.status === 'future' ? picked.date : ''
   const addMedia = () => {
     setTouched(true)
@@ -355,13 +365,14 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
           </span>
         </div>
       ) : (
-        <TimingFooter when={when} setWhen={(w) => { setTouched(true); setWhen(w) }} local={local} setLocal={(l) => { setTouched(true); setLocal(l) }} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>
+        <>
+          <span className="sint-review-sum">{summary}</span>
+          <span style={{ flex: 1 }} />
+          <button type="button" className="sint-btn ghost" aria-pressed={showPreview} onClick={() => setShowPreview(!showPreview)}>{showPreview ? __('Hide preview', 'social-integrations') : __('Show preview', 'social-integrations')}</button>
           <button type="button" className="sint-btn ghost" disabled={busy || building || opening || !selected.length} onClick={() => save(true)}>{__('Save draft', 'social-integrations')}</button>
           {!can(caps.publish) && <span className="sint-sub" style={{ margin: 0, fontSize: 12 }}>{__('You save drafts only. A user who can publish schedules them.', 'social-integrations')}</span>}
-          {can(caps.publish) && <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
-            {busy ? <><Spinner size={14} />{__('Wait…', 'social-integrations')}</> : when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
-          </button>}
-        </TimingFooter>
+          {can(caps.publish) && <button type="button" className="sint-btn primary" disabled={busy || building || opening} onClick={() => setReview(true)}>{item || editing ? __('Review and save', 'social-integrations') : __('Review and share', 'social-integrations')}</button>}
+        </>
       )}
       headerExtra={
         <>
@@ -372,6 +383,37 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
         </>
       }
     >
+      {review && (
+        <Modal
+          drawer
+          title={item || editing ? __('Review and save', 'social-integrations') : __('Review and share', 'social-integrations')}
+          onClose={closeReview}
+          footer={
+            <>
+              <button type="button" className="sint-btn ghost" onClick={closeReview}>{__('Back', 'social-integrations')}</button>
+              <span style={{ flex: 1 }} />
+              <button type="button" className="sint-btn primary" disabled={!canSend} title={over.length ? sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', ')) : undefined} onClick={() => save(false)}>
+                {busy ? <><Spinner size={14} />{__('Wait…', 'social-integrations')}</> : when === 'now' ? __('Share now', 'social-integrations') : upcoming || editing ? __('Save', 'social-integrations') : __('Add to calendar', 'social-integrations')}
+              </button>
+            </>
+          }
+        >
+          <div className="sint-review">
+            <div className="sint-label">{__('Summary', 'social-integrations')}</div>
+            <div className="sint-sum"><span className="l">{__('Accounts', 'social-integrations')}</span><span className="v">{accountsText}</span></div>
+            <div className="sint-sum"><span className="l">{__('Post', 'social-integrations')}</span><span className="v">{title || __('Text only, with no post of the site', 'social-integrations')}</span><button type="button" className="sint-sum-change" aria-label={__('Change: Post', 'social-integrations')} onClick={closeReview}>{__('Change', 'social-integrations')}</button></div>
+            <div className="sint-sum"><span className="l">{__('Caption', 'social-integrations')}</span><span className="v">{captionText}</span><button type="button" className="sint-sum-change" aria-label={__('Change: Caption', 'social-integrations')} onClick={closeReview}>{__('Change', 'social-integrations')}</button></div>
+            <div className="sint-sum"><span className="l">{__('Media', 'social-integrations')}</span><span className="v">{chosenMedia.length ? sprintf(_n('%d image or video', '%d images or videos', chosenMedia.length, 'social-integrations'), chosenMedia.length) : __('No media', 'social-integrations')}</span></div>
+            {!caption.trim() && <p className="sint-field-error" role="alert" style={{ margin: 0 }}>{__('Write a caption first.', 'social-integrations')}</p>}
+            {over.length > 0 && <p className="sint-field-error" role="alert" style={{ margin: 0 }}>{sprintf(__('Shorten the %s caption first.', 'social-integrations'), over.map((n) => network(n)?.label ?? n).join(', '))}</p>}
+            <div className="sint-label">{__('When', 'social-integrations')}</div>
+            <div className="sint-review-when">
+              <TimingFooter when={when} setWhen={(w) => { setTouched(true); setWhen(w) }} local={local} setLocal={(l) => { setTouched(true); setLocal(l) }} live={live ? utcToLocal(live) : ''} optionControls={optionControls} options={options} setOption={setOption}>{null}</TimingFooter>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       <AccountPicker accounts={accounts.filter((a) => !item || a.id === item.account_id)} connected={connected} selected={selected} setSelected={setSelected} locked={!!item} onLeave={leave} />
 
       {opened.map((value) => {
@@ -441,7 +483,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             )}
           </section>
 
-          <Preview
+          {showPreview && <Preview
             nets={nets}
             preview={preview}
             canSwitch={tab === 'all' && nets.length > 1}
@@ -451,7 +493,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
             chosenMedia={format === 'auto' ? chosenMedia : []}
             link={built?.link && format !== 'text' ? { url: built.link, title: shown.title || built.tokens.title || '', description: shown.description, image: linkImage } : undefined}
             comment={shown.first_comment}
-          />
+          />}
         </div>
       )}
     </Modal>

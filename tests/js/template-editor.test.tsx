@@ -262,6 +262,9 @@ describe('TemplateEditor', () => {
     fireEvent.change(await screen.findByRole('textbox', { name: /^Link/ }), { target: { value: '{field:shop_url}' } })
     expect(value().link).toBe('{field:shop_url}')
 
+    // The options for each network are closed until the user opens them.
+    expect(screen.queryByLabelText('Post format')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: /^Options for each network/ }))
     // The first comment is a chip field: a token goes in as a chip.
     const comment = await findCaption('First comment')
     await userEvent.click(comment)

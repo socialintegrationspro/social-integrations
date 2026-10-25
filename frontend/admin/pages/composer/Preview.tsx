@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { AccountAvatar, Icon, NetBadge } from '../../components/ui'
 import { CaptionText } from '../../components/CaptionText'
 import { hasMarks } from '../../lib/richtext'
@@ -21,19 +22,25 @@ interface Props {
   link?: { url: string; title: string; description?: string; image?: string }
   /** The first comment below the post, if any. */
   comment?: string
+  /** The heading; "Preview" when not set. */
+  label?: string
+  /** A message, or a placeholder, in place of the post card. */
+  notice?: ReactNode
+  /** The preview loads again. */
+  busy?: boolean
 }
 
 /** The right column: a post card for one network, then what does not fit. */
-export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment }: Props) {
+export function Preview({ nets, preview, canSwitch, setPreview, captionFor, account, chosenMedia, link, comment, label, notice, busy }: Props) {
   const { network } = useStore()
   const net = preview ? network(preview) : undefined
   const tooLong = nets.filter((n) => measure(captionFor(n), network(n)) > (network(n)?.char_limit ?? Infinity))
   const fewer = chosenMedia.length > 1 ? nets.filter((n) => (network(n)?.max_images ?? 1) < chosenMedia.length) : []
 
   return (
-    <aside style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
+    <aside className={`sint-preview-col${busy ? ' sint-loading' : ''}`} aria-busy={busy || undefined} style={{ flex: '1 1 330px', maxWidth: 380, borderLeft: '1px solid var(--line)', padding: 18, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--side)', minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-        <span className="sint-label" style={{ paddingTop: 6 }}>{__('Preview', 'social-integrations')}</span>
+        <span className="sint-label" style={{ paddingTop: 6, minWidth: 0 }}>{label ?? __('Preview', 'social-integrations')}</span>
         {canSwitch && nets.length > 4 && (
           // Many networks: a list with names is easier to read than a row of logos.
           <select className="sint-select sm" style={{ marginLeft: 'auto', maxWidth: 210 }} aria-label={__('Preview network', 'social-integrations')} value={preview} onChange={(e) => setPreview(e.target.value)}>
@@ -50,7 +57,9 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
           </span>
         )}
       </div>
-      {net ? (
+      {notice ? (
+        notice
+      ) : net ? (
         <div className="sint-preview" style={{ background: '#fff', color: '#1c1e21', borderRadius: 16, overflow: 'hidden', fontFamily: 'system-ui, sans-serif' }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 12 }}>
             {account && <AccountAvatar account={account} network={net} />}
@@ -97,7 +106,7 @@ export function Preview({ nets, preview, canSwitch, setPreview, captionFor, acco
       ) : (
         <p className="sint-sub">{__('Select an account to see a preview.', 'social-integrations')}</p>
       )}
-      {net && (
+      {net && !notice && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: 'var(--text-2)' }}>
           {/* One line when every caption fits; otherwise a line for each network that is too long. */}
           {nets.length > 1 && tooLong.length === 0 ? (

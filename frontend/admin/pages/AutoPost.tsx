@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react'
-import { FieldPreview } from '../components/FieldPreview'
+import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
+import { TemplatePreview } from '../components/TemplatePreview'
 import { AiCaption, NO_AI } from '../components/AiCaption'
-import { CaptionText } from '../components/CaptionText'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
-import { LoadError, useToast } from '../components/ui'
+import { LoadError, Modal, useToast } from '../components/ui'
 import { can, caps } from '../lib/config'
 import { api } from '../lib/api'
 import { applyFilters } from '../lib/hooks'
-import { __, sprintf } from '../lib/i18n'
+import { __, _n, sprintf } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { BuiltShare, ContentItem } from '../lib/types'
 import type { CampaignRef } from './Composer'
@@ -50,7 +49,7 @@ const BLANK: AutoCampaign = { id: 0, name: '', active: true, post_types: ['post'
 /** The Auto-post tab of the composer: one campaign that shares new posts when they are published. */
 /** The accounts come from the "Share to" row of the composer, which every tab shares. */
 export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaign?: CampaignRef; onSaved: () => void; selected: string[]; setSelected: (ids: string[]) => void }) {
-  const { postTypes, accounts, network } = useStore()
+  const { postTypes, accounts } = useStore()
   const toast = useToast()
   const source = campaign ? Number(campaign.id) : 0
   const editing = campaign && !campaign.copy ? source : 0
@@ -61,6 +60,12 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
   const kept = useRef<string[]>([])
   // Whether the campaign also shares to the accounts that the user connects later. It counts only when every connected account is selected.
   const [includeNew, setIncludeNew] = useState(true)
+  // The side panel with the summary, the timing and the name, which opens before the campaign saves.
+  const [review, setReview] = useState(false)
+  // The preview is closed when the tab opens; the user opens and closes it.
+  const [showPreview, setShowPreview] = useState(false)
+  // One function for every render: Modal sets the focus again when onClose changes.
+  const closeReview = useCallback(() => setReview(false), [])
   const [tab, setTab] = useState('all')
   const [sample, setSample] = useState<ContentItem | null | undefined>(undefined)
   const [preview, setPreview] = useState<BuiltShare | null>(null)
@@ -102,7 +107,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
 
   const key = c && sample ? JSON.stringify([sample.id, c.caption, c.captions, c.media, c.custom_media.map((m) => m.id), c.media_field, c.link, c.fields]) : ''
   useEffect(() => {
-    if (!c || !sample) return setPreview(null)
+    if (!c || !sample || !showPreview) return setPreview(null)
     const t = setTimeout(() => {
       setPreviewFailed(false)
       api.post<BuiltShare>(`content/${sample.id}/share`, { template: c }).then(
@@ -114,7 +119,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
       )
     }, 350)
     return () => clearTimeout(t)
-  }, [key])
+  }, [key, showPreview])
 
   // Filter `sint.autopost.options`: more settings for the campaign.
   const extras = applyFilters<AutoPostOption[]>('sint.autopost.options', [])
@@ -149,8 +154,12 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
   const current = nets.includes(tab) ? tab : 'all'
 
 
-  const shownCaption = preview ? (current !== 'all' && !Array.isArray(preview.captions) && preview.captions[current]) || preview.caption : ''
   const delayText = c.delay.value === 0 ? __('Immediately after you publish', 'social-integrations') : sprintf(c.delay.unit === 'minutes' ? __('%d minutes after you publish', 'social-integrations') : c.delay.unit === 'hours' ? __('%d hours after you publish', 'social-integrations') : __('%d days after you publish', 'social-integrations'), c.delay.value)
+
+  // One line in the bar at the bottom, and the summary in the side panel.
+  const accountsText = everyAccount ? __('All accounts, and new ones', 'social-integrations') : sprintf(_n('%d account', '%d accounts', selected.length, 'social-integrations'), selected.length)
+  const typesText = c.post_types.map((t) => postTypes.find((p) => p.name === t)?.label ?? t).join(', ')
+  const captionText = c.ai?.on ? __('Write with AI', 'social-integrations') : c.caption.trim() ? __('Your caption', 'social-integrations') : __('Default caption', 'social-integrations')
 
   const save = async () => {
     if (!selected.length) {
@@ -190,7 +199,6 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
         </aside>
 
         <section className="col mid">
-          <div className="sint-label">{__('What to post', 'social-integrations')}</div>
           <AiCaption value={c.ai ?? NO_AI} onChange={(ai) => set({ ai })} postType={c.post_types[0] ?? 'post'} sample={sample} />
           {c.ai?.on && <div className="sint-label">{__('Template caption, when the AI fails', 'social-integrations')}</div>}
           <TemplateEditor
@@ -203,30 +211,51 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
             hint={__('Leave empty to use the default caption. Custom field adds a value from the post, such as a date or a price.', 'social-integrations')}
             postType={c.post_types[0]}
           />
-          <div className="sint-autopost-share">
-            <span className="sint-label">{sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : __('Preview', 'social-integrations')}</span>
-            {sample === null ? (
-              <p className="sint-sub">{__('No published post is available for the preview.', 'social-integrations')}</p>
-            ) : previewFailed ? (
-              <p className="sint-sub">{__('The preview did not load. Change the caption to try again.', 'social-integrations')}</p>
-            ) : preview ? (
-              <>
-                <p><CaptionText text={shownCaption} format={current !== 'all' ? network(current)?.text_format : undefined} /></p>
-                {preview.media.length > 0 && (
-                  <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {preview.media.map((m) => (m.type === 'image' ? <img key={m.url} className="sint-thumb" src={m.url} alt={m.alt} /> : <span key={m.url} className="sint-pill muted">{__('Video', 'social-integrations')}</span>))}
-                  </span>
-                )}
-                <FieldPreview nets={current === 'all' ? nets : [current]} fields={preview.fields} link={preview.link} />
-              </>
-            ) : (
-              <div className="sint-skeleton" style={{ height: 80 }} />
-            )}
-          </div>
         </section>
 
-        <aside className="col side">
-          <div className="sint-label">{__('When', 'social-integrations')}</div>
+        {showPreview && (
+          <TemplatePreview
+            share={preview}
+            accounts={connected.filter((a) => selected.includes(a.id))}
+            tab={current}
+            label={sample ? sprintf(__('Preview: %s', 'social-integrations'), sample.title || __('(no title)', 'social-integrations')) : undefined}
+            notice={
+              sample === null ? <p className="sint-sub">{__('No published post is available for the preview.', 'social-integrations')}</p>
+              : previewFailed ? <p className="sint-sub">{__('The preview did not load. Change the caption to try again.', 'social-integrations')}</p>
+              : undefined
+            }
+          />
+        )}
+      </div>
+
+      <div className="sint-review-bar">
+        <span className="sint-review-sum">{[accountsText, typesText, captionText, delayText].join(' · ')}</span>
+        <span style={{ flex: 1 }} />
+        <button type="button" className="sint-btn ghost" aria-pressed={showPreview} onClick={() => setShowPreview(!showPreview)}>{showPreview ? __('Hide preview', 'social-integrations') : __('Show preview', 'social-integrations')}</button>
+        <button type="button" className="sint-btn primary" disabled={!connected.length} onClick={() => setReview(true)}>
+          {editing ? __('Review and save', 'social-integrations') : __('Review and create', 'social-integrations')}
+        </button>
+      </div>
+
+      {review && (
+        <Modal
+          drawer
+          title={editing ? __('Review and save', 'social-integrations') : __('Review and create', 'social-integrations')}
+          onClose={closeReview}
+          footer={
+            <>
+              <button type="button" className="sint-btn ghost" onClick={() => setReview(false)}>{__('Back', 'social-integrations')}</button>
+              <span style={{ flex: 1 }} />
+              <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Wait…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
+            </>
+          }
+        >
+          <div className="sint-review">
+            <div className="sint-label">{__('Summary', 'social-integrations')}</div>
+            <div className="sint-sum"><span className="l">{__('Accounts', 'social-integrations')}</span><span className="v">{accountsText}</span></div>
+            <div className="sint-sum"><span className="l">{__('Posts', 'social-integrations')}</span><span className="v">{typesText}</span><button type="button" className="sint-sum-change" aria-label={__('Change: Posts', 'social-integrations')} onClick={() => setReview(false)}>{__('Change', 'social-integrations')}</button></div>
+            <div className="sint-sum"><span className="l">{__('Caption', 'social-integrations')}</span><span className="v">{captionText}</span><button type="button" className="sint-sum-change" aria-label={__('Change: Caption', 'social-integrations')} onClick={() => setReview(false)}>{__('Change', 'social-integrations')}</button></div>
+            <div className="sint-label">{__('When', 'social-integrations')}</div>
           {/* The user decides about accounts connected later. Before, all accounts always included them. */}
           {allConnected && (
             <label className="sint-check-row">
@@ -263,9 +292,9 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
           </label>
           <small style={{ color: 'var(--faint)', fontSize: 12 }}>{__('The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar.', 'social-integrations')}</small>
           {accountsError && !selected.length && <small role="alert" className="sint-field-error">{__('Select an account.', 'social-integrations')}</small>}
-          <button type="button" className="sint-btn primary" disabled={saving || !connected.length} onClick={save}>{saving ? __('Wait…', 'social-integrations') : editing ? __('Save campaign', 'social-integrations') : __('Create campaign', 'social-integrations')}</button>
-        </aside>
-      </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }
