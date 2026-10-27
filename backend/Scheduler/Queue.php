@@ -70,7 +70,7 @@ final class Queue {
 	public static function find( int $id ): ?array {
 		global $wpdb;
 		$table = Migrations::queue_table();
-		$row   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row   = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $table, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $row ? self::hydrate( $row ) : null;
 	}
 
@@ -85,7 +85,7 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE scheduled_at >= %s AND scheduled_at < %s", $from, $to ) . self::accounts_where( $accounts, 'account_id' ) . ' ORDER BY scheduled_at ASC LIMIT 500', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( 'SELECT * FROM %i WHERE scheduled_at >= %s AND scheduled_at < %s', $table, $from, $to ) . self::accounts_where( $accounts, 'account_id' ) . ' ORDER BY scheduled_at ASC LIMIT 500', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -102,7 +102,7 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d", $post_id ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at DESC, id DESC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( 'SELECT * FROM %i WHERE post_id = %d', $table, $post_id ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at DESC, id DESC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -117,7 +117,7 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE status = 'scheduled' AND scheduled_at <= %s ORDER BY scheduled_at ASC LIMIT %d", current_time( 'mysql', true ), $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM %i WHERE status = 'scheduled' AND scheduled_at <= %s ORDER BY scheduled_at ASC LIMIT %d", $table, current_time( 'mysql', true ), $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -155,7 +155,7 @@ final class Queue {
 	public static function claim( int $id ): bool {
 		global $wpdb;
 		$table = Migrations::queue_table();
-		$done  = $wpdb->query( $wpdb->prepare( "UPDATE {$table} SET status = 'sending', attempts = attempts + 1, updated_at = %s WHERE id = %d AND status = 'scheduled'", current_time( 'mysql', true ), $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$done  = $wpdb->query( $wpdb->prepare( "UPDATE %i SET status = 'sending', attempts = attempts + 1, updated_at = %s WHERE id = %d AND status = 'scheduled'", $table, current_time( 'mysql', true ), $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return 1 === (int) $done;
 	}
 
@@ -177,7 +177,7 @@ final class Queue {
 	public static function count_unsent( string $account_id ): int {
 		global $wpdb;
 		$table = Migrations::queue_table();
-		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE account_id = %s AND status IN ('draft', 'scheduled')", $account_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE account_id = %s AND status IN ('draft', 'scheduled')", $table, $account_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
@@ -192,8 +192,8 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE account_id = %s AND status = 'scheduled'", $account_id ), ARRAY_A );
-		$stopped = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE account_id = %s AND status = 'draft'", $account_id ) );
+		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE account_id = %s AND status = 'scheduled'", $table, $account_id ), ARRAY_A );
+		$stopped = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE account_id = %s AND status = 'draft'", $table, $account_id ) );
 		// phpcs:enable
 		foreach ( (array) $rows as $row ) {
 			if ( self::update( (int) $row['id'], array( 'status' => 'failed' ), 'scheduled' ) ) {
@@ -247,13 +247,13 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::logs_table();
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT id, queue_id, account_id FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT id, queue_id, account_id FROM %i WHERE id = %d', $table, $log_id ), ARRAY_A );
 		if ( ! $row || ( null !== $accounts && ! in_array( (string) $row['account_id'], $accounts, true ) ) ) {
 			return null;
 		}
 		$rows = (int) $row['queue_id']
-			? $wpdb->get_results( $wpdb->prepare( "SELECT id, status, message, remote_url, details, created_at FROM {$table} WHERE queue_id = %d ORDER BY id ASC", (int) $row['queue_id'] ), ARRAY_A )
-			: $wpdb->get_results( $wpdb->prepare( "SELECT id, status, message, remote_url, details, created_at FROM {$table} WHERE id = %d", $log_id ), ARRAY_A );
+			? $wpdb->get_results( $wpdb->prepare( 'SELECT id, status, message, remote_url, details, created_at FROM %i WHERE queue_id = %d ORDER BY id ASC', $table, (int) $row['queue_id'] ), ARRAY_A )
+			: $wpdb->get_results( $wpdb->prepare( 'SELECT id, status, message, remote_url, details, created_at FROM %i WHERE id = %d', $table, $log_id ), ARRAY_A );
 		// phpcs:enable
 		$tries = array();
 		foreach ( (array) $rows as $try ) {
@@ -284,7 +284,7 @@ final class Queue {
 		}
 		$table = Migrations::logs_table();
 		$ids   = implode( ',', array_map( 'intval', $post_ids ) );
-		$rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE post_id IN ({$ids})" . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE post_id IN ({$ids})", $table ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		return (array) $rows;
 	}
 
@@ -377,16 +377,19 @@ final class Queue {
 		$queue  = Migrations::queue_table();
 		$search = (string) ( $args['search'] ?? '' );
 		// The newest row of each queue row comes from the queue_id index. Only a search reads the post title.
-		$sql    = "FROM {$logs} l
+		$sql    = 'FROM %i l
 			JOIN (
-				SELECT MAX(id) AS id, COUNT(*) AS tries FROM {$logs} WHERE queue_id > 0 GROUP BY queue_id
+				SELECT MAX(id) AS id, COUNT(*) AS tries FROM %i WHERE queue_id > 0 GROUP BY queue_id
 				UNION ALL
-				SELECT id, 1 FROM {$logs} WHERE queue_id = 0
+				SELECT id, 1 FROM %i WHERE queue_id = 0
 			) t ON t.id = l.id
-			LEFT JOIN {$queue} q ON q.id = l.queue_id"
-			. ( '' !== $search ? " LEFT JOIN {$wpdb->posts} p ON p.ID = l.post_id" : '' );
+			LEFT JOIN %i q ON q.id = l.queue_id'
+			. ( '' !== $search ? ' LEFT JOIN %i p ON p.ID = l.post_id' : '' );
 		$where  = array( '1 = 1' );
-		$params = array();
+		$params = array( $logs, $logs, $logs, $queue );
+		if ( '' !== $search ) {
+			$params[] = $wpdb->posts;
+		}
 		if ( '' !== ( $args['campaign'] ?? '' ) ) {
 			$where[]  = "COALESCE(q.campaign_key, '') = %s";
 			$params[] = $args['campaign'];
@@ -409,10 +412,7 @@ final class Queue {
 			$params[] = $args['to'];
 		}
 		$sql .= ' WHERE ' . implode( ' AND ', $where );
-		if ( $params ) {
-			$sql = $wpdb->prepare( $sql, $params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		}
-		return $sql . self::accounts_where( $args['accounts'] ?? null, 'l.account_id' );
+		return $wpdb->prepare( $sql, $params ) . self::accounts_where( $args['accounts'] ?? null, 'l.account_id' ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**
@@ -438,10 +438,10 @@ final class Queue {
 		$deleted = 0;
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( $batches ) {
-			$deleted += (int) $wpdb->query( $wpdb->prepare( "DELETE l FROM {$logs} l JOIN {$queue} q ON q.id = l.queue_id WHERE q.batch_id IN (" . implode( ',', array_fill( 0, count( $batches ), '%s' ) ) . ')', $batches ) );
+			$deleted += (int) $wpdb->query( $wpdb->prepare( 'DELETE l FROM %i l JOIN %i q ON q.id = l.queue_id WHERE q.batch_id IN (' . implode( ',', array_fill( 0, count( $batches ), '%s' ) ) . ')', array_merge( array( $logs, $queue ), $batches ) ) );
 		}
 		if ( $ids ) {
-			$deleted += (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$logs} WHERE id IN (" . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')', $ids ) );
+			$deleted += (int) $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE id IN (' . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')', array_merge( array( $logs ), $ids ) ) );
 		}
 		// phpcs:enable
 		return $deleted;
@@ -459,7 +459,7 @@ final class Queue {
 			return 0;
 		}
 		$table = Migrations::logs_table();
-		return (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE created_at < %s", gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE created_at < %s', $table, gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
@@ -474,7 +474,7 @@ final class Queue {
 		}
 		$table = Migrations::logs_table();
 		$ids   = implode( ',', array_map( 'intval', $queue_ids ) );
-		$rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE id IN (SELECT MAX(id) FROM {$table} WHERE queue_id IN ({$ids}) GROUP BY queue_id)", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE id IN (SELECT MAX(id) FROM %i WHERE queue_id IN ({$ids}) GROUP BY queue_id)", $table, $table ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$logs  = array();
 		foreach ( (array) $rows as $row ) {
 			$logs[ (int) $row['queue_id'] ] = $row;
@@ -495,7 +495,7 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT DATE(DATE_ADD(scheduled_at, INTERVAL %d SECOND)) AS day, network, status, COUNT(*) AS n FROM {$table} WHERE scheduled_at >= %s AND status IN ('published', 'failed')", $offset, $from ) . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY day, network, status', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SELECT DATE(DATE_ADD(scheduled_at, INTERVAL %d SECOND)) AS day, network, status, COUNT(*) AS n FROM %i WHERE scheduled_at >= %s AND status IN ('published', 'failed')", $offset, $table, $from ) . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY day, network, status', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return (array) $rows;
@@ -511,7 +511,7 @@ final class Queue {
 		global $wpdb;
 		$table  = Migrations::queue_table();
 		$counts = array_fill_keys( self::STATUSES, 0 );
-		foreach ( (array) $wpdb->get_results( "SELECT status, COUNT(*) AS n FROM {$table} WHERE 1 = 1" . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY status', ARRAY_A ) as $row ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) AS n FROM %i WHERE 1 = 1', $table ) . self::accounts_where( $accounts, 'account_id' ) . ' GROUP BY status', ARRAY_A ) as $row ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			$counts[ $row['status'] ] = (int) $row['n'];
 		}
 		return $counts;
@@ -527,7 +527,7 @@ final class Queue {
 		global $wpdb;
 		$table = Migrations::queue_table();
 		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE status = 'scheduled' AND scheduled_at >= %s", current_time( 'mysql', true ) ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at ASC, id ASC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SELECT * FROM %i WHERE status = 'scheduled' AND scheduled_at >= %s", $table, current_time( 'mysql', true ) ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY scheduled_at ASC, id ASC LIMIT %d', $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 		return array_map( array( self::class, 'hydrate' ), (array) $rows );
@@ -542,7 +542,7 @@ final class Queue {
 	public static function recent_logs( int $limit = 8, ?array $accounts = null ): array {
 		global $wpdb;
 		$table = Migrations::logs_table();
-		$rows  = $wpdb->get_results( "SELECT id, queue_id, post_id, network, account_id, status, message, remote_url, created_at FROM {$table} WHERE 1 = 1" . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$rows  = $wpdb->get_results( $wpdb->prepare( 'SELECT id, queue_id, post_id, network, account_id, status, message, remote_url, created_at FROM %i WHERE 1 = 1', $table ) . self::accounts_where( $accounts, 'account_id' ) . $wpdb->prepare( ' ORDER BY id DESC LIMIT %d', $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		return (array) $rows;
 	}
 

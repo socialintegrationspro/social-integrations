@@ -146,7 +146,8 @@ final class AccountsTest extends IntegrationTestCase {
 		$this->assertNotEmpty( $data['redirect_uri'] );
 		$methods = array_column( $data['networks'], 'methods', 'key' );
 		$this->assertSame( array( 'broker', 'app' ), $methods['facebook'] );
-		$this->assertSame( array( 'app' ), $methods['linkedin'] );
+		$this->assertSame( array( 'broker', 'app' ), $methods['linkedin'] );
+		$this->assertEmpty( array_filter( $this->requests, static fn( $r ) => false !== strpos( $r['url'], 'socialintegrations.com' ) ) );
 		$this->assertSame( array( 'facebook', 'linkedin' ), array_keys( $methods ) );
 		foreach ( $data['networks'] as $network ) {
 			foreach ( array( 'key', 'label', 'color', 'auth_type', 'char_limit', 'max_images', 'post_fields', 'methods' ) as $key ) {

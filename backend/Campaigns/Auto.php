@@ -127,7 +127,7 @@ final class Auto {
 	public static function all(): array {
 		global $wpdb;
 		$table = Migrations::campaigns_table();
-		$ids   = $wpdb->get_col( "SELECT id FROM {$table} WHERE type = 'auto' ORDER BY id ASC" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids   = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM %i WHERE type = 'auto' ORDER BY id ASC", $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$out   = array();
 		foreach ( $ids as $id ) {
 			$campaign = Campaigns::get( (int) $id );

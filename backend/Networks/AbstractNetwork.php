@@ -342,7 +342,8 @@ abstract class AbstractNetwork {
 
 	/**
 	 * The network's name on the Social Integrations app server (Auth\Broker). Empty when
-	 * the server cannot sign in to this network; the user then uses their own app.
+	 * the server cannot sign in to this network; the user then uses their own app. The
+	 * plugin reads it on its own and does not ask the server.
 	 */
 	public function broker_key(): string {
 		return 'oauth2' === $this->auth_type() ? $this->key() : '';

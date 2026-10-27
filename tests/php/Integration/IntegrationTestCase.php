@@ -33,13 +33,7 @@ abstract class IntegrationTestCase extends \WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->requests = array();
-		// The Social Integrations app signs in to Facebook.
-		$this->answers = array(
-			'https://app.socialintegrations.com/v1/networks' => array(
-				200,
-				array( 'networks' => array( array( 'key' => 'facebook' ) ) ),
-			),
-		);
+		$this->answers  = array();
 		add_filter( 'pre_http_request', array( $this, 'fake_http' ), 10, 3 );
 		_get_cron_array() && _set_cron_array( array() );
 	}

@@ -177,7 +177,7 @@ final class Campaigns {
 		global $wpdb;
 		self::remove_unsent( $id );
 		$queue = Migrations::queue_table();
-		$wpdb->query( $wpdb->prepare( "UPDATE {$queue} SET campaign_id = 0 WHERE campaign_id = %d", $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( 'UPDATE %i SET campaign_id = 0 WHERE campaign_id = %d', $queue, $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( Migrations::campaigns_table(), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
@@ -208,7 +208,7 @@ final class Campaigns {
 		global $wpdb;
 		$table   = Migrations::campaigns_table();
 		$like    = '%' . $wpdb->esc_like( '"' . $account_id . '"' ) . '%';
-		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT id, type, data FROM {$table} WHERE type IN ('single', 'auto') AND data LIKE %s", $like ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT id, type, data FROM %i WHERE type IN ('single', 'auto') AND data LIKE %s", $table, $like ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$changed = 0;
 		foreach ( (array) $rows as $row ) {
 			$data = json_decode( (string) $row['data'], true );
@@ -243,7 +243,7 @@ final class Campaigns {
 	public static function get( int $id ): ?array {
 		global $wpdb;
 		$table = Migrations::campaigns_table();
-		$row   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row   = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $table, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( ! $row ) {
 			return null;
 		}
@@ -290,7 +290,7 @@ final class Campaigns {
 	public static function all(): array {
 		global $wpdb;
 		$table = Migrations::campaigns_table();
-		$rows  = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY updated_at DESC LIMIT 200", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i ORDER BY updated_at DESC LIMIT 200', $table ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$stats = self::queue_stats( array_map( 'intval', array_column( (array) $rows, 'id' ) ) );
 		$items = array();
 		foreach ( (array) $rows as $row ) {
@@ -319,8 +319,8 @@ final class Campaigns {
 			return $stats;
 		}
 		$queue = Migrations::queue_table();
-		$in    = implode( ',', $ids );
-		$found = $wpdb->get_results( "SELECT campaign_id, status, COUNT(*) AS n, MIN(scheduled_at) AS first_at, MAX(updated_at) AS last_at FROM {$queue} WHERE campaign_id IN ({$in}) GROUP BY campaign_id, status", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$in    = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$found = $wpdb->get_results( $wpdb->prepare( "SELECT campaign_id, status, COUNT(*) AS n, MIN(scheduled_at) AS first_at, MAX(updated_at) AS last_at FROM %i WHERE campaign_id IN ({$in}) GROUP BY campaign_id, status", array_merge( array( $queue ), $ids ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		foreach ( (array) $found as $stat ) {
 			$stats[ (int) $stat['campaign_id'] ][ $stat['status'] ] = $stat;
 		}
@@ -459,8 +459,8 @@ final class Campaigns {
 	private static function remove_unsent( int $id ): void {
 		global $wpdb;
 		$queue  = Migrations::queue_table();
-		$status = "'" . implode( "','", self::UNSENT ) . "'";
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$queue} WHERE campaign_id = %d AND status IN ({$status})", $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$status = implode( ',', array_fill( 0, count( self::UNSENT ), '%s' ) );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE campaign_id = %d AND status IN ({$status})", array_merge( array( $queue, $id ), self::UNSENT ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- One %s for each status.
 	}
 
 	/**

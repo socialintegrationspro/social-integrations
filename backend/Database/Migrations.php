@@ -164,8 +164,8 @@ final class Migrations {
 		// Version 4: older shares get a campaign key and a batch. Shares of one campaign and
 		// post that were added in the same minute form one batch. Each other share is its own batch.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query( "UPDATE {$queue} q JOIN {$campaigns} c ON c.id = q.campaign_id SET q.campaign_key = CONCAT(c.type, '-', c.id) WHERE q.campaign_key = ''" );
-		$wpdb->query( "UPDATE {$queue} SET batch_id = MD5(IF(post_id > 0 OR campaign_id > 0, CONCAT(campaign_id, '|', post_id, '|', DATE_FORMAT(created_at, '%Y-%m-%d %H:%i')), CONCAT('q', id))) WHERE batch_id = ''" );
+		$wpdb->query( $wpdb->prepare( "UPDATE %i q JOIN %i c ON c.id = q.campaign_id SET q.campaign_key = CONCAT(c.type, '-', c.id) WHERE q.campaign_key = ''", $queue, $campaigns ) );
+		$wpdb->query( $wpdb->prepare( "UPDATE %i SET batch_id = MD5(IF(post_id > 0 OR campaign_id > 0, CONCAT(campaign_id, '|', post_id, '|', DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H:%%i')), CONCAT('q', id))) WHERE batch_id = ''", $queue ) );
 		// phpcs:enable
 	}
 }

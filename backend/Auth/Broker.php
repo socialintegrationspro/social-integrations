@@ -27,12 +27,9 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Broker {
 
-	const DEFAULT_URL       = 'https://app.socialintegrations.com';
-	const OPTION            = 'sint_broker_site';
-	const NETWORKS_CACHE    = 'sint_broker_networks';
-	const VERIFY_TRANSIENT  = 'sint_broker_verify';
-	const NETWORKS_TTL      = 12 * HOUR_IN_SECONDS;
-	const NETWORKS_FAIL_TTL = 10 * MINUTE_IN_SECONDS;
+	const DEFAULT_URL      = 'https://app.socialintegrations.com';
+	const OPTION           = 'sint_broker_site';
+	const VERIFY_TRANSIENT = 'sint_broker_verify';
 
 	/**
 	 * Hooks the verify route.
@@ -86,39 +83,13 @@ final class Broker {
 	}
 
 	/**
-	 * Whether the Social Integrations app can sign in to a network.
+	 * Whether the Social Integrations app can sign in to a network. Each network declares this
+	 * with broker_key(), so the plugin does not ask the server before the user connects.
 	 *
 	 * @param AbstractNetwork $network Network.
 	 */
 	public static function supports( AbstractNetwork $network ): bool {
-		$key = $network->broker_key();
-		return 'oauth2' === $network->auth_type() && '' !== $key && in_array( $key, self::networks(), true );
-	}
-
-	/**
-	 * Keys of the networks that the server supports. The plugin keeps the list for 12 hours;
-	 * when the server does not answer, the list is empty for 10 minutes.
-	 *
-	 * @return string[]
-	 */
-	public static function networks(): array {
-		$cached = get_transient( self::NETWORKS_CACHE );
-		if ( is_array( $cached ) ) {
-			return $cached;
-		}
-		$keys = array();
-		try {
-			$body = self::request( 'GET', '/v1/networks', array( 'timeout' => 5 ) );
-			foreach ( (array) ( $body['networks'] ?? array() ) as $network ) {
-				if ( ! empty( $network['key'] ) ) {
-					$keys[] = sanitize_key( (string) $network['key'] );
-				}
-			}
-			set_transient( self::NETWORKS_CACHE, $keys, self::NETWORKS_TTL );
-		} catch ( NetworkException $e ) {
-			set_transient( self::NETWORKS_CACHE, $keys, self::NETWORKS_FAIL_TTL );
-		}
-		return $keys;
+		return 'oauth2' === $network->auth_type() && '' !== $network->broker_key();
 	}
 
 	/**
