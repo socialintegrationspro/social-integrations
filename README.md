@@ -8,7 +8,7 @@ WordPress plugin that shares posts, pages, products and custom post types to soc
 composer install
 pnpm install
 pnpm build        # → build/
-pnpm dev          # Vite dev server on :5174; define SINT_DEV_SERVER in wp-config.php to use it
+pnpm dev          # Vite dev server on :5174 (a development environment loads it in wp-admin)
 ```
 
 - PHP 7.4+, WordPress 6.3+.

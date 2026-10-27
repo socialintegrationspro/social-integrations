@@ -14,9 +14,8 @@ use SocialIntegrations\Support\Capabilities;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Loads the built app from `build/` using the Vite manifest. When the constant
- * SINT_DEV_SERVER holds a URL (for example http://localhost:5174), loads the
- * app from that dev server instead.
+ * Loads the built app from `build/` using the Vite manifest. The app uses the React that
+ * WordPress loads.
  */
 final class Assets {
 
@@ -39,39 +38,17 @@ final class Assets {
 			return;
 		}
 
-		$deps = (array) apply_filters( Hooks::ADMIN_SCRIPT_DEPENDENCIES, array( 'wp-hooks', 'wp-i18n' ) );
-		// The Vite dev server is for local development only. On any other site the plugin
-		// loads only its own build/ files.
-		$local = in_array( wp_get_environment_type(), array( 'local', 'development' ), true );
-		$dev   = $local && defined( 'SINT_DEV_SERVER' ) ? untrailingslashit( (string) SINT_DEV_SERVER ) : '';
+		$deps = (array) apply_filters( Hooks::ADMIN_SCRIPT_DEPENDENCIES, array( 'react', 'react-dom', 'wp-element', 'wp-hooks', 'wp-i18n' ) );
 
-		if ( $dev ) {
-			// React Fast Refresh expects this preamble before the app module loads.
-			add_action(
-				'admin_print_scripts',
-				static function () use ( $dev ) {
-					wp_print_inline_script_tag(
-						sprintf(
-							'import RefreshRuntime from %s;RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>(type)=>type;window.__vite_plugin_react_preamble_installed__=true;',
-							wp_json_encode( esc_url_raw( $dev . '/@react-refresh' ) )
-						),
-						array( 'type' => 'module' )
-					);
-				}
-			);
-			wp_enqueue_script( 'sint-vite-client', $dev . '/@vite/client', array(), null, true ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
-			wp_enqueue_script( self::HANDLE, $dev . '/' . self::ENTRY, $deps, null, true ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
-		} else {
-			$entry = $this->manifest_entry();
-			if ( ! $entry ) {
-				add_action( 'admin_notices', array( $this, 'missing_build_notice' ) );
-				return;
-			}
-			wp_enqueue_script( self::HANDLE, SINT_URL . 'build/' . $entry['file'], $deps, SINT_VERSION, true );
-			$this->preload( $entry );
-			foreach ( (array) ( $entry['css'] ?? array() ) as $i => $css ) {
-				wp_enqueue_style( self::HANDLE . '-' . $i, SINT_URL . 'build/' . $css, array(), SINT_VERSION );
-			}
+		$entry = $this->manifest_entry();
+		if ( ! $entry ) {
+			add_action( 'admin_notices', array( $this, 'missing_build_notice' ) );
+			return;
+		}
+		wp_enqueue_script( self::HANDLE, SINT_URL . 'build/' . $entry['file'], $deps, SINT_VERSION, true );
+		$this->preload( $entry );
+		foreach ( (array) ( $entry['css'] ?? array() ) as $i => $css ) {
+			wp_enqueue_style( self::HANDLE . '-' . $i, SINT_URL . 'build/' . $css, array(), SINT_VERSION );
 		}
 
 		// The composer adds images from the media library.
@@ -113,7 +90,7 @@ final class Assets {
 	 * @param string $handle Handle.
 	 */
 	public function module_tag( string $tag, string $handle ): string {
-		if ( in_array( $handle, array( self::HANDLE, 'sint-vite-client' ), true ) && false === strpos( $tag, 'type="module"' ) ) {
+		if ( self::HANDLE === $handle && false === strpos( $tag, 'type="module"' ) ) {
 			$tag = str_replace( '<script ', '<script type="module" ', $tag );
 		}
 		return $tag;

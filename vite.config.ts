@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig, transformWithEsbuild, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -12,11 +13,25 @@ const minifyVendor = (): Plugin => ({
   },
 })
 
-// The admin app is loaded by backend/Admin/Assets.php from build/.vite/manifest.json,
-// or from this dev server when wp-config.php defines SINT_DEV_SERVER.
-export default defineConfig({
+// A release build uses the React that WordPress loads (the 'react', 'react-dom' and 'wp-element'
+// scripts), so build/ does not contain a second copy. The dev server uses React from node_modules.
+const wpReact = (file: string) => fileURLToPath(new URL(`frontend/admin/react/${file}`, import.meta.url))
+
+// The admin app is loaded by backend/Admin/Assets.php from build/.vite/manifest.json.
+export default defineConfig(({ command }) => ({
   plugins: [react(), minifyVendor()],
   base: './',
+  resolve: {
+    alias:
+      command === 'build'
+        ? [
+            { find: /^react$/, replacement: wpReact('react.ts') },
+            { find: /^react\/jsx-runtime$/, replacement: wpReact('jsx-runtime.ts') },
+            { find: /^react-dom$/, replacement: wpReact('react-dom.ts') },
+            { find: /^react-dom\/client$/, replacement: wpReact('react-dom-client.ts') },
+          ]
+        : [],
+  },
   // Keep names such as __ in build/, so `wp i18n make-pot` and translate.wordpress.org
   // find the translatable strings in the shipped files.
   esbuild: { minifyIdentifiers: false },
@@ -28,7 +43,7 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: 'frontend/admin/main.tsx',
-      // React and Motion go in their own chunk, which minifyVendor() shrinks. The caption editor
+      // Motion and the other libraries go in their own chunk, which minifyVendor() shrinks. The caption editor
       // library has a chunk of its own, which loads only when a screen shows a caption. CSS (the
       // bundled font) stays with the entry, because Assets.php enqueues the entry's CSS only.
       output: {
@@ -46,4 +61,4 @@ export default defineConfig({
     cors: true,
     origin: 'http://localhost:5174',
   },
-})
+}))
