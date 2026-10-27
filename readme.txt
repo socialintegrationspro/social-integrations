@@ -23,7 +23,7 @@ Social Integrations shares your WordPress content to your social accounts.
 * A week calendar and a list of every share.
 * A share log that shows the result for each account, with Retry.
 
-The uncompiled source of the admin app is in the `frontend/` folder of the public repository: https://github.com/SocialIntegrations/social-integrations
+The uncompiled source of the admin app is in the `frontend/` folder of the public repository: https://github.com/socialintegrationspro/social-integrations
 
 == External services ==
 
