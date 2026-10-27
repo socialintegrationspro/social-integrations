@@ -7,7 +7,6 @@
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Social Integrations
- * Author URI:        https://socialintegrations.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       social-integrations
