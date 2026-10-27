@@ -7,7 +7,6 @@
 
 namespace SocialIntegrations\Rest;
 
-use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Support\Capabilities;
 use SocialIntegrations\Support\Settings;
 
@@ -31,7 +30,7 @@ final class SettingsController extends RestController {
 	 * Current settings.
 	 */
 	public function show(): \WP_REST_Response {
-		return rest_ensure_response( Settings::all() + array( 'ai_providers' => Providers::status() ) );
+		return rest_ensure_response( Settings::all() );
 	}
 
 	/**
@@ -40,11 +39,7 @@ final class SettingsController extends RestController {
 	 * @param \WP_REST_Request $request Request.
 	 */
 	public function update( \WP_REST_Request $request ): \WP_REST_Response {
-		$input = (array) $request->get_json_params();
-		if ( isset( $input['ai_keys'] ) && is_array( $input['ai_keys'] ) ) {
-			Providers::save_keys( $input['ai_keys'] );
-		}
-		return rest_ensure_response( Settings::save( $input ) + array( 'ai_providers' => Providers::status() ) );
+		return rest_ensure_response( Settings::save( (array) $request->get_json_params() ) );
 	}
 
 	/**

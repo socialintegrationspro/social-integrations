@@ -31,15 +31,6 @@ final class SettingsTest extends TestCase {
 
 		$this->assertSame( array( 'core/paragraph' => 'text' ), $all['blocks'] );
 		$this->assertSame( 2, $all['max_images'] );
-		$this->assertSame(
-			array(
-				'provider' => 'openai',
-				'tone'     => 'friendly',
-				'model'    => '',
-			),
-			$all['ai'],
-			'AI settings merge over the defaults.'
-		);
 	}
 
 	public function test_the_old_name_remove_reads_and_saves_as_skip(): void {
@@ -92,14 +83,6 @@ final class SettingsTest extends TestCase {
 		$this->assertFalse( $saved['allow_block_override'] );
 		$this->assertSame( 10, $saved['max_images'] );
 		$this->assertSame( 0, $saved['log_days'] );
-		$this->assertSame(
-			array(
-				'provider' => 'openai',
-				'tone'     => 'friendly',
-				'model'    => 'gpt',
-			),
-			$saved['ai']
-		);
 	}
 
 	public function test_save_keeps_allowed_values(): void {

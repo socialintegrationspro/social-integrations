@@ -222,16 +222,6 @@ export interface Settings {
   allow_block_override: boolean
   max_images: number
   log_days: number
-  ai: { provider: string; tone: string; model: string }
-  ai_providers: AIProvider[]
-}
-
-export interface AIProvider {
-  key: string
-  label: string
-  needs_key: boolean
-  has_key: boolean
-  default_model: string
 }
 
 export interface BlockType {

@@ -59,7 +59,6 @@ const dialog = () => screen.findByRole('dialog', { name: /New campaign|Edit post
 describe('Composer', () => {
   beforeEach(() => setCaps(...ALL_CAPS))
   afterEach(() => {
-    window.sintConfig!.ai.ready = false
     window.location.hash = ''
     vi.unstubAllGlobals()
   })
@@ -476,41 +475,19 @@ describe('Composer', () => {
     expect(server.to('POST campaigns/4')[0]!.body).toMatchObject({ caption: 'Saved caption', accounts: ['threads'] })
   })
 
-  it('improves the caption with the AI menu and can undo it', async () => {
-    window.sintConfig!.ai.ready = true
-    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST ai/caption': { caption: 'A better caption', warnings: [] } })
+  it('shows the caption tools of other plugins, which can replace the caption', async () => {
+    const Tool = ({ text, onApply, limit }: { text: string; onApply: (t: string) => void; limit: number }) => (
+      <button type="button" onClick={() => onApply(`${text}!`)}>{`Tool ${limit}`}</button>
+    )
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.caption.tools' ? [{ key: 'tool', component: Tool }] : value) } } as unknown as Window['wp']
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
     openComposer()
     await dialog()
 
-    await typeCaption(await findCaption(), 'my text')
-    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
-    const menu = screen.getByRole('menu', { name: 'AI' })
-    // Without a post there is nothing to write from.
-    expect(within(menu).queryByRole('menuitem', { name: /Write from post/ })).toBeNull()
-    await userEvent.click(within(menu).getByRole('menuitem', { name: /^Improve/ }))
-
-    await waitFor(async () => expect(captionValue(await findCaption())).toBe('A better caption'))
-    expect(server.to('POST ai/caption')[0]!.body).toEqual({ mode: 'improve', text: 'my text', limit: 300 })
-    await userEvent.click(screen.getByRole('button', { name: 'Undo' }))
-    await waitFor(async () => expect(captionValue(await findCaption())).toBe('my text'))
-  })
-
-  it('changes the tone and translates with the AI menu', async () => {
-    window.sintConfig!.ai.ready = true
-    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [], 'POST ai/caption': { caption: 'Hola', warnings: [] } })
-    openComposer()
-    await dialog()
-
-    await typeCaption(await findCaption(), 'Hello')
-    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
-    await userEvent.click(within(screen.getByRole('menu', { name: 'AI' })).getByRole('menuitem', { name: 'Playful' }))
-    await waitFor(() => expect(server.to('POST ai/caption')).toHaveLength(1))
-    expect(server.to('POST ai/caption')[0]!.body).toMatchObject({ mode: 'tone', tone: 'playful' })
-
-    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
-    await userEvent.type(screen.getByRole('textbox', { name: 'Language' }), 'Spanish{Enter}')
-    await waitFor(() => expect(server.to('POST ai/caption')).toHaveLength(2))
-    expect(server.to('POST ai/caption')[1]!.body).toMatchObject({ mode: 'translate', language: 'Spanish', text: 'Hola' })
+    await typeCaption(await findCaption(), 'Hi')
+    await userEvent.click(screen.getByRole('button', { name: /^Tool \d+$/ }))
+    await waitFor(async () => expect(captionValue(await findCaption())).toBe('Hi!'))
+    delete window.wp
   })
 
   it('shares with Ctrl and Enter', async () => {

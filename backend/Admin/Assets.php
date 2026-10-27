@@ -7,7 +7,6 @@
 
 namespace SocialIntegrations\Admin;
 
-use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Hooks;
 use SocialIntegrations\Auth\OAuth;
 use SocialIntegrations\Support\Capabilities;
@@ -51,9 +50,12 @@ final class Assets {
 			add_action(
 				'admin_print_scripts',
 				static function () use ( $dev ) {
-					printf(
-						'<script type="module">import RefreshRuntime from "%s/@react-refresh";RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>(type)=>type;window.__vite_plugin_react_preamble_installed__=true;</script>',
-						esc_url( $dev )
+					wp_print_inline_script_tag(
+						sprintf(
+							'import RefreshRuntime from %s;RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>(type)=>type;window.__vite_plugin_react_preamble_installed__=true;',
+							wp_json_encode( esc_url_raw( $dev . '/@react-refresh' ) )
+						),
+						array( 'type' => 'module' )
 					);
 				}
 			);
@@ -139,7 +141,6 @@ final class Assets {
 				'weekStart'   => (int) get_option( 'start_of_week', 1 ),
 				'redirectUri' => OAuth::redirect_uri(),
 				'oauthError'  => OAuth::take_error(),
-				'ai'          => array( 'ready' => null !== Providers::current() ),
 				'user'        => array(
 					'name' => wp_get_current_user()->display_name,
 					'caps' => $this->caps(),

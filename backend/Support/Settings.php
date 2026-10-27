@@ -52,11 +52,6 @@ final class Settings {
 			'allow_block_override' => true,
 			'max_images'           => 4,
 			'log_days'             => 0,
-			'ai'                   => array(
-				'provider' => '',
-				'tone'     => 'friendly',
-				'model'    => '',
-			),
 		);
 	}
 
@@ -125,13 +120,6 @@ final class Settings {
 		if ( isset( $input['log_days'] ) && in_array( (int) $input['log_days'], self::LOG_DAYS, true ) ) {
 			$current['log_days'] = (int) $input['log_days'];
 		}
-		if ( isset( $input['ai'] ) && is_array( $input['ai'] ) ) {
-			$current['ai'] = array(
-				'provider' => sanitize_key( (string) ( $input['ai']['provider'] ?? '' ) ),
-				'tone'     => sanitize_key( (string) ( $input['ai']['tone'] ?? 'friendly' ) ),
-				'model'    => sanitize_text_field( (string) ( $input['ai']['model'] ?? '' ) ),
-			);
-		}
 
 		update_option( self::OPTION, $current, false );
 		return $current;
@@ -173,18 +161,14 @@ final class Settings {
 	}
 
 	/**
-	 * Recursive merge where saved lists replace default lists.
+	 * Saved values over the defaults.
 	 *
 	 * @param array $defaults Defaults.
 	 * @param array $saved    Saved values.
 	 */
 	private static function merge( array $defaults, array $saved ): array {
 		foreach ( $saved as $key => $value ) {
-			if ( is_array( $value ) && isset( $defaults[ $key ] ) && is_array( $defaults[ $key ] ) && ! wp_is_numeric_array( $value ) && in_array( $key, array( 'ai' ), true ) ) {
-				$defaults[ $key ] = self::merge( $defaults[ $key ], $value );
-			} else {
-				$defaults[ $key ] = $value;
-			}
+			$defaults[ $key ] = $value;
 		}
 		return $defaults;
 	}

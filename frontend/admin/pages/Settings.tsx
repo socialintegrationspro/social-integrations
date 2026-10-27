@@ -2,7 +2,6 @@ import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { Header, type PageProps } from '../components/Header'
 import { HelpTip, LoadError, Toggle, useToast } from '../components/ui'
 import { api } from '../lib/api'
-import { config } from '../lib/config'
 import { applyFilters, useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import type { BlockType, BlockUse, Settings } from '../lib/types'
@@ -15,8 +14,6 @@ export function SettingsPage(props: PageProps) {
   const blocks = useFetch<{ blocks: BlockType[] }>('blocks').data?.blocks ?? []
   const [saving, setSaving] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  // API keys typed in this visit. The app sends a key once, and the server never sends it back.
-  const [keys, setKeys] = useState<Record<string, string | null>>({})
 
   const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -33,7 +30,7 @@ export function SettingsPage(props: PageProps) {
   }
   useEffect(load, [])
 
-  const dirty = !!settings && (JSON.stringify(settings) !== saved || Object.values(keys).some((k) => k !== ''))
+  const dirty = !!settings && JSON.stringify(settings) !== saved
   // The browser asks before it leaves or reloads the page with unsaved changes.
   useEffect(() => {
     if (!dirty) return
@@ -45,7 +42,7 @@ export function SettingsPage(props: PageProps) {
   // Filter `sint.settings.sections`: other plugins add sections to the Settings menu. Each section saves its own data.
   const extra = applyFilters<ExtraSettingsSection[]>('sint.settings.sections', [])
   const fromUrl = props.params.get('section')
-  const [active, setActive] = useState(() => fromUrl ?? 'ai')
+  const [active, setActive] = useState(() => fromUrl ?? 'blocks')
   // A link to another section, such as #/settings?section=log, opens it while the screen is open.
   useEffect(() => {
     if (fromUrl) setActive(fromUrl)
@@ -81,12 +78,9 @@ export function SettingsPage(props: PageProps) {
   const save = async () => {
     setSaving(true)
     try {
-      const r = await api.post<Settings>('settings', { ...settings, ai_keys: keys })
+      const r = await api.post<Settings>('settings', settings)
       setSettings(r.data)
       setSaved(JSON.stringify(r.data))
-      setKeys({})
-      const chosen = r.data.ai_providers.find((p) => p.key === r.data.ai.provider)
-      config.ai.ready = !!chosen && (!chosen.needs_key || chosen.has_key)
       toast(__('Settings saved.', 'social-integrations'))
     } catch (e) {
       toast((e as Error).message, true)
@@ -112,13 +106,6 @@ export function SettingsPage(props: PageProps) {
   const differs = (...keys: (keyof Settings)[]) => keys.some((k) => JSON.stringify(settings[k]) !== JSON.stringify(base[k]))
 
   const own: SettingsSection[] = [
-    {
-      key: 'ai',
-      label: __('AI captions', 'social-integrations'),
-      description: __('“Write with AI” in New campaign writes a caption from your post. It uses your API key. The plugin sends the post text only to the provider that you select.', 'social-integrations'),
-      changed: differs('ai') || Object.values(keys).some((k) => k !== ''),
-      body: <AICard settings={settings} setSettings={setSettings} keys={keys} setKeys={setKeys} />,
-    },
     {
       key: 'blocks',
       label: __('Block rules', 'social-integrations'),
@@ -259,58 +246,3 @@ export interface ExtraSettingsSection {
 
 const LOG_DAYS = [0, 30, 90, 180, 365]
 
-const TONES = [
-  { value: 'friendly', label: () => __('Friendly', 'social-integrations') },
-  { value: 'professional', label: () => __('Professional', 'social-integrations') },
-  { value: 'playful', label: () => __('Playful', 'social-integrations') },
-  { value: 'informative', label: () => __('Informative', 'social-integrations') },
-  { value: 'bold', label: () => __('Bold', 'social-integrations') },
-]
-
-/** Provider, API key, model and tone for "Write with AI". Saved with the page. The section above it has the title. */
-function AICard({ settings, setSettings, keys, setKeys }: { settings: Settings; setSettings: (s: Settings) => void; keys: Record<string, string | null>; setKeys: (k: Record<string, string | null>) => void }) {
-  const ai = settings.ai
-  const provider = settings.ai_providers.find((p) => p.key === ai.provider)
-  const setAI = (patch: Partial<Settings['ai']>) => setSettings({ ...settings, ai: { ...ai, ...patch } })
-  const typed = provider ? keys[provider.key] : undefined
-  const saved = !!provider?.has_key && typed !== null
-
-  return (
-    <div className="sint-card">
-      <div className="sint-ai-grid">
-        <label className="sint-field">
-          <span>{__('Provider', 'social-integrations')}</span>
-          <select className="sint-select" style={{ width: '100%' }} value={ai.provider} onChange={(e) => setAI({ provider: e.target.value, model: '' })}>
-            <option value="">{__('Off', 'social-integrations')}</option>
-            {settings.ai_providers.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-          </select>
-        </label>
-        {provider?.needs_key && (
-          <label className="sint-field">
-            <span id="sint-ai-key-label">{sprintf(__('%s API key', 'social-integrations'), provider.label)}</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input aria-labelledby="sint-ai-key-label" aria-describedby="sint-ai-key-help" className="sint-input" type="password" autoComplete="off" value={typed ?? ''} placeholder={saved ? __('Saved. Type a new key to replace it.', 'social-integrations') : __('Paste your API key', 'social-integrations')} onChange={(e) => setKeys({ ...keys, [provider.key]: e.target.value })} />
-              {saved && <button type="button" className="sint-btn ghost sm" style={{ height: 42 }} onClick={() => setKeys({ ...keys, [provider.key]: null })}>{__('Remove', 'social-integrations')}</button>}
-            </div>
-            <small id="sint-ai-key-help">{typed === null ? __('The plugin removes the key when you save.', 'social-integrations') : __('The plugin keeps the key encrypted on your site. It does not show the key again.', 'social-integrations')}</small>
-          </label>
-        )}
-        {provider && provider.default_model && (
-          <label className="sint-field">
-            <span>{__('Model', 'social-integrations')}</span>
-            <input className="sint-input" value={ai.model} placeholder={provider.default_model} onChange={(e) => setAI({ model: e.target.value.trim() })} />
-            <small>{sprintf(__('Leave empty to use %s.', 'social-integrations'), provider.default_model)}</small>
-          </label>
-        )}
-        {provider && (
-          <label className="sint-field">
-            <span>{__('Tone', 'social-integrations')}</span>
-            <select className="sint-select" style={{ width: '100%' }} value={ai.tone} onChange={(e) => setAI({ tone: e.target.value })}>
-              {TONES.map((t) => <option key={t.value} value={t.value}>{t.label()}</option>)}
-            </select>
-          </label>
-        )}
-      </div>
-    </div>
-  )
-}

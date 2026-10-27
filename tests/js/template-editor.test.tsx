@@ -155,21 +155,6 @@ describe('TemplateEditor', () => {
     expect(tools.getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('writes a template with the AI menu and shows a warning for a removed token', async () => {
-    window.sintConfig!.ai.ready = true
-    const server = fakeServer({ ...storeRoutes(), 'POST ai/caption': { caption: 'New {title}', warnings: ['The AI removed {url}. Add it again if the caption needs it.'] } })
-    const { value } = renderEditor(['bluesky'], { caption: '{title} {url}' })
-
-    await findCaption(/^Caption/)
-    await userEvent.click(screen.getByRole('button', { name: 'AI' }))
-    await userEvent.click(within(screen.getByRole('menu', { name: 'AI' })).getByRole('menuitem', { name: /^Make shorter/ }))
-
-    await waitFor(() => expect(value().caption).toBe('New {title}'))
-    expect(server.to('POST ai/caption')[0]!.body).toMatchObject({ mode: 'shorter', text: '{title} {url}', template: true, limit: 300 })
-    expect(await screen.findByText('The AI removed {url}. Add it again if the caption needs it.')).toBeInTheDocument()
-    window.sintConfig!.ai.ready = false
-  })
-
   it('opens a list of tokens when the user types "{" and inserts the one selected as a chip', async () => {
     fakeServer(storeRoutes())
     const { value } = renderEditor(['bluesky'])

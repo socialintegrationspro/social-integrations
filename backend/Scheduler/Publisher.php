@@ -7,7 +7,6 @@
 
 namespace SocialIntegrations\Scheduler;
 
-use SocialIntegrations\AI\AutoCaption;
 use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Content\PostFields;
 use SocialIntegrations\Support\Cron;
@@ -151,16 +150,8 @@ final class Publisher {
 		if ( $network ) {
 			$details['requests'] = $network->take_trace();
 		}
-		// An auto-post share that got the template caption, because the AI did not write one.
-		$ai_error = 0 === strpos( (string) ( $job['campaign_key'] ?? '' ), 'auto-' ) ? AutoCaption::fallback_error( (int) $job['post_id'], (string) ( $job['batch_id'] ?? '' ) ) : '';
-		if ( '' !== $ai_error ) {
-			$details['ai'] = array( 'error' => $ai_error );
-			if ( 'published' === $result['status'] && '' === $result['message'] ) {
-				/* translators: %s: the error from the AI provider */
-				$result['message'] = sprintf( __( 'The AI did not write the caption, so the plugin used the template caption. %s', 'social-integrations' ), $ai_error );
-			}
-		}
 		$result['details'] = $details;
+		$result            = (array) apply_filters( Hooks::SHARE_RESULT, $result, $job );
 
 		Queue::update( (int) $job['id'], array( 'status' => $result['status'] ) );
 		Queue::log( $job, $result );

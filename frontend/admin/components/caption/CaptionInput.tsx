@@ -31,7 +31,7 @@ export interface CaptionInputProps {
   insertRef?: MutableRefObject<((text: string) => void) | null>
   /** Text styles: bold, italic, underline, strikethrough and monospace, with a toolbar. */
   formats?: boolean
-  /** More controls at the end of the toolbar, such as the AI menu. */
+  /** More controls at the end of the toolbar, such as the controls of other plugins. */
   tools?: ReactNode
   /** Ctrl or Cmd + Enter. */
   onSubmit?: () => void
@@ -147,7 +147,7 @@ function TokenTransformPlugin({ known }: { known: MutableRefObject<IsKnown> }) {
 /** Keeps the editor and the `value` prop the same, and gives `insertRef`. */
 function SyncPlugin({ value, onChange, mode, insertRef, singleLine, known, onSubmit }: Pick<CaptionInputProps, 'value' | 'onChange' | 'insertRef' | 'singleLine' | 'onSubmit'> & { mode: CaptionMode; known: MutableRefObject<IsKnown> }) {
   const [editor] = useLexicalComposerContext()
-  // The last value that the editor gave or got, so a change from outside (AI, Undo, a fix) replaces the content.
+  // The last value that the editor gave or got, so a change from outside (another control, Undo, a fix) replaces the content.
   const last = useRef(value)
   const change = useRef(onChange)
   change.current = onChange

@@ -78,6 +78,14 @@ final class Hooks {
 	const ADMIN_SCRIPT_DEPENDENCIES = 'sint/admin_script_dependencies';
 
 	/**
+	 * Filter. Script handles the block editor panel loads after. A handle added here loads
+	 * first, so its `wp.hooks` filters are in place before the panel renders.
+	 *
+	 * @param string[] $handles
+	 */
+	const EDITOR_SCRIPT_DEPENDENCIES = 'sint/editor_script_dependencies';
+
+	/**
 	 * Filter. The connected accounts the plugin can share to.
 	 *
 	 * @param array[] $accounts
@@ -124,12 +132,25 @@ final class Hooks {
 	const ACCOUNT_STORE = 'sint/account_store';
 
 	/**
-	 * Filter. AI providers offered in Settings. Each must implement
-	 * \SocialIntegrations\AI\ProviderInterface.
+	 * Filter. The share that an auto-post campaign adds for one account, before the plugin
+	 * queues it. A filter can change the caption, the media, the link or the fields.
 	 *
-	 * @param \SocialIntegrations\AI\ProviderInterface[] $providers
+	 * @param array    $share    ['caption' => string, 'media' => array, 'link' => string,
+	 *                           'fields' => [ network => [ field name => value ] ]].
+	 * @param \WP_Post $post
+	 * @param array    $account  The account the share goes to.
+	 * @param array    $campaign The campaign, with its `id` and `captions`.
 	 */
-	const AI_PROVIDERS = 'sint/ai_providers';
+	const AUTO_SHARE = 'sint/auto_share';
+
+	/**
+	 * Filter. The result of a share to one account, before the plugin writes it to the share
+	 * log and fires sint/share_completed.
+	 *
+	 * @param array $result ['status' => 'published'|'failed', 'message' => string, 'details' => array, ...].
+	 * @param array $job    The queue row.
+	 */
+	const SHARE_RESULT = 'sint/share_result';
 
 	/**
 	 * Filter. The template that the plugin builds a share from. It starts as the post type's

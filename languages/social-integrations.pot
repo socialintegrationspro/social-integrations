@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-24T07:10:57+00:00\n"
+"POT-Creation-Date: 2026-10-27T16:45:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: social-integrations\n"
@@ -27,19 +27,19 @@ msgstr ""
 
 #. Description of the plugin
 #: social-integrations.php
-msgid "Share your WordPress content to social networks when you publish, with AI-written captions, a content calendar and a share log."
+msgid "Share your WordPress content to social networks when you publish, with caption templates, a content calendar and a share log."
 msgstr ""
 
 #. Author of the plugin
 #: social-integrations.php
 #: backend/Admin/Menu.php:39
 #: backend/Admin/Menu.php:40
-#: build/assets/main-ChVfYBxH.js:6
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/assets/main-BnWxiW9o.js:10
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Social Integrations"
 msgstr ""
 
-#: backend/Admin/Assets.php:124
+#: backend/Admin/Assets.php:126
 msgid "Social Integrations cannot find its built files. Run the build. Then reload this page."
 msgstr ""
 
@@ -48,75 +48,33 @@ msgid "Social Integrations needs JavaScript."
 msgstr ""
 
 #: backend/Admin/Menu.php:80
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Open"
 msgstr ""
 
-#. translators: 1: provider name, 2: transport error
-#: backend/AI/AbstractProvider.php:52
-#, php-format
-msgid "Cannot connect to %1$s: %2$s"
-msgstr ""
-
-#. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:72
-#, php-format
-msgid "%s did not accept the API key. Check it in Settings."
-msgstr ""
-
-#. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:76
-#, php-format
-msgid "%s is busy, or the account is at its limit. Try again in a minute."
-msgstr ""
-
-#. translators: 1: provider name, 2: reason from the provider
-#: backend/AI/AbstractProvider.php:80
-#, php-format
-msgid "%1$s did not write the caption. %2$s"
-msgstr ""
-
-#. translators: %s: provider name
-#: backend/AI/AbstractProvider.php:93
-#, php-format
-msgid "%s returned no caption. Try again."
-msgstr ""
-
-#: backend/AI/CaptionGenerator.php:34
-msgid "In Settings, select an AI provider. Then enter its API key."
-msgstr ""
-
-#: backend/AI/CaptionGenerator.php:48
-msgid "Select an item from your site, or write a caption to improve."
-msgstr ""
-
-#: backend/AI/Claude.php:79
-msgid "Claude did not write a caption for this content."
-msgstr ""
-
-#: backend/Auth/Broker.php:142
+#: backend/Auth/Broker.php:113
 msgid "The Social Integrations app did not return a sign-in address. Try again."
 msgstr ""
 
-#: backend/Auth/Broker.php:156
+#: backend/Auth/Broker.php:127
 #: backend/Auth/OAuth.php:222
 #: backend/Auth/OAuth.php:247
 msgid "The sign-in expired. Connect again."
 msgstr ""
 
-#: backend/Auth/Broker.php:214
+#: backend/Auth/Broker.php:185
 msgid "The Social Integrations app did not accept this site. Try again."
 msgstr ""
 
-#: backend/Auth/Broker.php:252
+#: backend/Auth/Broker.php:223
 msgid "The Social Integrations app did not register this site. Try again."
 msgstr ""
 
-#: backend/Auth/Broker.php:279
+#: backend/Auth/Broker.php:250
 msgid "The plugin cannot reach the Social Integrations app. Try again, or use your own app."
 msgstr ""
 
-#: backend/Auth/Broker.php:292
+#: backend/Auth/Broker.php:263
 msgid "The Social Integrations app had a problem. Try again, or use your own app."
 msgstr ""
 
@@ -198,115 +156,128 @@ msgstr ""
 msgid "New %s"
 msgstr ""
 
+#: backend/Campaigns/Auto.php:116
+msgid "This campaign has no accounts. Edit the campaign and select an account."
+msgstr ""
+
 #: backend/Campaigns/Campaigns.php:46
-#: backend/Rest/ContentController.php:149
-#: backend/Rest/ContentController.php:176
+#: backend/Rest/ContentController.php:165
+#: backend/Rest/ContentController.php:192
 #: backend/Rest/EditorController.php:84
 #: backend/Rest/EditorController.php:151
 msgid "This item does not exist."
 msgstr ""
 
 #: backend/Campaigns/Campaigns.php:49
-#: backend/Rest/CampaignsController.php:121
+#: backend/Rest/CampaignsController.php:123
 msgid "Select at least one account."
 msgstr ""
 
 #: backend/Campaigns/Campaigns.php:55
-#: backend/Rest/QueueController.php:126
+#: backend/Rest/QueueController.php:127
 msgid "Enter a valid date and time."
 msgstr ""
 
-#: backend/Campaigns/Campaigns.php:208
+#: backend/Campaigns/Campaigns.php:262
 msgid "You cannot share to one or more of the selected accounts. Select only your accounts."
 msgstr ""
 
-#: backend/Campaigns/Campaigns.php:284
-#: build/assets/main-ChVfYBxH.js:5
+#: backend/Campaigns/Campaigns.php:346
+#: build/assets/main-BnWxiW9o.js:9
 msgid "(no caption)"
 msgstr ""
 
-#: backend/Content/PostTypes.php:98
+#: backend/Content/CustomFields.php:141
+msgid "Yes"
+msgstr ""
+
+#: backend/Content/CustomFields.php:141
+msgid "No"
+msgstr ""
+
+#: backend/Content/PostTypes.php:100
 msgid "Custom"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:183
+#: backend/Networks/AbstractNetwork.php:184
 msgid "Post format"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:186
+#: backend/Networks/AbstractNetwork.php:187
 msgid "Automatic: the media of the post. When the post has no media, a link card."
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:190
+#: backend/Networks/AbstractNetwork.php:191
 msgid "Automatic"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:194
+#: backend/Networks/AbstractNetwork.php:195
 msgid "Link card only"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:198
+#: backend/Networks/AbstractNetwork.php:199
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Text only"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:212
+#: backend/Networks/AbstractNetwork.php:213
 msgid "Link card title"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:228
+#: backend/Networks/AbstractNetwork.php:229
 msgid "Link card description"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:244
+#: backend/Networks/AbstractNetwork.php:245
 msgid "First comment"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:249
+#: backend/Networks/AbstractNetwork.php:250
 msgid "The plugin adds this comment below the post. Leave empty for no comment."
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:289
+#: backend/Networks/AbstractNetwork.php:290
 msgid "App ID"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:294
+#: backend/Networks/AbstractNetwork.php:295
 msgid "App secret"
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:354
+#: backend/Networks/AbstractNetwork.php:382
 msgid "This network connects with sign-in."
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:378
+#: backend/Networks/AbstractNetwork.php:406
 msgid "This network does not use sign-in."
 msgstr ""
 
-#: backend/Networks/AbstractNetwork.php:424
+#: backend/Networks/AbstractNetwork.php:452
 msgid "This network does not take comments."
 msgstr ""
 
 #. translators: %s: network name
-#: backend/Networks/AbstractNetwork.php:606
+#: backend/Networks/AbstractNetwork.php:635
 #, php-format
 msgid "The plugin cannot read an image of the post. It did not send the image to %s."
 msgstr ""
 
 #. translators: %s: network name
-#: backend/Networks/AbstractNetwork.php:667
-#: backend/Scheduler/Publisher.php:130
-#: build/editor/editor-BI3Hcaxc.js:1
+#: backend/Networks/AbstractNetwork.php:696
+#: backend/Scheduler/Publisher.php:131
+#: build/editor/editor-8u8nPg1Q.js:1
 #, php-format,js-format
 msgid "%s sign-in expired. Reconnect the account."
 msgstr ""
 
 #. translators: 1: network name, 2: reason from the network
-#: backend/Networks/AbstractNetwork.php:680
+#: backend/Networks/AbstractNetwork.php:709
 #, php-format
 msgid "%1$s did not accept the comment. %2$s"
 msgstr ""
 
 #. translators: 1: network name, 2: reason from the network
-#: backend/Networks/AbstractNetwork.php:682
+#: backend/Networks/AbstractNetwork.php:711
 #, php-format
 msgid "%1$s did not accept the post. %2$s"
 msgstr ""
@@ -371,1807 +342,2159 @@ msgstr ""
 msgid "LinkedIn did not return an access token. Connect again."
 msgstr ""
 
-#: backend/Rest/AccountsController.php:92
+#: backend/Rest/AccountsController.php:96
 msgid "This network is not available."
 msgstr ""
 
-#: backend/Rest/AccountsController.php:95
+#: backend/Rest/AccountsController.php:99
 msgid "Connect this network with sign-in."
 msgstr ""
 
-#: backend/Rest/AccountsController.php:120
+#: backend/Rest/AccountsController.php:126
+#: backend/Rest/AccountsController.php:152
 msgid "This account is not connected."
 msgstr ""
 
-#: backend/Rest/AccountsController.php:134
+#: backend/Rest/AccountsController.php:155
+msgid "The account was disconnected. The plugin did not share the post."
+msgstr ""
+
+#: backend/Rest/AccountsController.php:176
 msgid "This network does not use an app."
 msgstr ""
 
 #. translators: %s: field label
-#: backend/Rest/AccountsController.php:141
+#: backend/Rest/AccountsController.php:183
 #, php-format
 msgid "Enter the %s."
 msgstr ""
 
 #: backend/Rest/CampaignsController.php:52
 #: backend/Rest/CampaignsController.php:83
-#: backend/Rest/CampaignsController.php:132
-#: backend/Rest/CampaignsController.php:150
+#: backend/Rest/CampaignsController.php:134
+#: backend/Rest/CampaignsController.php:156
 msgid "This campaign does not exist."
 msgstr ""
 
-#: backend/Rest/CampaignsController.php:110
-#: build/assets/main-ChVfYBxH.js:5
+#: backend/Rest/CampaignsController.php:111
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Enter a name for the campaign."
 msgstr ""
 
-#: backend/Rest/QueueController.php:120
+#: backend/Rest/ContentController.php:84
+msgid "The plugin cannot share this post type."
+msgstr ""
+
+#: backend/Rest/QueueController.php:121
 msgid "The plugin sent this share already."
 msgstr ""
 
-#: backend/Rest/QueueController.php:145
-#: backend/Rest/QueueController.php:154
-#: backend/Rest/QueueController.php:175
-#: backend/Rest/QueueController.php:218
+#: backend/Rest/QueueController.php:146
+#: backend/Rest/QueueController.php:155
+#: backend/Rest/QueueController.php:176
+#: backend/Rest/QueueController.php:220
 msgid "The plugin sends this share now."
 msgstr ""
 
-#: backend/Rest/QueueController.php:189
+#: backend/Rest/QueueController.php:191
 msgid "This share does not exist."
 msgstr ""
 
-#: backend/Rest/QueueController.php:214
+#: backend/Rest/QueueController.php:216
 msgid "You can send only a failed share again."
 msgstr ""
 
-#: backend/Rest/QueueController.php:344
+#: backend/Rest/QueueController.php:347
 msgid "This log entry does not exist."
 msgstr ""
 
-#: backend/Rest/QueueController.php:363
+#: backend/Rest/QueueController.php:366
 msgid "Select at least one entry."
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:65
+#: backend/Scheduler/Publisher.php:66
 msgid "Every minute"
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:126
+#: backend/Scheduler/Publisher.php:127
 msgid "The account is no longer connected."
 msgstr ""
 
 #. translators: %s: network name
-#: backend/Scheduler/Publisher.php:192
+#: backend/Scheduler/Publisher.php:211
 #, php-format
 msgid "The post is on %s. The network did not allow the first comment. Reconnect the account to give the plugin permission for comments."
 msgstr ""
 
 #. translators: 1: network name, 2: reason
-#: backend/Scheduler/Publisher.php:195
+#: backend/Scheduler/Publisher.php:214
 #, php-format
 msgid "The post is on %1$s. The first comment failed: %2$s"
 msgstr ""
 
-#: backend/Scheduler/Publisher.php:230
+#: backend/Scheduler/Publisher.php:249
 msgid "The share stopped because of an unexpected error."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "bold"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "italic"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "underline"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "strikethrough"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "monospace"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "As written"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+#: build/assets/main-BnWxiW9o.js:5
+msgid "UPPERCASE"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+#: build/assets/main-BnWxiW9o.js:5
+msgid "lowercase"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Title Case"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "No limit"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "10 words"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "20 words"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "100 characters"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+#, js-format
+msgid "%s token. Select to change."
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "Letter case"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "Shorten"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "Text if empty"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "For example: Ask us"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "Remove token"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+#, js-format
+msgid "Change the %s token"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:1
+msgid "No recent post of this type has this field. When a post does not have it, the share leaves it empty."
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Insert a token"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Tokens"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+#, js-format
+msgid "%s to select, Esc to close"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Bold"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Italic"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Underline"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Strikethrough"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Monospace"
+msgstr ""
+
+#: build/assets/CaptionInput-4e1xHBGQ.js:4
+msgid "Text styles"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$s, %2$s: sign-in expired"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "More information"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Close"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Cancel"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Select the URL and copy it."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Refresh"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Try again"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Loading"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Pages"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Rows per page"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "%1$d–%2$d of %3$d"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Previous page"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "Page %1$d of %2$d"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Next page"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Title"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Excerpt"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Link"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Tags"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Author"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Site name"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Post text"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Price"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Regular price"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Sale price"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "%s: no recent post of this type has this field. When a post does not have it, the share leaves it empty."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
+#, js-format
+msgid "%s is not a token. The share shows it as text."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
+#, js-format
+msgid "Use %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Options for each network"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "Options for %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "%d network"
+msgid_plural "%d networks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Post options"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "Post options for %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Each option applies to the networks next to its name. Select a network tab for the options of one network."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Select the network tab for all of its options."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "An empty field uses the value from “All networks”."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "All networks"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "%d networks"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "For %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "The post has media, so %d networks show the media and no link card. Select “Link card only” to show the card."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "The post has media, so %s shows the media and no link card. Select “Link card only” to show the card."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Show the networks"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Add media"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Add to post"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:1
-msgid "On"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Link"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Featured image and post images"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Featured image"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Images in the post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-msgid "Chosen images"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No media"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The media library did not load. Reload the page and try again."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Caption for"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s, edited"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Edited"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Caption"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#, js-format
-msgid "Caption for %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-msgid "Leave empty to use the caption for all networks."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Media"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#, js-format
-msgid "Remove image %d"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Remove"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Add"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-msgid "Leave empty to use the link of the post. {field:meta_key} uses a link from a custom field."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Share to"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Connect an account first"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No accounts are connected."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%1$d of %2$d"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%1$s on %2$s: sign-in expired"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:1
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Reconnect"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s (copy)"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "The campaign did not load. %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Immediately after you publish"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d minutes after you publish"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d hours after you publish"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d days after you publish"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "All accounts, and new ones you connect"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Which posts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Post type"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "What to post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Leave empty to use the default. {field:meta_key} adds any custom field."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Preview: %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "(no title)"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Preview"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No published post is available for the preview."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The preview did not load. Change the caption to try again."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Video"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "When"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Campaign is on"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "On: shares new posts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Paused"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "You save the campaign off. A user who can publish turns it on."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Share"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Delay"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Delay unit"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "minutes"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "hours"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "days"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Immediately"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "10 min"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "1 hour"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "1 day"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Name"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "For example: Blog to LinkedIn"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Post type setting"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Featured image and post images"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Featured image"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Images in the post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No media"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
 msgid "In an hour"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Tomorrow 9:00"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Next week"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "When the post is published"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Write a caption, or select an item from your site."
+#: build/assets/main-BnWxiW9o.js:5
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Preview"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Insert"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Fits all %d networks"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "From your site"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Search content"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Search any post type"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "All"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The posts did not load."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Show more"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No posts match the search."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "There are no posts yet."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Write without a post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Scheduled for %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Draft"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d failed"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Shared to %d"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Not shared yet"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d selected. Click an image to add or remove it."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "From"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Image %d"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Featured"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Block"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Preview network"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Your caption appears here."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 msgid "Select an account to see a preview."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "The caption fits all %d networks."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "These networks take fewer images and get the first ones: %s."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "%s caption fits"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
 #, js-format
 msgid "%1$s caption is %2$d characters too long"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Search"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "Search: %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Wait…"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "The posts of this type have no custom fields."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "No field matches the search."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "For example: %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Images from a custom field"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Chosen images"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The media library did not load. Reload the page and try again."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Caption for"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s, edited"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Edited"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "Caption for %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Custom field"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Text styles use special characters on most networks. Screen readers can read them incorrectly. Use them for a small number of words. Telegram, Discord and Reddit show real styles."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Leave empty to use the caption for all networks."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Media"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Field with the images"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "When a post has no images in this field, the share has no media."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#, js-format
+msgid "Remove image %d"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Remove"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Add"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:5
+msgid "Link from a custom field"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s (copy)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The campaign did not load. %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Immediately after you publish"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d minutes after you publish"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d hours after you publish"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d days after you publish"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "All accounts, and new ones"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d account"
+msgid_plural "%d accounts"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Your caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Default caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Which posts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Post type"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Leave empty to use the default caption. Custom field adds a value from the post, such as a date or a price."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Preview: %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "(no title)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No published post is available for the preview."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The preview did not load. Change the caption to try again."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Back"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Summary"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Posts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Change: Posts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Change"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Change: Caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "When"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Also share to accounts that you connect later"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "You save the campaign off. A user who can publish turns it on."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "This campaign is paused. Resume it on the Campaigns screen."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Share"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Delay"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Delay unit"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "minutes"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "hours"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "days"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Immediately"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "10 min"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "1 hour"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "1 day"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Name"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "For example: Blog to LinkedIn"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The plugin shares a post when you publish it for the first time, not when you update it. If a post matches more than one campaign, each account gets it one time. Editors can change the caption or the accounts for one post in the editor sidebar."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Select an account."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Share to"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Connect an account first"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No accounts are connected."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$d of %2$d"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d needs a new sign-in"
+msgid_plural "%d need a new sign-in"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$d of %2$d accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Done"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Search accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Show accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "All networks (%d)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Needs a new sign-in (%d)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d account needs a new sign-in. It gets no shares until you reconnect it."
+msgid_plural "%d accounts need a new sign-in. They get no shares until you reconnect them."
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Reconnect"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No account matches the search."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Write a caption, or select an item from your site."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Insert"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Fits all %d networks"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "From your site"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Search content"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Search any post type"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "All"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The posts did not load."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Show more"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No posts match the search."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "There are no posts yet."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Write without a post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Scheduled for %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Draft"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d failed"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Shared to %d"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Not shared yet"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d selected. Click an image to add or remove it."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "From"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Image %d"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Featured"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Video"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Block"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Now"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Select a time"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Date and time"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Auto-post"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Too long for %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Fits %d network"
+msgid_plural "Fits all %d networks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No caption yet"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%s did not accept the post."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Draft saved."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Shared to %d accounts."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "You have changes that are not saved."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Go back"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Discard changes"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Save draft"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "You save drafts only. A user who can publish schedules them."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "What to share"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Single post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Shorten the %s caption first."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Wait…"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "What to share"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Single post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Undo"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Rebuild from post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Use the shared caption"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Week"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "List"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Shared."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Share deleted."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Post"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Text only, with no post of the site"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Change: Post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d image or video"
+msgid_plural "%d images or videos"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Write a caption first."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Rebuild from post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Use the shared caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Week"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "List"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Shared."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Share deleted."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Publish"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Retry"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Open the post on the network"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Duplicate"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "media"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
 msgid "Calendar"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "New campaign"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Accounts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Manage"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "No accounts yet."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Connect an account"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Sign-in expired"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Post types"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Previous"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Next"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Today"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Refresh the calendar"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "View"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "The calendar did not load. %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "No shares this week"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%d more"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Published"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Failed"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "In progress"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Shared"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Scheduled"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Drafts"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Shares by status"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%1$s: %2$d shared, %3$d failed"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Shares for each day"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Day"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Success rate"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%1$d shared, %2$d failed"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Welcome, %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
 msgid "Dashboard"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Period"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "7 days"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "30 days"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Refresh the dashboard"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%1$s sign-in expired for %2$s. Reconnect the account."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Close the notice"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "The dashboard did not load."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Active campaigns"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Networks"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Shares"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Open the share log"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "sent in %d days"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Same as the period before"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%d more than the period before"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%d less than the period before"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Results"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Next shares"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "No shares are scheduled."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Schedule a post"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Open the calendar"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Recent activity"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Shares show here after the plugin sends them."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "No shares in this period."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Active"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Paused"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Ended"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Campaign deleted. Shares already sent stay in the share log."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d campaigns deleted. Shares already sent stay in the share log."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$d of %2$d campaigns deleted. %3$s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
 msgid "Campaigns"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Refresh the campaigns"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "The campaigns did not load. %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "No campaigns yet"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Share one post now or later, schedule many posts, or share new posts when you publish them."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Campaign type"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Campaign"
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Select all campaigns on this page"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Status"
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Selected campaigns"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Last shared"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Actions"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Pause"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Campaign paused."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Resume"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Campaign resumed."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
-msgid "Share log"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Edit"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "All accounts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "When you publish a post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d sent"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Share log of %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Edit %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Duplicate %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Click again to delete"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Delete %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Actions for %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "The accounts did not load. %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s is connected."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Disconnect %s? Scheduled shares to it will fail."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Account disconnected."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Refresh the accounts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The plugin keeps sign-in tokens encrypted on your site. It sends each token only to its network."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Dismiss"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d accounts: sign-in expired"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Shares to these accounts stop until you reconnect them. Scheduled shares wait."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Reconnect %1$s (%2$s)"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Shares to this account stop until you reconnect it. Scheduled shares wait."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Not connected"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Connect %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Connected"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Handle"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "App"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Social Integrations app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Your own app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Caption limit"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s characters"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Disconnect"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Select how this site signs in to %s."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Connect with Social Integrations"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Sign in to %s. You do not need a developer app."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Use my own app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Enter the details of an app that you created on the %s developer site."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Cancel"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Sign in to %s to give this site permission to post. The Social Integrations app connects the account."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s connects through an app that you create on its developer site. Enter the app details. Then sign in."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Redirect URL for the app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Add this URL to the app as an allowed redirect URL."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Create an app on %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Sign in to %s to give this site permission to post."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Back"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Change app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Save app"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Sign in to %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Connect"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Select where to post on %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s sent no place to post. Make sure that you gave permission for a page or an account."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/assets/main-ChVfYBxH.js:6
-msgid "Settings"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "The settings did not load. %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Settings saved."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Caption text"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Excerpt text"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Do not use"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#: build/editor/editor-BI3Hcaxc.js:1
-msgid "Never send"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Unsaved changes"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Block rules"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Set how each block in a post becomes caption text, media or a link. Editors can change the rule for one block in the block toolbar."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Let editors change the rule for one block"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Use as"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Use of %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Default (%s)"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Any other block"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "default"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Default use"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Show only blocks with a rule"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Show all %d blocks"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Select how long the share log keeps its entries. The plugin deletes older entries one time each day. Campaigns and the calendar do not change."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Keep the share log"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d days"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Always"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Friendly"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Professional"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Playful"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Informative"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Bold"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "AI captions"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "“Write with AI” in New campaign writes a caption from your post. It uses your API key. The plugin sends the post text only to the provider that you select."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Provider"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Off"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%s API key"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Model"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "Leave empty to use %s."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Tone"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Any time"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Last 7 days"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Last 30 days"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "This month"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Custom range"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%1$d of %2$d shares sent."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Entry deleted."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d entries deleted."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Written in the composer"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Edit the post"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Show the shares of this campaign"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Deleted campaign"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d account"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d accounts"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "%d tries"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Details"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Details: each try and what the network answered"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Refresh the log"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Search"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Search post or caption"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "All campaigns"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Date"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "To"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Result"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Clear"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-#, js-format
-msgid "The share log did not load. %s"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No failed shares"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "The plugin sent every share in the log."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Show all shares"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No shares match the filters"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Clear filters"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "No shares yet"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Each share to a network appears here with its result."
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Select all entries on this page"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
-msgid "Selected entries"
-msgstr ""
-
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "%d selected"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Clear"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Shares already sent stay in the share log."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Campaign"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Status"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Last shared"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Actions"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
+msgid "Share log"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Select %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "by %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "All accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "When you publish a post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d sent"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Campaign paused."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Pause"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Campaign resumed."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Resume"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Edit %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Edit"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "More actions for %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The accounts did not load. %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s is connected."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Account disconnected. The plugin stopped %d scheduled share."
+msgid_plural "Account disconnected. The plugin stopped %d scheduled shares."
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Account disconnected."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Refresh the accounts"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The plugin keeps sign-in tokens encrypted on your site. It sends each token only to its network."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Dismiss"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d accounts: sign-in expired"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Shares to these accounts stop until you reconnect them. Scheduled shares wait."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Reconnect %1$s (%2$s)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$s on %2$s: sign-in expired"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Shares to this account stop until you reconnect it. Scheduled shares wait."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Not connected"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Connect %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Connected"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Handle"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "App"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Social Integrations app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Your own app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Caption limit"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s characters"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Disconnect"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Disconnect %s?"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The plugin removes the sign-in token from your site. Shares already sent stay in the share log."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The plugin stops %d scheduled share to this account."
+msgid_plural "The plugin stops %d scheduled shares to this account."
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The plugin removes the account from %d campaign. A campaign without accounts stops."
+msgid_plural "The plugin removes the account from %d campaigns. A campaign without accounts stops."
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Select how this site signs in to %s."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Connect with Social Integrations"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Sign in to %s. You do not need a developer app."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Use my own app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Enter the details of an app that you created on the %s developer site."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Sign in to %s to give this site permission to post. The Social Integrations app connects the account."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s connects through an app that you create on its developer site. Enter the app details. Then sign in."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Redirect URL for the app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Add this URL to the app as an allowed redirect URL."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Create an app on %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Sign in to %s to give this site permission to post."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Change app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Save app"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Sign in to %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Connect"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Select where to post on %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%s sent no place to post. Make sure that you gave permission for a page or an account."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/assets/main-BnWxiW9o.js:10
+msgid "Settings"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The settings did not load. %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Settings saved."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Text: {excerpt}"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The text goes into {excerpt} when the post has no excerpt."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Text: {text}"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The text goes into {text}."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The image or video goes with the share."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The URL of the block becomes the link of the share."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Leave out"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The plugin does not use the block."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Block rules"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Set how the plugin uses each block of a post in a share: as text, media or a link. Editors can change the rule for one block in the block toolbar."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Let editors change the rule for one block"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "What each choice does"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Use of %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Default (%s)"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Any other block"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Show only blocks with a rule"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "Show all %d blocks"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Select how long the share log keeps its entries. The plugin deletes older entries one time each day. Campaigns and the calendar do not change."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Keep the share log"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d days"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Always"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Unsaved changes"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Settings sections"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Any time"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Last 7 days"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Last 30 days"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "This month"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Custom range"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%1$d of %2$d shares sent."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Entry deleted."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d entries deleted."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Written in the composer"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Edit the post"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Show the shares of this campaign"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Deleted campaign"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "%d tries"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Details"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Details: each try and what the network answered"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Refresh the log"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Search post or caption"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "All campaigns"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Date"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "To"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Result"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+#, js-format
+msgid "The share log did not load. %s"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No failed shares"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "The plugin sent every share in the log."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Show all shares"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No shares match the filters"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Clear filters"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "No shares yet"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Each share to a network appears here with its result."
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Select all entries on this page"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Selected entries"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "The shares stay in the calendar. The plugin deletes only their log entries."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Type"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Select the entry of %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Retry %d failed"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
+msgid "Click again to delete"
+msgstr ""
+
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Delete the entry"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "The browser did not allow the copy."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Share details"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Last try"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Post on the network"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Open on the network"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "1 try"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "Tries"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "The tries did not load. %s"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 #, js-format
 msgid "Try %d"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:5
+#: build/assets/main-BnWxiW9o.js:9
 msgid "This try has no details. The plugin saves details only for shares that it sent after this update."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:10
 msgid "The share stopped before it sent a request to the network."
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:10
 msgid "No answer"
 msgstr ""
 
-#: build/assets/main-ChVfYBxH.js:6
+#: build/assets/main-BnWxiW9o.js:10
 #, js-format
 msgid "%d ms"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/assets/main-BnWxiW9o.js:10
+msgid "On"
+msgstr ""
+
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "15 seconds"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "%d hour"
 msgid_plural "%d hours"
 msgstr[0] ""
 msgstr[1] ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "%d minute"
 msgid_plural "%d minutes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "the blocks inside use their own rules"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Use in social posts"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Social"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "Rule from Settings: %s"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Show this media first"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "This choice is for this block only. Settings have the rules for all blocks."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Use the campaign caption"
+msgstr ""
+
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The share status did not load."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The plugin shared this post when you published it. An update does not share it again."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "This post is published. The plugin shares a post only when you publish it for the first time."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "No auto-post campaign shares this post type."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The plugin does not share this post when you publish it."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "The plugin shares the post %1$s after you publish it. Campaigns: %2$s."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Share when I publish"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Create an auto-post campaign"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The plugin shares this post only to the accounts that you select."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Each campaign shares to its own accounts. Select accounts to use other accounts for this post."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "No account is connected."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Use the campaign accounts"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "These values replace the values of the campaign for this post. Leave a field empty to use the campaign value."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 #, js-format
 msgid "For %s."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "You can use {title}, {excerpt}, {url}, {tags} and {author}."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:1
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Campaign setting"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "The AI did not write a caption. Try again."
-msgstr ""
-
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Caption for this post"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Leave it empty to use the caption of the campaign. You can use {title}, {excerpt}, {url}, {tags} and {author}."
+#: build/editor/editor-8u8nPg1Q.js:1
+msgid "Leave it empty to use the caption of the campaign. Select a token to put a value of the post in the caption."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Write with AI"
-msgstr ""
-
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "Use the campaign caption"
-msgstr ""
-
-#: build/editor/editor-BI3Hcaxc.js:3
-msgid "The AI reads the last saved version of the post."
-msgstr ""
-
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The preview did not load. Change the post to try again."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "The caption is empty."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Blocks in the post"
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "This post has no shares yet."
 msgstr ""
 
-#: build/editor/editor-BI3Hcaxc.js:3
+#: build/editor/editor-8u8nPg1Q.js:1
 msgid "Open the post"
 msgstr ""

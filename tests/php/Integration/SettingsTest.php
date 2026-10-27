@@ -22,14 +22,6 @@ final class SettingsTest extends IntegrationTestCase {
 
 		$read = $this->rest( 'GET', '/settings' )->get_data();
 		$this->assertSame( 'skip', $read['block_fallback'] );
-		$this->assertArrayHasKey( 'ai_providers', $read );
-	}
-
-	public function test_ai_keys_are_never_sent_back(): void {
-		$this->rest( 'POST', '/settings', array( 'ai_keys' => array( 'openai' => 'sk-test-secret' ) ) );
-
-		$this->assertStringNotContainsString( 'sk-test-secret', wp_json_encode( $this->rest( 'GET', '/settings' )->get_data() ) );
-		$this->assertStringNotContainsString( 'sk-test-secret', serialize( wp_load_alloptions() ) );
 	}
 
 	public function test_blocks_list_core_blocks_with_their_rule(): void {

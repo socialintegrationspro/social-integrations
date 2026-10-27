@@ -20,7 +20,7 @@ interface Wp {
   components: Any
   blockEditor: Any
   compose: { createHigherOrderComponent: (inner: Any, name: string) => Any }
-  hooks: { addFilter: (hook: string, namespace: string, callback: Any) => void }
+  hooks: { addFilter: (hook: string, namespace: string, callback: Any) => void; applyFilters: (hook: string, value: unknown, ...args: unknown[]) => unknown }
 }
 
 declare global {
@@ -56,8 +56,6 @@ export interface EditorConfig {
   blockOverride: boolean
   blockRules: Record<string, BlockUse>
   blockFallback: BlockUse
-  /** True when an AI provider is set up in Settings. */
-  aiReady?: boolean
   /** Caption tokens for the post type, such as '{title}' or '{price}'. */
   tokens?: string[]
 }

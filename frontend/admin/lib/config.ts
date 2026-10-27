@@ -12,8 +12,6 @@ export interface SintConfig {
   oauthError: string
   /** The current user, and the plugin's capabilities that the user has, such as `sint_share`. */
   user: { name: string; caps: Record<string, boolean> }
-  /** Whether an AI provider and its key are set. */
-  ai: { ready: boolean }
   /** The answers of these GET routes when the page loaded, or null for a route that failed. */
   store?: {
     networks: { networks: Network[]; redirect_uri: string } | null
@@ -53,7 +51,6 @@ export const config: SintConfig = window.sintConfig ?? {
   weekStart: 1,
   redirectUri: '',
   user: { name: '', caps: {} },
-  ai: { ready: false },
 }
 
 /** The plugin's capabilities. The server checks them again on each request. */

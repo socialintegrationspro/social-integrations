@@ -1,6 +1,6 @@
 # Social Integrations
 
-WordPress plugin that shares posts, pages, products and custom post types to social networks, with AI captions, a calendar and a share log.
+WordPress plugin that shares posts, pages, products and custom post types to social networks, with caption templates, a calendar and a share log.
 
 ## Develop
 

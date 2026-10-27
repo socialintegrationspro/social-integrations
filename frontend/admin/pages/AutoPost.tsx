@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
 import { TemplatePreview } from '../components/TemplatePreview'
-import { AiCaption, NO_AI } from '../components/AiCaption'
 import { TemplateEditor, type ShareTemplate } from '../components/TemplateEditor'
 import { LoadError, Modal, useToast } from '../components/ui'
 import { can, caps } from '../lib/config'
@@ -19,13 +18,15 @@ export interface AutoPostOptionProps {
   postTypes: string[]
   /** The tab calls the registered function on Save with the ID of the saved campaign. */
   registerSave: (key: string, save: (id: number) => Promise<unknown>) => void
+  /** The latest published item of the post type, for a test or a preview. Null when there is none; undefined while it loads. */
+  sample?: ContentItem | null
 }
 
-/** A `sint.autopost.options` entry. `area` is the column it shows in: which posts, or when (the default). */
+/** A `sint.autopost.options` entry. `area` is where it shows: which posts, above the caption, or when (the default). */
 interface AutoPostOption {
   key: string
   component: ComponentType<AutoPostOptionProps>
-  area?: 'posts' | 'when'
+  area?: 'posts' | 'caption' | 'when'
 }
 
 type Unit = 'minutes' | 'hours' | 'days'
@@ -142,8 +143,8 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
     )
   }
 
-  const renderExtras = (area: 'posts' | 'when') =>
-    extras.filter((x) => (x.area ?? 'when') === area).map(({ key: k, component: Extra }) => <Extra key={k} campaignId={source} postTypes={c.post_types} registerSave={registerSave} />)
+  const renderExtras = (area: 'posts' | 'caption' | 'when') =>
+    extras.filter((x) => (x.area ?? 'when') === area).map(({ key: k, component: Extra }) => <Extra key={k} campaignId={source} postTypes={c.post_types} registerSave={registerSave} sample={sample} />)
 
   const set = (patch: Partial<AutoCampaign>) => setC({ ...c, ...patch })
   const connected = accounts.filter((a) => a.status === 'connected')
@@ -159,7 +160,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
   // One line in the bar at the bottom, and the summary in the side panel.
   const accountsText = everyAccount ? __('All accounts, and new ones', 'social-integrations') : sprintf(_n('%d account', '%d accounts', selected.length, 'social-integrations'), selected.length)
   const typesText = c.post_types.map((t) => postTypes.find((p) => p.name === t)?.label ?? t).join(', ')
-  const captionText = c.ai?.on ? __('Write with AI', 'social-integrations') : c.caption.trim() ? __('Your caption', 'social-integrations') : __('Default caption', 'social-integrations')
+  const captionText = c.caption.trim() ? __('Your caption', 'social-integrations') : __('Default caption', 'social-integrations')
 
   const save = async () => {
     if (!selected.length) {
@@ -199,8 +200,7 @@ export function AutoPost({ campaign, onSaved, selected, setSelected }: { campaig
         </aside>
 
         <section className="col mid">
-          <AiCaption value={c.ai ?? NO_AI} onChange={(ai) => set({ ai })} postType={c.post_types[0] ?? 'post'} sample={sample} />
-          {c.ai?.on && <div className="sint-label">{__('Template caption, when the AI fails', 'social-integrations')}</div>}
+          {renderExtras('caption')}
           <TemplateEditor
             value={c}
             onChange={set}

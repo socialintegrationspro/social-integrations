@@ -24,11 +24,8 @@
 .sint-ed-fields dt { font-weight: 600; color: #50575e; margin-top: 8px; }
 .sint-ed-fields dd { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* Caption tools: token buttons, typo warnings and the AI menu. */
+/* Caption tools: token buttons, typo warnings and the controls of other plugins. */
 .sint-ed-tokens { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
 .sint-ed-tokens .components-button.sint-ed-token { font-family: ui-monospace, Menlo, monospace; font-size: 11px; height: 28px; min-height: 28px; padding: 0 8px; }
 .sint-ed-issue { margin: 8px 0; }
 .sint-ed-issue .components-button.is-link { margin-left: 4px; }
-.sint-ed-ai { min-width: 260px; }
-.sint-ed-translate { display: flex; gap: 8px; align-items: flex-end; padding: 4px 8px 8px; }
-.sint-ed-translate .components-base-control { flex: 1; }

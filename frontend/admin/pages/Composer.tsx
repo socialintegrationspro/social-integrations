@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Modal, Segmented, Spinner, useToast } from '../components/ui'
-import { AiMenu } from '../components/AiMenu'
+import { CaptionTools } from '../components/CaptionTools'
 import { MediaWarning, PostFields, resolveFields } from '../components/PostFields'
 import { api } from '../lib/api'
-import { can, caps, config } from '../lib/config'
+import { can, caps } from '../lib/config'
 import { applyFilters } from '../lib/hooks'
 import { localToUtc, utcToLocal } from '../lib/format'
 import { __, _n, sprintf } from '../lib/i18n'
@@ -450,9 +450,7 @@ export function Composer({ seed, onClose, onSaved }: { seed: ComposerSeed; onClo
               onSubmit={() => { if (canSend) save(false) }}
               actions={
                 <>
-                  {config.ai.ready && (postId || text.trim()) && (
-                    <AiMenu text={text} onApply={setText} postId={postId} limit={Math.min(500, ...(tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />
-                  )}
+                  <CaptionTools text={text} onApply={setText} postId={postId} limit={Math.min(500, ...(tab === 'all' ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />
                   <button type="button" className="sint-btn ghost sm" onClick={addMedia}>
                     <Icon name="image" size={15} stroke={2} />
                     {__('Add media', 'social-integrations')}

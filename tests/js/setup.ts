@@ -14,7 +14,6 @@ window.sintConfig = {
   redirectUri: '',
   oauthError: '',
   user: { name: 'Admin', caps: { sint_view: true, sint_share: true } },
-  ai: { ready: false },
 }
 
 // jsdom has no layout. The caption editor reads where the caret is to place its list of tokens.

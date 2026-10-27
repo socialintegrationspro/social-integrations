@@ -16,7 +16,6 @@ use SocialIntegrations\Editor\BlockSupport;
 use SocialIntegrations\Editor\SidebarPanel;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Rest\AccountsController;
-use SocialIntegrations\Rest\AIController;
 use SocialIntegrations\Rest\CampaignsController;
 use SocialIntegrations\Rest\ContentController;
 use SocialIntegrations\Rest\DashboardController;
@@ -95,7 +94,6 @@ final class Plugin {
 			}
 		);
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
 		( new BlockSupport() )->register();
@@ -121,13 +119,6 @@ final class Plugin {
 	}
 
 	/**
-	 * Loads translations for older WordPress versions; 6.7+ loads them on demand.
-	 */
-	public function load_textdomain(): void {
-		load_plugin_textdomain( 'social-integrations', false, dirname( plugin_basename( SINT_FILE ) ) . '/languages' );
-	}
-
-	/**
 	 * Registers the REST routes for the admin app.
 	 */
 	public function register_routes(): void {
@@ -135,7 +126,6 @@ final class Plugin {
 		( new SettingsController() )->register_routes();
 		( new AccountsController( $this->networks ) )->register_routes();
 		( new QueueController() )->register_routes();
-		( new AIController() )->register_routes();
 		( new CampaignsController() )->register_routes();
 		( new EditorController() )->register_routes();
 		( new DashboardController() )->register_routes();

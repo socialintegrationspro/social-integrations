@@ -312,34 +312,14 @@ describe('Auto-post campaign', () => {
     expect(screen.getByRole('textbox', { name: 'Link' })).toHaveValue('{field:buy_url}')
   })
 
-  it('lets the AI write the caption from instructions, tests them and saves them', async () => {
-    window.sintConfig!.ai.ready = true
-    const server = fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview, 'GET post-types/post/fields': [], 'POST ai/caption': { caption: 'AI caption for Summer sale', warnings: [] }, 'POST campaigns/auto': { id: 5 } })
+  it('shows the caption controls of other plugins above the caption, with the latest post', async () => {
+    const Extra = ({ sample: post }: { sample?: { title: string } | null }) => <p>{`Caption control: ${post?.title ?? 'none'}`}</p>
+    window.wp = { hooks: { applyFilters: (name: string, value: unknown) => (name === 'sint.autopost.options' ? [{ key: 'extra', component: Extra, area: 'caption' }] : value) } } as unknown as Window['wp']
+    fakeServer({ ...storeRoutes(accounts), 'GET content': [sample], 'POST content/10/share': preview, 'GET post-types/post/fields': [] })
     await renderAutoPost()
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Write with AI' }))
-    expect(screen.getByText('Template caption, when the AI fails')).toBeInTheDocument()
-    const prompt = await findCaption('Instructions for the AI')
-    await typeCaption(prompt, 'Write about {title|upper}.')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Tone' }), { target: { value: 'playful' } })
-
-    await userEvent.click(screen.getByRole('button', { name: 'Test with the latest post' }))
-    expect(await screen.findByText('AI caption for Summer sale')).toBeInTheDocument()
-    expect(server.to('POST ai/caption')[0]!.body).toEqual({ mode: 'prompt', post_id: 10, prompt: 'Write about {title|upper}.', tone: 'playful', limit: 600 })
-
-    await openReview()
-    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'AI posts')
-    await userEvent.click(screen.getByRole('button', { name: 'Create campaign' }))
-    await waitFor(() => expect(server.to('POST campaigns/auto')[0]!.body).toMatchObject({ ai: { on: true, prompt: 'Write about {title|upper}.', tone: 'playful' } }))
-    window.sintConfig!.ai.ready = false
-  })
-
-  it('has no AI choice when the AI is not set up', async () => {
-    fakeServer({ ...storeRoutes(accounts), 'GET content': [] })
-    await renderAutoPost()
-
-    await findCaption()
-    expect(screen.queryByRole('button', { name: 'Write with AI' })).toBeNull()
+    expect(await screen.findByText('Caption control: Summer sale')).toBeInTheDocument()
+    delete window.wp
   })
 
   it('says when the posts have no custom fields', async () => {

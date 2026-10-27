@@ -365,15 +365,6 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-root .sint-tok-menu .sint-input { min-height: 40px; height: 40px; }
 .sint-tok-menu-foot { display: flex; justify-content: flex-end; padding-top: 10px; margin-top: 2px; border-top: 1px dashed var(--line); }
 
-/* Auto-post: the caption from the template or from the AI. */
-.sint-ai-caption { display: flex; flex-direction: column; gap: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
-.sint-ai-caption .sint-seg { align-self: flex-start; }
-.sint-ai-caption-note { display: flex; gap: 10px; margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--raised); color: var(--text-2); font-size: 13px; line-height: 1.5; }
-.sint-ai-caption-note svg { flex: none; margin-top: 2px; color: var(--link); }
-.sint-ai-caption-test { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.sint-ai-caption-result { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: var(--r-card); border: 1px solid var(--border); background: var(--card); }
-.sint-ai-caption-result p { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
-
 /* The list of tokens that opens when the user types "{" in a caption. */
 .sint-root.sint-typeahead { position: absolute; z-index: 9996; top: 24px; min-height: 0; width: 300px; max-width: calc(100vw - 16px); padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35); }
 .sint-typeahead ul { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow: auto; }
@@ -383,19 +374,6 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-typeahead-h, .sint-typeahead-foot { display: block; padding: 6px 12px; font-size: 11px; font-weight: 700; color: var(--muted); }
 .sint-typeahead-h { letter-spacing: 0.08em; text-transform: uppercase; }
 .sint-typeahead-foot { border-top: 1px dashed var(--line); margin-top: 4px; font-weight: 500; }
-
-/* AI menu next to a caption: write, improve, shorter, longer, emojis, hashtags, tone, translate. */
-.sint-ai { position: relative; display: inline-flex; align-items: center; gap: 6px; }
-.sint-ai-menu { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; overflow-y: auto; overscroll-behavior: contain; width: 320px; max-width: calc(100vw - 32px); box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35); }
-.sint-root .sint-ai-menu > button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 44px; padding: 6px 12px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.sint-root .sint-ai-menu > button:hover:not(:disabled), .sint-root .sint-ai-menu > button:focus-visible { background: var(--raised); outline: none; }
-.sint-root .sint-ai-menu > button:disabled { opacity: 0.45; cursor: not-allowed; }
-.sint-ai-menu.up { top: auto; bottom: calc(100% + 6px); }
-.sint-ai-menu .t { font-size: 14px; font-weight: 700; }
-.sint-ai-menu .h { font-size: 12px; color: var(--muted); }
-.sint-ai-menu-h { display: block; margin: 6px 12px 2px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.sint-ai-menu-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 8px 6px; }
-.sint-root .sint-ai-menu-row .sint-input { flex: 1 1 140px; min-height: 36px; height: 36px; }
 
 /* Tokens in a template that the plugin cannot fill. */
 .sint-token-issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -478,8 +456,6 @@ body.sint-admin-page #wpfooter { display: none; }
 .sint-method:disabled { cursor: default; opacity: .7; }
 .sint-method-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
 .sint-method-text { color: var(--muted); font-size: 13px; }
-.sint-ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 4px 20px 20px; }
-.sint-btn.ai { border-color: var(--tok-border); background: var(--tok-bg); color: var(--accent-text); }
 .sint-field > span { font-size: 13px; font-weight: 600; }
 .sint-field small { color: var(--faint); font-size: 12px; }
 .sint-field .sint-field-error { color: var(--bad-text); font-weight: 600; }

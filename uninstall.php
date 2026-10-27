@@ -14,13 +14,11 @@ require_once __DIR__ . '/backend/Support/Sites.php';
 require_once __DIR__ . '/backend/Support/Settings.php';
 require_once __DIR__ . '/backend/Networks/Accounts.php';
 require_once __DIR__ . '/backend/Auth/Broker.php';
-require_once __DIR__ . '/backend/AI/Providers.php';
 require_once __DIR__ . '/backend/Database/Migrations.php';
 require_once __DIR__ . '/backend/Scheduler/AutoShare.php';
 require_once __DIR__ . '/backend/Scheduler/Publisher.php';
 require_once __DIR__ . '/backend/Plugin.php';
 
-use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Auth\Broker;
 use SocialIntegrations\Database\Migrations;
 use SocialIntegrations\Networks\Accounts;
@@ -33,12 +31,12 @@ use SocialIntegrations\Support\Sites;
 $sint_uninstall = static function () {
 	global $wpdb;
 
-	foreach ( array( Settings::OPTION, Accounts::OPTION, Accounts::APP_OPTION, Broker::OPTION, Providers::KEYS_OPTION, Migrations::VERSION_OPTION ) as $option ) {
+	foreach ( array( Settings::OPTION, Accounts::OPTION, Accounts::APP_OPTION, Broker::OPTION, Migrations::VERSION_OPTION ) as $option ) {
 		delete_option( $option );
 	}
 
 	foreach ( array( Migrations::queue_table(), Migrations::logs_table(), Migrations::campaigns_table() ) as $table ) {
-		$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange
 	}
 
 	foreach ( array( AutoShare::META_SHARED, AutoShare::META_DISABLED, AutoShare::META_CAPTION, AutoShare::META_ACCOUNTS, AutoShare::META_FIELDS ) as $meta_key ) {

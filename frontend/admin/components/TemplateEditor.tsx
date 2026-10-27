@@ -2,13 +2,11 @@ import { lazy, Suspense, useId, useRef } from 'react'
 import { useFetch } from '../lib/hooks'
 import { __, sprintf } from '../lib/i18n'
 import { pickMedia } from '../lib/media'
-import { config } from '../lib/config'
 import { hasMarks } from '../lib/richtext'
 import { checkTokens } from '../lib/tokens'
 import { useStore } from '../lib/store'
 import type { CustomField, FieldMap, MediaItem, MediaSource } from '../lib/types'
-import type { AiSettings } from './AiCaption'
-import { AiMenu } from './AiMenu'
+import { CaptionTools } from './CaptionTools'
 import { FieldPicker } from './FieldPicker'
 import { MediaWarning, PostFields } from './PostFields'
 import { TokenIssues } from './TokenIssues'
@@ -25,8 +23,6 @@ export interface ShareTemplate {
   custom_media: MediaItem[]
   /** The custom field with the images, when `media` is 'field'. */
   media_field?: string
-  /** An auto-post campaign: the AI writes the caption from these instructions. */
-  ai?: AiSettings
   /** Link template; empty: the post's permalink. */
   link?: string
   /** Post field templates (see PostFields). */
@@ -134,9 +130,7 @@ export function TemplateEditor({ value, onChange, nets, tab, setTab, placeholder
             placeholder={all ? placeholder : value.caption || placeholder}
             insertRef={insert}
             formats
-            tools={config.ai.ready && (
-              <AiMenu text={text} onApply={setText} template tokens={tokens} limit={Math.min(500, ...(all ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />
-            )}
+            tools={<CaptionTools text={text} onApply={setText} template tokens={tokens} limit={Math.min(500, ...(all ? nets : [tab]).map((n) => network(n)?.char_limit ?? 500))} />}
           />
         </Suspense>
         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

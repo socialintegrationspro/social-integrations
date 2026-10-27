@@ -13,11 +13,6 @@ const settings = (over: Partial<Settings> = {}): Settings => ({
   allow_block_override: true,
   max_images: 4,
   log_days: 0,
-  ai: { provider: '', tone: 'friendly', model: '' },
-  ai_providers: [
-    { key: 'openai', label: 'OpenAI', needs_key: true, has_key: false, default_model: 'gpt-4o-mini' },
-    { key: 'claude', label: 'Claude', needs_key: true, has_key: true, default_model: 'claude-haiku' },
-  ],
   ...over,
 })
 
@@ -30,12 +25,8 @@ const blocks = {
   ],
 }
 
-/** The server saves what it gets and sends it back, without the keys. */
-const saveRoute = (c: Call) => {
-  const { ai_keys, ...rest } = c.body as Settings & { ai_keys: Record<string, string | null> }
-  const providers = rest.ai_providers.map((p) => (p.key in ai_keys ? { ...p, has_key: ai_keys[p.key] !== null } : p))
-  return { ...rest, ai_providers: providers }
-}
+/** The server saves what it gets and sends it back. */
+const saveRoute = (c: Call) => c.body as Settings
 
 /** Opens a section from the Settings menu. */
 const open = async (name: string) => userEvent.click(within(await screen.findByRole('navigation', { name: 'Settings sections' })).getByRole('link', { name: new RegExp(`^${name}`) }))
@@ -43,7 +34,6 @@ const open = async (name: string) => userEvent.click(within(await screen.findByR
 describe('Settings screen', () => {
   beforeEach(() => setCaps(...ALL_CAPS))
   afterEach(() => {
-    window.sintConfig!.ai.ready = false
     vi.unstubAllGlobals()
   })
 
@@ -52,7 +42,9 @@ describe('Settings screen', () => {
     renderPage(SettingsPage)
 
     expect(screen.getByText('Loading')).toBeInTheDocument()
-    await open('Block rules')
+    // Block rules is the first section.
+    expect(await screen.findByRole('heading', { name: 'Block rules' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'AI captions' })).toBeNull()
     expect(await screen.findByRole('combobox', { name: 'Use of Paragraph' })).toHaveValue('excerpt')
     expect(screen.getByRole('combobox', { name: 'Use of Price' })).toHaveValue('')
     expect(screen.queryByRole('combobox', { name: 'Use of Quote' })).toBeNull()
@@ -111,12 +103,12 @@ describe('Settings screen', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Unsaved changes')
     const nav = screen.getByRole('navigation', { name: 'Settings sections' })
     expect(within(nav).getByRole('link', { name: 'Block rules Unsaved changes' })).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: 'AI captions' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Share log Unsaved changes' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await findToast('Settings saved.')
-    expect(server.to('POST settings')[0]!.body).toMatchObject({ blocks: { 'core/paragraph': 'text' }, block_fallback: 'skip', allow_block_override: false, log_days: 90, ai_keys: {} })
+    expect(server.to('POST settings')[0]!.body).toMatchObject({ blocks: { 'core/paragraph': 'text' }, block_fallback: 'skip', allow_block_override: false, log_days: 90 })
     expect(screen.queryByText('Unsaved changes')).toBeNull()
   })
 
@@ -130,38 +122,6 @@ describe('Settings screen', () => {
     window.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
-  })
-
-  it('sends a new API key once and turns AI on', async () => {
-    const server = fakeServer({ ...storeRoutes(), 'GET settings': settings(), 'GET blocks': blocks, 'POST settings': saveRoute })
-    renderPage(SettingsPage)
-
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Provider' }), { target: { value: 'openai' } })
-    await userEvent.type(screen.getByLabelText(/^OpenAI API key/), 'sk-123')
-    expect(screen.getByLabelText(/^Model/)).toHaveAttribute('placeholder', 'gpt-4o-mini')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Tone' }), { target: { value: 'bold' } })
-    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-
-    await findToast('Settings saved.')
-    expect(server.to('POST settings')[0]!.body).toMatchObject({ ai: { provider: 'openai', tone: 'bold', model: '' }, ai_keys: { openai: 'sk-123' } })
-    expect(window.sintConfig!.ai.ready).toBe(true)
-    // The key does not show again; the field says that a key is saved.
-    expect(screen.getByLabelText('OpenAI API key')).toHaveValue('')
-    expect(screen.getByLabelText('OpenAI API key')).toHaveAccessibleDescription('The plugin keeps the key encrypted on your site. It does not show the key again.')
-    expect(screen.getByLabelText(/^OpenAI API key/)).toHaveAttribute('placeholder', 'Saved. Type a new key to replace it.')
-  })
-
-  it('removes a saved API key on save', async () => {
-    const server = fakeServer({ ...storeRoutes(), 'GET settings': settings({ ai: { provider: 'claude', tone: 'friendly', model: '' } }), 'GET blocks': blocks, 'POST settings': saveRoute })
-    renderPage(SettingsPage)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }))
-    expect(screen.getByText('The plugin removes the key when you save.')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-
-    await findToast('Settings saved.')
-    expect(server.to('POST settings')[0]!.body).toMatchObject({ ai_keys: { claude: null } })
-    expect(window.sintConfig!.ai.ready).toBe(false)
   })
 
   it('shows the error of a failed save and keeps the changes', async () => {
@@ -183,15 +143,15 @@ describe('Settings screen', () => {
 
     expect(await screen.findByRole('heading', { name: 'Share log' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Share log' })).toHaveAttribute('aria-current', 'page')
-    await open('AI captions')
-    expect(window.location.hash).toBe('#/settings?section=ai')
-    expect(screen.getByRole('combobox', { name: 'Provider' })).toBeInTheDocument()
+    await open('Block rules')
+    expect(window.location.hash).toBe('#/settings?section=blocks')
+    expect(await screen.findByRole('combobox', { name: 'Use of Paragraph' })).toBeInTheDocument()
   })
 
   it('opens another section when the URL changes while the screen is open', async () => {
     fakeServer({ ...storeRoutes(), 'GET settings': settings(), 'GET blocks': blocks })
-    const { rerender, go, openComposer } = renderPage(SettingsPage, { params: 'section=ai' })
-    expect(await screen.findByRole('heading', { name: 'AI captions' })).toBeInTheDocument()
+    const { rerender, go, openComposer } = renderPage(SettingsPage, { params: 'section=blocks' })
+    expect(await screen.findByRole('heading', { name: 'Block rules' })).toBeInTheDocument()
 
     rerender(<Providers><SettingsPage params={new URLSearchParams('section=log')} go={go} openComposer={openComposer} /></Providers>)
 
@@ -208,14 +168,5 @@ describe('Settings screen', () => {
     expect(screen.getByText('Who can approve posts.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull()
     delete window.wp
-  })
-
-  it('hides the AI fields when AI is off', async () => {
-    fakeServer({ ...storeRoutes(), 'GET settings': settings(), 'GET blocks': blocks })
-    renderPage(SettingsPage)
-
-    await screen.findByRole('combobox', { name: 'Provider' })
-    expect(screen.queryByRole('combobox', { name: 'Tone' })).toBeNull()
-    expect(screen.queryByLabelText(/API key/)).toBeNull()
   })
 })

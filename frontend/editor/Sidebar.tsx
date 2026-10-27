@@ -245,7 +245,6 @@ function CaptionPanel({ post, nets, onChange }: { post: ReturnType<typeof usePos
           help={__('Leave it empty to use the caption of the campaign. Select a token to put a value of the post in the caption.', 'social-integrations')}
         />
         <CaptionTools postId={post.id} caption={caption} onChange={onChange} />
-        <p className="sint-ed-help">{__('The AI reads the last saved version of the post.', 'social-integrations')}</p>
       </PanelBody>
       <PanelBody title={__('Preview', 'social-integrations')} initialOpen={false}>
         {!preview && !previewFailed && <Spinner />}

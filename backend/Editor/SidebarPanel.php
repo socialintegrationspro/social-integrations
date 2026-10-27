@@ -7,9 +7,9 @@
 
 namespace SocialIntegrations\Editor;
 
-use SocialIntegrations\AI\Providers;
 use SocialIntegrations\Admin\Menu;
 use SocialIntegrations\Content\PostTypes;
+use SocialIntegrations\Hooks;
 use SocialIntegrations\Networks\Registry;
 use SocialIntegrations\Support\Settings;
 
@@ -64,6 +64,8 @@ final class SidebarPanel {
 		$path = SINT_PATH . 'build/editor/';
 		$url  = SINT_URL . 'build/editor/';
 		$deps = array( 'wp-api-fetch', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-data', 'wp-edit-post', 'wp-editor', 'wp-element', 'wp-hooks', 'wp-i18n', 'wp-plugins' );
+		// A script added here loads first, so its wp.hooks filters are in place before the panel renders.
+		$deps = array_values( array_unique( array_merge( $deps, array_map( 'strval', (array) apply_filters( Hooks::EDITOR_SCRIPT_DEPENDENCIES, array() ) ) ) ) );
 		wp_enqueue_script( self::HANDLE, $url . $files['js'], $deps, SINT_VERSION . '.' . filemtime( $path . $files['js'] ), true );
 		if ( '' !== $files['css'] ) {
 			wp_enqueue_style( self::HANDLE, $url . $files['css'], array( 'wp-components' ), SINT_VERSION . '.' . filemtime( $path . $files['css'] ) );
@@ -112,7 +114,6 @@ final class SidebarPanel {
 			'blockOverride' => (bool) Settings::get( 'allow_block_override', true ),
 			'blockRules'    => (object) Settings::get( 'blocks', array() ),
 			'blockFallback' => (string) Settings::get( 'block_fallback', 'text' ),
-			'aiReady'       => null !== Providers::current(),
 			'tokens'        => $this->tokens(),
 		);
 	}
