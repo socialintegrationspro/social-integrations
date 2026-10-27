@@ -1,6 +1,6 @@
 <?php
 /**
- * Client for the Social Integrations app at app.socialintegrations.com.
+ * Client for the Social Integrations app at auth-apps.socialintegrations.com.
  *
  * @package SocialIntegrations
  */
@@ -27,7 +27,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Broker {
 
-	const DEFAULT_URL      = 'https://app.socialintegrations.com';
+	const DEFAULT_URL      = 'https://auth-apps.socialintegrations.com';
 	const OPTION           = 'sint_broker_site';
 	const VERIFY_TRANSIENT = 'sint_broker_verify';
 

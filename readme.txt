@@ -1,4 +1,4 @@
-=== Social Integrations – AI Auto Post & Social Media Scheduler ===
+=== Social Integrations – Auto Post & Social Media Scheduler ===
 Contributors: socialintegrations
 Tags: auto post, social media, scheduler, facebook, linkedin
 Requires at least: 6.3
@@ -8,7 +8,7 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Share your posts, pages, products and any custom post type to social networks when you publish. Write captions with tokens and plan them in a calendar.
+Share posts, pages, products and any custom post type to social networks when you publish. Write captions with tokens and plan them in a calendar.
 
 == Description ==
 
@@ -29,8 +29,8 @@ The uncompiled source of the admin app is in the `frontend/` folder of the publi
 
 This plugin sends data to a third-party service only when you connect an account or share content to it.
 
-= Social Integrations app (app.socialintegrations.com) =
-To connect Facebook or LinkedIn without your own developer app, select "Connect with Social Integrations". The plugin then registers your site with app.socialintegrations.com and sends the site address and the network name. The network sends you back through that server. The server exchanges the sign-in code and gives the access token to your site once. The server does not keep the token. When the token expires, the plugin sends it to the server to renew it. The plugin does not contact the server before you select "Connect with Social Integrations". If you use your own app for each network, the plugin sends nothing else to this server.
+= Social Integrations app (auth-apps.socialintegrations.com) =
+To connect Facebook or LinkedIn without your own developer app, select "Connect with Social Integrations". The plugin then registers your site with auth-apps.socialintegrations.com. It sends the site address, the sign-in return address, a verification address and a one-time verification code. For each sign-in, it sends the network name and a random state value. The network sends you back through the server. The server exchanges the sign-in code and gives the access token to your site one time. The server does not keep the token. When the token expires, the plugin sends the token and the renewal token to the server to renew it. The plugin does not contact the server before you select "Connect with Social Integrations". If you use your own app for each network, the plugin sends nothing to this server.
 Terms: https://socialintegrations.com/terms — Privacy: https://socialintegrations.com/privacy
 
 = Facebook (Meta Graph API) =

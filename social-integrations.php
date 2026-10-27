@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Social Integrations – AI Auto Post & Social Media Scheduler
+ * Plugin Name:       Social Integrations – Auto Post & Social Media Scheduler
  * Plugin URI:        https://socialintegrations.com
  * Description:       Share your WordPress content to social networks when you publish, with caption templates, a content calendar and a share log.
  * Version:           0.1.0
